@@ -16,6 +16,7 @@ import ConferenciaEstoque from './pages/ConferenciaEstoque';
 import Relatorios from './pages/Relatorios';
 import Configuracoes from './pages/Configuracoes';
 import Sidebar from './components/Sidebar';
+import BottomNav from './components/BottomNav';
 import AIChatAssistant from './components/AIChatAssistant';
 import { Menu, X, Cpu } from 'lucide-react';
 
@@ -30,12 +31,12 @@ const AppContent: React.FC<{ isAuthenticated: boolean; onLogin: () => void; onLo
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 flex flex-col md:flex-row">
       {/* Mobile Header */}
-      <header className="md:hidden bg-slate-700 text-white p-4 flex justify-between items-center sticky top-0 z-50 border-b border-neutral-700">
+      <header className="md:hidden bg-white text-slate-900 p-4 flex justify-between items-center sticky top-0 z-50 border-b border-slate-200 shadow-sm">
         <div className="flex items-center gap-2">
-          <Cpu size={20} className="text-blue-400" />
+          <Cpu size={24} className="text-blue-600" />
           <span className="text-lg font-extrabold tracking-tight uppercase">QUARTZ 4.0</span>
         </div>
-        <button onClick={toggleSidebar} className="p-1 hover:bg-slate-600 rounded">
+        <button onClick={toggleSidebar} className="p-2 hover:bg-slate-100 rounded-lg transition">
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </header>
@@ -48,15 +49,17 @@ const AppContent: React.FC<{ isAuthenticated: boolean; onLogin: () => void; onLo
         />
       )}
 
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation - Desktop Only */}
       <aside className={`
         fixed md:relative z-50 w-64 h-full bg-slate-700 text-white flex-shrink-0 transition-transform duration-300
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        hidden md:block
       `}>
         <Sidebar onLogout={onLogout} onCloseSidebar={() => setIsSidebarOpen(false)} />
       </aside>
 
-      <main className="flex-1 overflow-x-hidden min-h-screen p-4 md:p-8 lg:p-10 bg-white">
+      {/* Main Content */}
+      <main className="flex-1 overflow-x-hidden min-h-screen p-4 md:p-8 lg:p-10 bg-white pb-20 md:pb-8">
         <Routes>
           <Route path="/" element={<ModuleSelector onLogout={onLogout} />} />
 
@@ -81,7 +84,13 @@ const AppContent: React.FC<{ isAuthenticated: boolean; onLogin: () => void; onLo
         </Routes>
       </main>
 
-      <AIChatAssistant />
+      {/* Bottom Navigation - Mobile Only */}
+      <BottomNav />
+
+      {/* AI Chat Assistant - Hidden on small screens */}
+      <div className="hidden lg:block">
+        <AIChatAssistant />
+      </div>
     </div>
   );
 };
