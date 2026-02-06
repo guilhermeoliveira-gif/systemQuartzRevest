@@ -1,30 +1,16 @@
 ﻿
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Plus, Search, Filter, CheckCircle, Clock, XCircle, FileText, ChevronRight, Save, ShieldAlert, Upload, Image as ImageIcon } from 'lucide-react';
 import { NaoConformidade } from '../types_nc';
+import { qualidadeService } from '../services/qualidadeService';
 
 const NaoConformidades: React.FC = () => {
     const navigate = useNavigate();
-    // Mock Data simulating store fetch
-    const [ocorrencias, setOcorrencias] = useState<NaoConformidade[]>([
-        {
-            id: '1',
-            titulo: 'Falha na Mistura Lote 45',
-            descricao: 'A mistura apresentou viscosidade abaixo do padrÃ£o, gerando material quebradiÃ§o.',
-            tipo: 'PRODUTO',
-            origem: 'Misturador 02',
-            data_ocorrencia: '2025-10-25',
-            status: 'EM_ANALISE',
-            severidade: 'ALTA',
-            responsavel_id: 'JoÃ£o Silva',
 
-            created_at: new Date().toISOString(),
-            acao_contencao: 'ProduÃ§Ã£o parada imediatamente e lote segregado no pallet vermelho.',
-            evidencias: []
-        }
-    ]);
-
+    // State
+    const [ocorrencias, setOcorrencias] = useState<NaoConformidade[]>([]);
+    const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'FORM' | 'ANALYSIS'>('LIST');
     const [selectedOcorrencia, setSelectedOcorrencia] = useState<NaoConformidade | null>(null);
 
@@ -43,63 +29,117 @@ const NaoConformidades: React.FC = () => {
         causa_raiz: ''
     });
 
-    const handleOpenAnalysis = (ocorrencia: NaoConformidade) => {
+    // Load data from Supabase on mount
+    useEffect(() => {
+        loadNaoConformidades();
+    }, []);
+
+    const loadNaoConformidades = async () => {
+        try {
+            setLoading(true);
+            const data = await qualidadeService.getNaoConformidades();
+            setOcorrencias(data);
+        } catch (error) {
+            console.error('Erro ao carregar não conformidades:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenAnalysis = async (ocorrencia: NaoConformidade) => {
         setSelectedOcorrencia(ocorrencia);
-        setFiveWhys({
-            pq1: ocorrencia.analise_causa?.pq1 || '',
-            pq2: ocorrencia.analise_causa?.pq2 || '',
-            pq3: ocorrencia.analise_causa?.pq3 || '',
-            pq4: ocorrencia.analise_causa?.pq4 || '',
-            pq5: ocorrencia.analise_causa?.pq5 || '',
-            causa_raiz: ocorrencia.analise_causa?.causa_raiz || ''
-        });
+
+        // Load existing analysis if available
+        try {
+            const analise = await qualidadeService.getAnaliseCausa(ocorrencia.id);
+            if (analise) {
+                setFiveWhys({
+                    pq1: analise.pq1 || '',
+                    pq2: analise.pq2 || '',
+                    pq3: analise.pq3 || '',
+                    pq4: analise.pq4 || '',
+                    pq5: analise.pq5 || '',
+                    causa_raiz: analise.causa_raiz || ''
+                });
+            } else {
+                setFiveWhys({
+                    pq1: '', pq2: '', pq3: '', pq4: '', pq5: '',
+                    causa_raiz: ''
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao carregar análise:', error);
+        }
+
         setViewMode('ANALYSIS');
     };
 
-    const handleSaveAnalysis = (e: React.FormEvent) => {
+    const handleSaveAnalysis = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedOcorrencia) return;
 
-        const updatedOcorrencias = ocorrencias.map(oc => {
-            if (oc.id === selectedOcorrencia.id) {
-                return {
-                    ...oc,
-                    status: 'ACAO_DEFINIDA',
-                    analise_causa: {
-                        ...fiveWhys
-                    }
-                } as NaoConformidade;
-            }
-            return oc;
-        });
+        try {
+            // Save analysis to database
+            await qualidadeService.saveAnaliseCausa(selectedOcorrencia.id, fiveWhys);
 
-        setOcorrencias(updatedOcorrencias);
-        // Redirect to Action Plan creation
-        navigate(`/qualidade/planos-acao?nc_id=${selectedOcorrencia.id}&nc_title=${encodeURIComponent(selectedOcorrencia.titulo)}`);
+            // Reload data
+            await loadNaoConformidades();
+
+            // Redirect to Action Plan creation
+            navigate(`/qualidade/planos-acao?nc_id=${selectedOcorrencia.id}&nc_title=${encodeURIComponent(selectedOcorrencia.titulo)}`);
+        } catch (error) {
+            console.error('Erro ao salvar análise:', error);
+            alert('Erro ao salvar análise. Tente novamente.');
+        }
     };
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        const newEntry: NaoConformidade = {
-            id: Math.random().toString(36).substr(2, 9),
-            titulo: formData.titulo || '',
-            descricao: formData.descricao || '',
-            tipo: formData.tipo as any,
-            origem: formData.origem || '',
-            data_ocorrencia: formData.data_ocorrencia || '',
-            status: 'EM_ANALISE',
-            severidade: formData.severidade as any,
-            responsavel_id: 'Current User',
 
-            created_at: new Date().toISOString(),
-            acao_contencao: formData.acao_contencao || '',
-            evidencias: formData.evidencias || []
-        };
+        try {
+            const newEntry: Omit<NaoConformidade, 'id' | 'created_at'> = {
+                titulo: formData.titulo || '',
+                descricao: formData.descricao || '',
+                tipo: formData.tipo as any,
+                origem: formData.origem || '',
+                data_ocorrencia: formData.data_ocorrencia || '',
+                status: 'EM_ANALISE',
+                severidade: formData.severidade as any,
+                responsavel_id: 'Current User', // TODO: Get from auth context
+                acao_contencao: formData.acao_contencao || '',
+                evidencias: formData.evidencias || []
+            };
 
-        setOcorrencias([newEntry, ...ocorrencias]);
-        setViewMode('LIST');
-        setFormData({ severidade: 'MEDIA', tipo: 'PROCESSO', data_ocorrencia: new Date().toISOString().split('T')[0], acao_contencao: '', evidencias: [] });
+            await qualidadeService.createNaoConformidade(newEntry);
+
+            // Reload data
+            await loadNaoConformidades();
+
+            // Reset form
+            setViewMode('LIST');
+            setFormData({
+                severidade: 'MEDIA',
+                tipo: 'PROCESSO',
+                data_ocorrencia: new Date().toISOString().split('T')[0],
+                acao_contencao: '',
+                evidencias: []
+            });
+        } catch (error) {
+            console.error('Erro ao criar não conformidade:', error);
+            alert('Erro ao criar não conformidade. Tente novamente.');
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-slate-600">Carregando não conformidades...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

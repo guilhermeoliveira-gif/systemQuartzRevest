@@ -1,31 +1,34 @@
 
 export interface Tarefa {
     id: string;
+    plano_acao_id: string;
     descricao: string;
-    responsavel_id: string;
-    data_inicio: string;
-    data_termino: string;
-    concluida: boolean;
+    responsavel: string;
+    prazo: string;
+    status: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDA';
+    observacoes?: string;
+    created_at: string;
+    updated_at?: string;
 }
 
 export interface PlanoAcao {
     id: string;
-    nc_id?: string; // ID da Não Conformidade vinculada (opcional)
+    nao_conformidade_id?: string; // ID da Não Conformidade vinculada
     titulo: string;
-    origem: 'RNC' | 'MANUAL'; // Se veio de uma RNC ou foi criado avulso
 
     // 5W2H Methodology
     what: string;       // O que será feito? (Ação)
     why: string;        // Por que será feito? (Motivo/Justificativa)
-    where: string;      // Onde será feito? (Local)
-    when: string;       // Quando será feito? (Prazo)
+    where_loc: string;  // Onde será feito? (Local) - renamed to avoid SQL keyword
+    when_date: string;  // Quando será feito? (Prazo) - renamed to avoid SQL keyword
     who: string;        // Quem fará? (Responsável)
     how: string;        // Como será feito? (Método/Procedimento)
-    how_much: string;   // Quanto custará? (Custo estimado ou Zero)
+    how_much?: string;  // Quanto custará? (Custo estimado ou Zero)
 
-    tarefas?: Tarefa[]; // Checklist de tarefas do plano
-
-    status: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDO' | 'CANCELADO';
+    status_acao: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'VERIFICADA';
     created_at: string;
-    updated_at: string;
+    updated_at?: string;
+
+    // Tarefas podem ser carregadas separadamente
+    tarefas?: Tarefa[];
 }

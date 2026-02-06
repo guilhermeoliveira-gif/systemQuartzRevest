@@ -7,6 +7,7 @@ import {
     CheckCircle, XCircle, Save, ArrowLeft, Filter, Trash2, CheckSquare, ListCheck
 } from 'lucide-react';
 import { PlanoAcao, Tarefa } from '../types_plano_acao';
+import { qualidadeService } from '../services/qualidadeService';
 
 const PlanosAcao: React.FC = () => {
     const location = useLocation();
@@ -15,108 +16,182 @@ const PlanosAcao: React.FC = () => {
     const ncIdParam = searchParams.get('nc_id');
     const ncTitleParam = searchParams.get('nc_title');
 
-    // Mock Data
-    const [planos, setPlanos] = useState<PlanoAcao[]>([
-        {
-            id: '1',
-            titulo: 'Treinamento de Operadores Moinho 3',
-            nc_id: 'RNC-1234',
-            origem: 'RNC',
-            what: 'Realizar treinamento de reciclagem sobre ajuste de granulometria',
-            why: 'Evitar recorrência de falha na moagem fina',
-            where: 'Sala de Treinamento e Chão de Fábrica',
-            when: '2025-11-15',
-            who: 'Carlos Supervisor',
-            how: 'Slides teóricos pela manhã e prática assistida à tarde',
-            how_much: 'R$ 0,00 (Interno)',
-            tarefas: [
-                { id: 't1', descricao: 'Preparar material didático', responsavel_id: 'Ana RH', data_inicio: '2025-11-01', data_termino: '2025-11-05', concluida: true },
-                { id: 't2', descricao: 'Reservar sala e projetor', responsavel_id: 'Ana RH', data_inicio: '2025-11-10', data_termino: '2025-11-10', concluida: false }
-            ],
-            status: 'PENDENTE',
-            created_at: '2025-10-26T10:00:00Z',
-            updated_at: '2025-10-26T10:00:00Z'
-        }
-    ]);
-
+    // State
+    const [planos, setPlanos] = useState<PlanoAcao[]>([]);
+    const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'FORM' | 'STANDALONE'>('LIST');
     const [currentTasks, setCurrentTasks] = useState<Tarefa[]>([]);
+    const [selectedPlanoId, setSelectedPlanoId] = useState<string | null>(null);
 
-    // Standalone Tasks State
-    const [standaloneTasks, setStandaloneTasks] = useState<Tarefa[]>([
-        { id: 'st1', descricao: 'Verificar estoque de EPIs', responsavel_id: 'Ana RH', data_inicio: '2025-10-27', data_termino: '2025-10-28', concluida: false }
-    ]);
-
-    const handleAddStandaloneTask = () => {
-        if (!newTask.descricao || !newTask.responsavel_id) return;
-
-        const task: Tarefa = {
-            id: 'st-' + Math.random().toString(36).substr(2, 9),
-            descricao: newTask.descricao,
-            responsavel_id: newTask.responsavel_id,
-            data_inicio: newTask.data_inicio || new Date().toISOString().split('T')[0],
-            data_termino: newTask.data_termino || new Date().toISOString().split('T')[0],
-            concluida: false
-        };
-
-        setStandaloneTasks([...standaloneTasks, task]);
-        setNewTask({ descricao: '', responsavel_id: '', data_inicio: '', data_termino: '' });
-    };
-
-    const toggleStandaloneTask = (id: string) => {
-        setStandaloneTasks(standaloneTasks.map(t => t.id === id ? { ...t, concluida: !t.concluida } : t));
-    };
-
-    const deleteStandaloneTask = (id: string) => {
-        setStandaloneTasks(standaloneTasks.filter(t => t.id !== id));
-    };
+    // Standalone Tasks State (kept for backward compatibility)
+    const [standaloneTasks, setStandaloneTasks] = useState<Tarefa[]>([]);
 
     // Task Input State
     const [newTask, setNewTask] = useState<Partial<Tarefa>>({
         descricao: '',
-        responsavel_id: '',
-        data_inicio: '',
-        data_termino: ''
+        responsavel: '',
+        prazo: ''
     });
 
     const mockUsers = ['João Silva', 'Maria Oliveira', 'Carlos Supervisor', 'Ana RH', 'Pedro Engenheiro'];
 
     // Form State
     const [formData, setFormData] = useState<Partial<PlanoAcao>>({
-        status: 'PENDENTE',
-        how_much: '0,00',
-        origem: 'MANUAL'
+        status_acao: 'PENDENTE',
+        how_much: '0,00'
     });
+
+    // Load data from Supabase on mount
+    useEffect(() => {
+        loadPlanosAcao();
+    }, []);
 
     // Effect to handle incoming NC redirection
     useEffect(() => {
         if (ncIdParam) {
             setFormData({
-                nc_id: ncIdParam,
+                nao_conformidade_id: ncIdParam,
                 titulo: ncTitleParam ? `Ação Corretiva: ${ncTitleParam}` : '',
                 what: ncTitleParam ? `Correção para: ${ncTitleParam}` : '',
-                origem: 'RNC',
-                status: 'PENDENTE',
-                how_much: '0,00'
+                status_acao: 'PENDENTE',
+                how_much: '0,00',
+                when_date: new Date().toISOString().split('T')[0],
+                where_loc: '',
+                who: '',
+                why: '',
+                how: ''
             });
             setViewMode('FORM');
         }
     }, [ncIdParam, ncTitleParam]);
 
+    const loadPlanosAcao = async () => {
+        try {
+            setLoading(true);
+            const data = await qualidadeService.getPlanosAcao();
+
+            // Load tasks for each plano
+            const planosWithTasks = await Promise.all(
+                data.map(async (plano) => {
+                    const tarefas = await qualidadeService.getTarefasByPlano(plano.id);
+                    return { ...plano, tarefas };
+                })
+            );
+
+            setPlanos(planosWithTasks);
+        } catch (error) {
+            console.error('Erro ao carregar planos de ação:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddStandaloneTask = async () => {
+        if (!newTask.descricao || !newTask.responsavel || !selectedPlanoId) return;
+
+        try {
+            const task: Omit<Tarefa, 'id' | 'created_at'> = {
+                plano_acao_id: selectedPlanoId,
+                descricao: newTask.descricao,
+                responsavel: newTask.responsavel,
+                prazo: newTask.prazo || new Date().toISOString(),
+                status: 'PENDENTE',
+                observacoes: ''
+            };
+
+            await qualidadeService.createTarefa(task);
+            await loadPlanosAcao();
+
+            setNewTask({ descricao: '', responsavel: '', prazo: '' });
+        } catch (error) {
+            console.error('Erro ao adicionar tarefa:', error);
+            alert('Erro ao adicionar tarefa. Tente novamente.');
+        }
+    };
+
+    const toggleStandaloneTask = async (id: string) => {
+        try {
+            const task = standaloneTasks.find(t => t.id === id);
+            if (!task) return;
+
+            const newStatus = task.status === 'CONCLUIDA' ? 'PENDENTE' : 'CONCLUIDA';
+            await qualidadeService.updateTarefa(id, { status: newStatus });
+            await loadPlanosAcao();
+        } catch (error) {
+            console.error('Erro ao atualizar tarefa:', error);
+        }
+    };
+
+    const deleteStandaloneTask = async (id: string) => {
+        try {
+            await qualidadeService.deleteTarefa(id);
+            await loadPlanosAcao();
+        } catch (error) {
+            console.error('Erro ao deletar tarefa:', error);
+        }
+    };
+
+    const handleSavePlano = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            const plano: Omit<PlanoAcao, 'id' | 'created_at'> = {
+                nao_conformidade_id: formData.nao_conformidade_id,
+                titulo: formData.titulo || '',
+                what: formData.what || '',
+                why: formData.why || '',
+                where_loc: formData.where_loc || '',
+                when_date: formData.when_date || new Date().toISOString(),
+                who: formData.who || '',
+                how: formData.how || '',
+                how_much: formData.how_much,
+                status_acao: formData.status_acao || 'PENDENTE'
+            };
+
+            const createdPlano = await qualidadeService.createPlanoAcao(plano);
+
+            // Save tasks if any
+            if (currentTasks.length > 0) {
+                await Promise.all(
+                    currentTasks.map(task =>
+                        qualidadeService.createTarefa({
+                            plano_acao_id: createdPlano.id,
+                            descricao: task.descricao,
+                            responsavel: task.responsavel,
+                            prazo: task.prazo,
+                            status: task.status,
+                            observacoes: task.observacoes
+                        })
+                    )
+                );
+            }
+
+            await loadPlanosAcao();
+            setViewMode('LIST');
+            setFormData({ status_acao: 'PENDENTE', how_much: '0,00' });
+            setCurrentTasks([]);
+        } catch (error) {
+            console.error('Erro ao salvar plano de ação:', error);
+            alert('Erro ao salvar plano de ação. Tente novamente.');
+        }
+    };
+
     const handleAddTask = () => {
-        if (!newTask.descricao || !newTask.responsavel_id) return;
+        if (!newTask.descricao || !newTask.responsavel) return;
 
         const task: Tarefa = {
             id: Math.random().toString(36).substr(2, 9),
+            plano_acao_id: selectedPlanoId || '',
             descricao: newTask.descricao,
-            responsavel_id: newTask.responsavel_id,
-            data_inicio: newTask.data_inicio || new Date().toISOString().split('T')[0],
-            data_termino: newTask.data_termino || new Date().toISOString().split('T')[0],
-            concluida: false
+            responsavel: newTask.responsavel,
+            prazo: newTask.prazo || new Date().toISOString(),
+            status: 'PENDENTE',
+            observacoes: '',
+            created_at: new Date().toISOString()
         };
 
         setCurrentTasks([...currentTasks, task]);
-        setNewTask({ descricao: '', responsavel_id: '', data_inicio: '', data_termino: '' });
+        setNewTask({ descricao: '', responsavel: '', prazo: '' });
     };
 
     const handleDeleteTask = (id: string) => {
@@ -124,40 +199,19 @@ const PlanosAcao: React.FC = () => {
     };
 
     const toggleTaskStatus = (id: string) => {
-        setCurrentTasks(currentTasks.map(t => t.id === id ? { ...t, concluida: !t.concluida } : t));
+        setCurrentTasks(currentTasks.map(t => t.id === id ? { ...t, status: t.status === 'CONCLUIDA' ? 'PENDENTE' : 'CONCLUIDA' } : t));
     };
 
-    const handleSave = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const newPlano: PlanoAcao = {
-            id: Math.random().toString(36).substr(2, 9),
-            titulo: formData.titulo || 'Sem Título',
-            nc_id: formData.nc_id,
-            origem: formData.origem as any,
-            what: formData.what || '',
-            why: formData.why || '',
-            where: formData.where || '',
-            when: formData.when || '',
-            who: formData.who || '',
-            how: formData.how || '',
-            how_much: formData.how_much || '0',
-            tarefas: currentTasks,
-            status: 'PENDENTE',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        };
-
-        setPlanos([newPlano, ...planos]);
-        setViewMode('LIST');
-        setFormData({ status: 'PENDENTE', how_much: '0,00', origem: 'MANUAL' });
-        setCurrentTasks([]);
-
-        // Remove query params to avoid reopening form on refresh
-        if (ncIdParam) {
-            navigate('/qualidade/planos-acao', { replace: true });
-        }
-    };
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-slate-600">Carregando planos de ação...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -380,7 +434,7 @@ const PlanosAcao: React.FC = () => {
                         </button>
                     </div>
 
-                    <form onSubmit={handleSave} className="p-8">
+                    <form onSubmit={handleSavePlano} className="p-8">
                         {/* Header Info */}
                         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="md:col-span-2">

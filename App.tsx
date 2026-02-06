@@ -21,11 +21,7 @@ import { Menu, X, Cpu } from 'lucide-react';
 
 const AppContent: React.FC<{ isAuthenticated: boolean; onLogin: () => void; onLogout: () => void }> = ({ isAuthenticated, onLogin, onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const location = useLocation();
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
-  // Check if we are inside a module (estoque or qualidade) or in the global selector
-  const isInModule = location.pathname.startsWith('/estoque') || location.pathname.startsWith('/qualidade');
 
   if (!isAuthenticated) {
     return <Login onLogin={onLogin} />;
@@ -33,38 +29,34 @@ const AppContent: React.FC<{ isAuthenticated: boolean; onLogin: () => void; onLo
 
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 flex flex-col md:flex-row">
-      {isInModule && (
-        <>
-          {/* Mobile Header */}
-          <header className="md:hidden bg-slate-700 text-white p-4 flex justify-between items-center sticky top-0 z-50 border-b border-neutral-700">
-            <div className="flex items-center gap-2">
-              <Cpu size={20} className="text-blue-400" />
-              <span className="text-lg font-extrabold tracking-tight uppercase">QUARTZ 4.0</span>
-            </div>
-            <button onClick={toggleSidebar} className="p-1 hover:bg-slate-600 rounded">
-              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </header>
+      {/* Mobile Header */}
+      <header className="md:hidden bg-slate-700 text-white p-4 flex justify-between items-center sticky top-0 z-50 border-b border-neutral-700">
+        <div className="flex items-center gap-2">
+          <Cpu size={20} className="text-blue-400" />
+          <span className="text-lg font-extrabold tracking-tight uppercase">QUARTZ 4.0</span>
+        </div>
+        <button onClick={toggleSidebar} className="p-1 hover:bg-slate-600 rounded">
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </header>
 
-          {/* Sidebar Overlay for Mobile */}
-          {isSidebarOpen && (
-            <div
-              className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
-              onClick={toggleSidebar}
-            />
-          )}
-
-          {/* Sidebar Navigation */}
-          <aside className={`
-            fixed md:relative z-50 w-64 h-full bg-slate-700 text-white flex-shrink-0 transition-transform duration-300
-            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-          `}>
-            <Sidebar onLogout={onLogout} onCloseSidebar={() => setIsSidebarOpen(false)} />
-          </aside>
-        </>
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+          onClick={toggleSidebar}
+        />
       )}
 
-      <main className={`flex-1 overflow-x-hidden min-h-screen ${isInModule ? 'p-4 md:p-8 lg:p-10 bg-white' : ''}`}>
+      {/* Sidebar Navigation */}
+      <aside className={`
+        fixed md:relative z-50 w-64 h-full bg-slate-700 text-white flex-shrink-0 transition-transform duration-300
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <Sidebar onLogout={onLogout} onCloseSidebar={() => setIsSidebarOpen(false)} />
+      </aside>
+
+      <main className="flex-1 overflow-x-hidden min-h-screen p-4 md:p-8 lg:p-10 bg-white">
         <Routes>
           <Route path="/" element={<ModuleSelector onLogout={onLogout} />} />
 
@@ -89,7 +81,7 @@ const AppContent: React.FC<{ isAuthenticated: boolean; onLogin: () => void; onLo
         </Routes>
       </main>
 
-      {isInModule && <AIChatAssistant />}
+      <AIChatAssistant />
     </div>
   );
 };

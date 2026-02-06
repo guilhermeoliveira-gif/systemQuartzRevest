@@ -9,6 +9,7 @@ export interface NaoConformidade {
     severidade: 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA';
     responsavel_id: string;
     created_at: string;
+    updated_at?: string;
 
     // Ação Imediata / Contenção
     acao_contencao?: string;
@@ -16,7 +17,7 @@ export interface NaoConformidade {
     // Evidências (URLs ou nomes de arquivos)
     evidencias?: string[];
 
-    // Metodologia 5 Porquês
+    // Metodologia 5 Porquês (pode estar em tabela separada)
     analise_causa?: {
         pq1: string;
         pq2?: string;
@@ -26,7 +27,7 @@ export interface NaoConformidade {
         causa_raiz: string;
     };
 
-    // Plano de Ação (5W2H)
+    // Plano de Ação (5W2H) - pode estar em tabela separada
     plano_acao?: {
         what: string;  // O que fazer (Ação)
         why: string;   // Por que fazer (Motivo)
