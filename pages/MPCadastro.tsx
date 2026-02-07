@@ -8,11 +8,13 @@ const MPCadastro: React.FC = () => {
   const [materias, setMaterias] = useState<MateriaPrima[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<MateriaPrima>>({
     nome: '',
     unidade_medida: '',
     custo_unitario: 0,
-    minimo_seguranca: 0
+    minimo_seguranca: 0,
+    quantidade_atual: 0
   });
 
   useEffect(() => {
@@ -28,24 +30,54 @@ const MPCadastro: React.FC = () => {
     setIsLoading(false);
   };
 
+  const handleEdit = (mp: MateriaPrima) => {
+    setEditingId(mp.id);
+    setFormData({
+      nome: mp.nome,
+      unidade_medida: mp.unidade_medida,
+      custo_unitario: mp.custo_unitario,
+      minimo_seguranca: mp.minimo_seguranca,
+      quantidade_atual: mp.quantidade_atual
+    });
+    setIsDialogOpen(true);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (!formData.nome) return;
 
-      const { error } = await supabase.from('materia_prima').insert({
-        nome: formData.nome,
-        unidade_medida: formData.unidade_medida || 'un',
-        quantidade_atual: 0,
-        custo_unitario: Number(formData.custo_unitario) || 0,
-        minimo_seguranca: Number(formData.minimo_seguranca) || 0,
-        organization_id: '1'
-      });
+      if (editingId) {
+        // Update existing
+        const { error } = await supabase
+          .from('materia_prima')
+          .update({
+            nome: formData.nome,
+            unidade_medida: formData.unidade_medida || 'un',
+            custo_unitario: Number(formData.custo_unitario) || 0,
+            minimo_seguranca: Number(formData.minimo_seguranca) || 0,
+            quantidade_atual: Number(formData.quantidade_atual) || 0
+          })
+          .eq('id', editingId);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase.from('materia_prima').insert({
+          nome: formData.nome,
+          unidade_medida: formData.unidade_medida || 'un',
+          quantidade_atual: Number(formData.quantidade_atual) || 0,
+          custo_unitario: Number(formData.custo_unitario) || 0,
+          minimo_seguranca: Number(formData.minimo_seguranca) || 0,
+          organization_id: '1'
+        });
+
+        if (error) throw error;
+      }
 
       setIsDialogOpen(false);
-      setFormData({ nome: '', unidade_medida: '', custo_unitario: 0, minimo_seguranca: 0 });
+      setEditingId(null);
+      setFormData({ nome: '', unidade_medida: '', custo_unitario: 0, minimo_seguranca: 0, quantidade_atual: 0 });
       loadData();
     } catch (error) {
       console.error('Error saving materia prima:', error);
@@ -111,7 +143,7 @@ const MPCadastro: React.FC = () => {
                     <td className="px-6 py-4 text-sm font-bold text-neutral-900">{mp.quantidade_atual}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex justify-end gap-2">
-                        <button className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
+                        <button onClick={() => handleEdit(mp)} className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
                           <Edit2 size={16} />
                         </button>
                         <button onClick={() => handleDelete(mp.id)} className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir">
@@ -132,7 +164,7 @@ const MPCadastro: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setIsDialogOpen(false)}></div>
           <div className="relative bg-white border border-neutral-700 w-full max-w-lg rounded-xl shadow-2xl p-6">
-            <h2 className="text-xl font-bold mb-6">Cadastrar Matéria-Prima</h2>
+            <h2 className="text-xl font-bold mb-6">{editingId ? 'Editar' : 'Cadastrar'} Matéria-Prima</h2>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Nome da Matéria-Prima</label>
@@ -170,16 +202,29 @@ const MPCadastro: React.FC = () => {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Estoque Mínimo (Segurança)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Ex: 100"
-                  className="w-full px-4 py-2 border border-neutral-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-600"
-                  value={formData.minimo_seguranca}
-                  onChange={e => setFormData({ ...formData, minimo_seguranca: parseFloat(e.target.value) })}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Estoque Mínimo (Segurança)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 100"
+                    className="w-full px-4 py-2 border border-neutral-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-600"
+                    value={formData.minimo_seguranca}
+                    onChange={e => setFormData({ ...formData, minimo_seguranca: parseFloat(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Quantidade Inicial</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 500"
+                    className="w-full px-4 py-2 border border-neutral-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-600"
+                    value={formData.quantidade_atual}
+                    onChange={e => setFormData({ ...formData, quantidade_atual: parseFloat(e.target.value) })}
+                  />
+                </div>
               </div>
               <div className="flex justify-end gap-3 mt-8">
                 <button
