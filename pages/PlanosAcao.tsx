@@ -292,11 +292,11 @@ const PlanosAcao: React.FC = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className={`px-3 py-1 rounded-full text-xs font-bold border ${plano.status === 'CONCLUIDO' ? 'bg-green-100 text-green-700 border-green-200' :
-                                        plano.status === 'EM_ANDAMENTO' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                    <div className={`px-3 py-1 rounded-full text-xs font-bold border ${plano.status_acao === 'CONCLUIDA' ? 'bg-green-100 text-green-700 border-green-200' :
+                                        plano.status_acao === 'EM_ANDAMENTO' ? 'bg-blue-100 text-blue-700 border-blue-200' :
                                             'bg-slate-100 text-slate-700 border-slate-200'
                                         }`}>
-                                        {plano.status.replace('_', ' ')}
+                                        {plano.status_acao?.replace('_', ' ') || 'PENDENTE'}
                                     </div>
                                 </div>
 
