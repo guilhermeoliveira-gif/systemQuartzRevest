@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield } from 'lucide-react';
+import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield, FolderKanban } from 'lucide-react';
 
 interface ModuleSelectorProps {
   onLogout: () => void;
@@ -22,6 +22,18 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
       iconColor: 'text-blue-600',
       active: true,
       path: '/estoque/dashboard'
+    },
+    {
+      id: 'projetos',
+      name: 'Gestão de Projetos',
+      description: 'Planejamento e acompanhamento de projetos e tarefas.',
+      icon: FolderKanban,
+      color: 'from-teal-600 to-teal-700',
+      borderColor: 'border-teal-200',
+      iconBg: 'bg-teal-100',
+      iconColor: 'text-teal-600',
+      active: true,
+      path: '/projetos/dashboard'
     },
     {
       id: 'producao',

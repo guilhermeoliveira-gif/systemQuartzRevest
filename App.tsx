@@ -24,6 +24,9 @@ import MinhasTarefas from './pages/MinhasTarefas';
 import CadastroUsuarios from './pages/CadastroUsuarios';
 import CadastroPerfis from './pages/CadastroPerfis';
 import PerfilPermissoes from './pages/PerfilPermissoes';
+import ProjetosDashboard from './pages/ProjetosDashboard';
+import CadastroProjeto from './pages/CadastroProjeto';
+import CadastroTarefa from './pages/CadastroTarefa';
 
 const App: React.FC = () => {
   return (
@@ -64,6 +67,11 @@ const App: React.FC = () => {
               <Route path="/seguranca/usuarios" element={<CadastroUsuarios />} />
               <Route path="/seguranca/perfis" element={<CadastroPerfis />} />
               <Route path="/seguranca/permissoes" element={<PerfilPermissoes />} />
+
+              {/* Projects Module */}
+              <Route path="/projetos/dashboard" element={<ProjetosDashboard />} />
+              <Route path="/projetos/cadastro" element={<CadastroProjeto />} />
+              <Route path="/projetos/tarefas" element={<CadastroTarefa />} />
             </Route>
           </Route>
 

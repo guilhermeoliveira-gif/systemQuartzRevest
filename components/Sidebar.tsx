@@ -5,7 +5,7 @@ import Logo from './Logo';
 import { APP_VERSION } from '../src/version';
 import {
   LayoutDashboard, Package, Box, FlaskConical, AlertTriangle,
-  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo, Shield, Users, Key
+  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo, Shield, Users, Key, FolderKanban
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -45,6 +45,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     { name: 'Permissões', path: '/seguranca/permissoes', icon: Key },
   ];
 
+  const projectsNavItems = [
+    { name: 'Dashboard', path: '/projetos/dashboard', icon: LayoutDashboard },
+    { name: 'Projetos', path: '/projetos/cadastro', icon: FolderKanban },
+    { name: 'Tarefas', path: '/projetos/tarefas', icon: ListTodo },
+  ];
+
   const generalNavItems = [
     { name: 'Configurações', path: '/configuracoes', icon: Settings },
   ];
@@ -65,6 +71,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     navItems = securityNavItems;
     moduleName = 'Segurança';
     moduleColor = 'bg-purple-600';
+  } else if (currentModule === 'projetos') {
+    navItems = projectsNavItems;
+    moduleName = 'Projetos';
+    moduleColor = 'bg-teal-600';
   }
 
   return (
