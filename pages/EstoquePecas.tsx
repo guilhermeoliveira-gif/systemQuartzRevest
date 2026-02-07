@@ -251,26 +251,50 @@ const EstoquePecas: React.FC = () => {
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-slate-700 mb-2">Máquinas que utilizam esta peça</label>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto max-h-40 p-3 border rounded-lg bg-slate-50">
-                                {maquinas.map(m => (
-                                    <label key={m.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            className="rounded text-blue-600 focus:ring-blue-500"
-                                            checked={newItem.maquina_ids?.includes(m.id)}
-                                            onChange={e => {
-                                                const currentIds = newItem.maquina_ids || [];
-                                                if (e.target.checked) {
-                                                    setNewItem({ ...newItem, maquina_ids: [...currentIds, m.id] });
-                                                } else {
-                                                    setNewItem({ ...newItem, maquina_ids: currentIds.filter(id => id !== m.id) });
-                                                }
-                                            }}
-                                        />
-                                        <span className="text-sm text-slate-700 truncate">{m.nome}</span>
-                                    </label>
-                                ))}
-                                {maquinas.length === 0 && <p className="text-xs text-slate-400 italic col-span-full">Nenhuma máquina cadastrada</p>}
+                            <div className="space-y-3">
+                                <select
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                                    value=""
+                                    onChange={(e) => {
+                                        const selectedId = e.target.value;
+                                        if (!selectedId) return;
+                                        const currentIds = newItem.maquina_ids || [];
+                                        if (!currentIds.includes(selectedId)) {
+                                            setNewItem({ ...newItem, maquina_ids: [...currentIds, selectedId] });
+                                        }
+                                    }}
+                                >
+                                    <option value="">+ Adicionar vínculo com máquina...</option>
+                                    {maquinas
+                                        .filter(m => !newItem.maquina_ids?.includes(m.id))
+                                        .sort((a, b) => a.nome.localeCompare(b.nome))
+                                        .map(m => (
+                                            <option key={m.id} value={m.id}>{m.nome}</option>
+                                        ))}
+                                </select>
+
+                                <div className="flex flex-wrap gap-2 min-h-[30px] p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                    {newItem.maquina_ids?.map(id => {
+                                        const m = maquinas.find(mq => mq.id === id);
+                                        return (
+                                            <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-blue-200 text-blue-700 rounded-md text-sm shadow-sm animate-in zoom-in-50">
+                                                <MachineIcon size={12} className="opacity-50" />
+                                                {m?.nome || 'Máquina desconhecida'}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewItem({ ...newItem, maquina_ids: newItem.maquina_ids?.filter(mid => mid !== id) })}
+                                                    className="ml-1 p-0.5 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors"
+                                                    title="Remover vínculo"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </span>
+                                        );
+                                    })}
+                                    {(!newItem.maquina_ids || newItem.maquina_ids.length === 0) && (
+                                        <p className="text-xs text-slate-400 italic self-center w-full text-center">Nenhum vínculo selecionado.</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div>
