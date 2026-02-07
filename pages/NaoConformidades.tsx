@@ -325,10 +325,61 @@ const NaoConformidades: React.FC = () => {
                                     <ImageIcon size={18} className="text-slate-400" />
                                     Evidências (Fotos do Problema)
                                 </label>
-                                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 transition cursor-pointer min-h-[120px]">
-                                    <Upload size={32} className="mb-2" />
-                                    <p className="text-sm font-medium text-center">Clique para fazer upload ou arraste fotos aqui</p>
-                                    <p className="text-xs mt-1">PNG, JPG (Máx 5MB)</p>
+
+                                <div className="space-y-4">
+                                    {/* Photo Input Area */}
+                                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 transition cursor-pointer min-h-[120px] relative">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            capture="environment"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        const base64String = reader.result as string;
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            evidencias: [...(prev.evidencias || []), base64String]
+                                                        }));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                        <div className="flex flex-col items-center gap-2 pointer-events-none">
+                                            <div className="bg-blue-100 p-3 rounded-full text-blue-600 mb-1">
+                                                <Upload size={24} />
+                                            </div>
+                                            <p className="font-bold text-slate-700 text-center">Tirar Foto ou Upload</p>
+                                            <p className="text-xs text-slate-400 text-center">Toque para abrir a câmera</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Preview Area */}
+                                    {formData.evidencias && formData.evidencias.length > 0 && (
+                                        <div className="grid grid-cols-2 gap-2 mt-4">
+                                            {formData.evidencias.map((img, index) => (
+                                                <div key={index} className="relative group rounded-lg overflow-hidden border border-slate-200 aspect-video bg-black">
+                                                    <img src={img} alt={`Evidência ${index + 1}`} className="w-full h-full object-contain" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                evidencias: prev.evidencias?.filter((_, i) => i !== index)
+                                                            }));
+                                                        }}
+                                                        className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full shadow-md opacity-90 hover:opacity-100"
+                                                    >
+                                                        <XCircle size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
