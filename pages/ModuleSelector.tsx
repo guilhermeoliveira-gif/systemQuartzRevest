@@ -50,13 +50,14 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
     {
       id: 'producao',
       name: 'Produção & PCP',
-      description: 'Planejamento e ordens de serviço em tempo real.',
+      description: 'Planejamento e controle de produção (PCP) em tempo real.',
       icon: Factory,
-      color: 'from-slate-500 to-slate-600',
-      borderColor: 'border-slate-200',
-      iconBg: 'bg-slate-100',
-      iconColor: 'text-slate-500',
-      active: false,
+      color: 'from-blue-800 to-blue-900',
+      borderColor: 'border-blue-200',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-800',
+      active: true,
+      path: '/pcp'
     },
     {
       id: 'comercial',

@@ -51,6 +51,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     { name: 'Tarefas', path: '/projetos/tarefas-consulta', icon: ListTodo },
   ];
 
+  const pcpNavItems = [
+    { name: 'Dashboard PCP', path: '/pcp', icon: LayoutDashboard },
+    { name: 'Planejamento', path: '/pcp/planejamento', icon: ClipboardCheck },
+    { name: 'Produção em Tempo Real', path: '/pcp/producao', icon: Factory },
+    { name: 'Histórico', path: '/pcp/historico', icon: BarChart },
+  ];
+
   const generalNavItems = [
     { name: 'Configurações', path: '/configuracoes', icon: Settings },
   ];
@@ -72,9 +79,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     moduleName = 'Segurança';
     moduleColor = 'bg-purple-600';
   } else if (currentModule === 'projetos') {
-    navItems = projectsNavItems;
     moduleName = 'Projetos';
     moduleColor = 'bg-teal-600';
+  } else if (currentModule === 'pcp') {
+    navItems = pcpNavItems;
+    moduleName = 'Produção PCP';
+    moduleColor = 'bg-blue-800';
   }
 
   return (

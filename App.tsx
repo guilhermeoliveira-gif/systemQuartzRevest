@@ -31,6 +31,12 @@ import Tarefas from './pages/Tarefas';
 import ProjetoDetalhes from './pages/ProjetoDetalhes';
 import DashboardGlobal from './pages/DashboardGlobal';
 
+// PCP Module
+import PCPDashboard from './pages/PCP/PCPDashboard';
+import PCPPlanejamento from './pages/PCP/PCPPlanejamento';
+import PCPProducao from './pages/PCP/PCPProducao';
+import PCPHistorico from './pages/PCP/PCPHistorico';
+
 const App: React.FC = () => {
   return (
     <Router>
@@ -78,6 +84,12 @@ const App: React.FC = () => {
                 <Route path="/projetos/consulta" element={<Projetos />} />
                 <Route path="/projetos/detalhes/:id" element={<ProjetoDetalhes />} />
                 <Route path="/projetos/tarefas-consulta" element={<Tarefas />} />
+
+                {/* PCP Module */}
+                <Route path="/pcp" element={<PCPDashboard />} />
+                <Route path="/pcp/planejamento" element={<PCPPlanejamento />} />
+                <Route path="/pcp/producao" element={<PCPProducao />} />
+                <Route path="/pcp/historico" element={<PCPHistorico />} />
               </Route>
             </Route>
 
