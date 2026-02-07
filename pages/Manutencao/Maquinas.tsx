@@ -103,8 +103,8 @@ const Maquinas: React.FC = () => {
                         <ChevronLeft size={24} />
                     </button>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Frota de Ativos</h1>
-                        <p className="text-slate-500 text-sm font-medium">Gestão de máquinas e ensacadeiras</p>
+                        <h1 className="text-2xl font-bold text-gray-800">Parque de Máquinas</h1>
+                        <p className="text-slate-500 text-sm font-medium">Gestão de equipamentos e ensacadeiras</p>
                     </div>
                 </div>
                 <Button onClick={() => setIsAddOpen(true)} className="bg-blue-800 text-white">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronRight, Home } from 'lucide-react';
+import { ChevronRight, Home, Box, AlertTriangle, FolderKanban, Factory, Wrench } from 'lucide-react';
 
 const Breadcrumbs: React.FC = () => {
     const location = useLocation();
@@ -15,6 +15,8 @@ const Breadcrumbs: React.FC = () => {
             projetos: 'Projetos',
             dashboard: 'Dashboard',
             cadastro: 'Cadastro',
+            pcp: 'PCP',
+            manutencao: 'Manutenção',
             'nao-conformidades': 'Não Conformidades',
             'planos-acao': 'Planos de Ação',
             tarefas: 'Tarefas',
@@ -25,34 +27,50 @@ const Breadcrumbs: React.FC = () => {
         return labels[path] || path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
     };
 
+    const getIcon = (path: string) => {
+        switch (path) {
+            case 'estoque': return <Box size={14} />;
+            case 'qualidade': return <AlertTriangle size={14} />;
+            case 'projetos': return <FolderKanban size={14} />;
+            case 'pcp': return <Factory size={14} />;
+            case 'manutencao': return <Wrench size={14} />;
+            default: return null;
+        }
+    };
+
     return (
-        <nav className="flex items-center space-x-2 text-sm text-slate-500 mb-6 bg-white w-fit px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
+        <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6 bg-white w-fit px-4 py-2 rounded-lg border border-slate-200 shadow-sm overflow-hidden min-h-[40px]">
             <Link
                 to="/"
-                className="flex items-center gap-1 hover:text-indigo-600 transition-colors"
+                className="flex items-center gap-1.5 hover:text-blue-600 transition-colors shrink-0"
             >
-                <Home size={14} />
-                <span className="font-medium">Início</span>
+                <Home size={14} className="text-slate-400" />
+                <span className="font-medium text-slate-600">Início</span>
             </Link>
 
             {pathnames.map((value, index) => {
                 const last = index === pathnames.length - 1;
                 const to = `/${pathnames.slice(0, index + 1).join('/')}`;
+                const icon = getIcon(value);
 
                 return (
-                    <React.Fragment key={to}>
-                        <ChevronRight size={14} className="text-slate-300" />
+                    <div key={to} className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-slate-300 shrink-0" />
                         {last ? (
-                            <span className="font-bold text-slate-800">{getLabel(value)}</span>
+                            <div className="flex items-center gap-1.5 font-bold text-slate-900 h-full">
+                                {icon && <span className="text-slate-400 flex items-center">{icon}</span>}
+                                <span className="truncate max-w-[200px] leading-tight">{getLabel(value)}</span>
+                            </div>
                         ) : (
                             <Link
                                 to={to}
-                                className="hover:text-indigo-600 transition-colors font-medium"
+                                className="flex items-center gap-1.5 hover:text-blue-600 transition-colors font-medium whitespace-nowrap text-slate-600"
                             >
+                                {icon && <span className="opacity-70 flex items-center">{icon}</span>}
                                 {getLabel(value)}
                             </Link>
                         )}
-                    </React.Fragment>
+                    </div>
                 );
             })}
         </nav>

@@ -11,10 +11,13 @@ import { Dialog, AlertDialog } from '../../components/ui/Dialog';
 import { pcpService } from '../../services/pcpService';
 import { ItemPlanoProducao, StatusItemProducao } from '../../types_pcp';
 import { useToast } from '../../contexts/ToastContext';
+import { store } from '../../services/store';
+import { ProdutoAcabado } from '../../types';
 
 const PCPPlanejamento: React.FC = () => {
     const toast = useToast();
     const [itens, setItens] = useState<ItemPlanoProducao[]>([]);
+    const [produtosAcabados, setProdutosAcabados] = useState<ProdutoAcabado[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -25,6 +28,7 @@ const PCPPlanejamento: React.FC = () => {
 
     // Form state
     const [formData, setFormData] = useState({
+        id_produto_acabado: '',
         nome_produto_acabado: '',
         qtd_misturas_planejadas: 10
     });
@@ -36,7 +40,13 @@ const PCPPlanejamento: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const planos = await pcpService.getPlanos();
+            const [planos, produtos] = await Promise.all([
+                pcpService.getPlanos(),
+                store.getProdutosAcabados()
+            ]);
+
+            setProdutosAcabados(produtos);
+
             // Para simplificar, pegamos todos os itens de todos os planos ativos
             const allItens: ItemPlanoProducao[] = [];
             planos.forEach(p => {
@@ -71,7 +81,7 @@ const PCPPlanejamento: React.FC = () => {
                 id_plano_producao: planoId,
                 nome_produto_acabado: formData.nome_produto_acabado,
                 qtd_misturas_planejadas: formData.qtd_misturas_planejadas,
-                id_produto_acabado: '00000000-0000-0000-0000-000000000000', // Mock UUID if needed
+                id_produto_acabado: formData.id_produto_acabado,
                 status: 'Aguardando',
                 ordem: itens.length + 1
             });
@@ -81,7 +91,7 @@ const PCPPlanejamento: React.FC = () => {
             });
 
             setIsAddOpen(false);
-            setFormData({ nome_produto_acabado: '', qtd_misturas_planejadas: 10 });
+            setFormData({ id_produto_acabado: '', nome_produto_acabado: '', qtd_misturas_planejadas: 10 });
             loadData();
         } catch (error) {
             console.error(error);
@@ -216,13 +226,23 @@ const PCPPlanejamento: React.FC = () => {
                 <div className="space-y-6">
                     <div>
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Produto Acabado</label>
-                        <input
-                            type="text"
-                            placeholder="Selecione o produto"
+                        <select
                             className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-bold"
-                            value={formData.nome_produto_acabado}
-                            onChange={(e) => setFormData({ ...formData, nome_produto_acabado: e.target.value })}
-                        />
+                            value={formData.id_produto_acabado}
+                            onChange={(e) => {
+                                const selected = produtosAcabados.find(p => p.id === e.target.value);
+                                setFormData({
+                                    ...formData,
+                                    id_produto_acabado: e.target.value,
+                                    nome_produto_acabado: selected?.nome || ''
+                                });
+                            }}
+                        >
+                            <option value="">Selecione o produto...</option>
+                            {produtosAcabados.map(p => (
+                                <option key={p.id} value={p.id}>{p.nome}</option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Quantidade de Misturas</label>

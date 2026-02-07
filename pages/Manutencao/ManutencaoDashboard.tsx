@@ -66,12 +66,11 @@ const ManutencaoDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Saúde das Ativos (Progress Bars for hours) */}
                 <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
                             <Gauge size={24} className="text-blue-800" />
-                            Saúde dos Ativos (Horas de Uso)
+                            Saúde das Máquinas (Horas de Uso)
                         </h2>
                         <button onClick={() => navigate('/manutencao/maquinas')} className="text-xs font-black text-blue-800 uppercase tracking-widest hover:underline flex items-center gap-1">
                             Ver Máquinas <ArrowRight size={14} />
@@ -138,7 +137,7 @@ const ManutencaoDashboard: React.FC = () => {
                                 onClick={() => navigate('/manutencao/maquinas')}
                                 className="w-full flex items-center justify-between p-4 bg-white/10 hover:bg-white/20 rounded-2xl border border-white/10 transition-all font-bold group"
                             >
-                                <span>Gerenciar Frota</span>
+                                <span>Gerenciar Maquinário</span>
                                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </button>
                         </div>

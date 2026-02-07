@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
 
   const maintenanceNavItems = [
     { name: 'Dashboard Saúde', path: '/manutencao', icon: LayoutDashboard },
-    { name: 'Gestão da Frota', path: '/manutencao/maquinas', icon: Settings },
+    { name: 'Gestão de Máquinas', path: '/manutencao/maquinas', icon: Settings },
     { name: 'Ordens de Serviço', path: '/manutencao/os', icon: ClipboardCheck },
   ];
 

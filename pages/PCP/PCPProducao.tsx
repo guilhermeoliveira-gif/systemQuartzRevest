@@ -8,13 +8,30 @@ import { Button } from '../../components/ui/Button';
 import { pcpService } from '../../services/pcpService';
 import { ItemPlanoProducao, RegistroProducao } from '../../types_pcp';
 import { useToast } from '../../contexts/ToastContext';
+import { store } from '../../services/store';
 
 const PCPProducao: React.FC = () => {
     const toast = useToast();
+    const [proximas, setProximas] = useState<ItemPlanoProducao[]>([]);
+    const [proximasPoolHistory, setProximasPoolHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [itemAtivo, setItemAtivo] = useState<ItemPlanoProducao | null>(null);
     const [registroAtivo, setRegistroAtivo] = useState<RegistroProducao | null>(null);
-    const [proximas, setProximas] = useState<ItemPlanoProducao[]>([]);
+    const [produtosAcabados, setProdutosAcabados] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [proximasPool, setProximasPool] = useState<ItemPlanoProducao[]>([]);
+    const [historicoFull, setHistoricoFull] = useState<any[]>([]);
+    const [itemAtivoHistory, setItemAtivoHistory] = useState<any | null>(null);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [availableCategories, setAvailableCategories] = useState<string[]>(['PECA', 'INSUMO']);
+    const [customCategoryMode, setCustomCategoryMode] = useState(false);
+    const [newItem, setNewItem] = useState<any>({ nome: '', categoria: 'PECA' });
+    const [selectedMaquinaId, setSelectedMaquinaId] = useState('');
+    const [maquinas, setMaquinas] = useState<any[]>([]);
+    const [filter, setFilter] = useState('');
+    const [moveModal, setMoveModal] = useState<{ open: boolean; type: 'ENTRADA' | 'SAIDA'; item: any | null }>({ open: false, type: 'ENTRADA', item: null });
+    const [moveQty, setMoveQty] = useState('');
+    const [moveReason, setMoveReason] = useState('');
 
     // Form control
     const [isProduzindo, setIsProduzindo] = useState(false);
@@ -36,6 +53,9 @@ const PCPProducao: React.FC = () => {
                 if (p.itens) allItens.push(...p.itens);
             });
 
+            // Carregar histórico para pegar os últimos contadores se necessário
+            const historico = await pcpService.getHistorico();
+
             // Encontra o primeiro item 'Produzindo' ou 'Aguardando'
             const ativo = allItens.find(i => i.status === 'Produzindo');
             const proximasPool = allItens.filter(i => i.status === 'Aguardando');
@@ -43,20 +63,33 @@ const PCPProducao: React.FC = () => {
             if (ativo) {
                 setItemAtivo(ativo);
                 setIsProduzindo(true);
-                // Carregar registro ativo (simplificado: pega o último registro deste item)
-                const historico = await pcpService.getHistorico();
+                // Carregar registro ativo
                 const reg = historico.find(r => r.id_item_plano_producao === ativo.id && !r.data_hora_fim);
-                setRegistroAtivo(reg);
+                setRegistroAtivo(reg || null);
                 if (reg) {
                     setContadores({ c1: Number(reg.contador1_inicio), c2: Number(reg.contador2_inicio) });
                 }
             } else if (proximasPool.length > 0) {
                 setItemAtivo(proximasPool[0]);
                 setProximas(proximasPool.slice(1));
+
+                // Preenche com o final da última produção realizada (se houver)
+                const ultimoReg = historico.find(r => r.data_hora_fim);
+                if (ultimoReg) {
+                    setContadores({
+                        c1: Number(ultimoReg.contador1_fim) || 0,
+                        c2: Number(ultimoReg.contador2_fim) || 0
+                    });
+                }
             } else {
                 setItemAtivo(null);
                 setProximas([]);
             }
+
+            // Filtra histórico para mostrar apenas o que foi finalizado hoje
+            const hoje = new Date().toISOString().split('T')[0];
+            const finalizadosHoje = historico.filter(r => r.data_hora_fim && r.data_hora_fim.startsWith(hoje));
+            setProximasPoolHistory(finalizadosHoje);
         } catch (error) {
             console.error(error);
         } finally {
@@ -96,12 +129,21 @@ const PCPProducao: React.FC = () => {
             await pcpService.finalizarProducao(registroAtivo.id, {
                 contador1_fim: contadores.c1,
                 contador2_fim: contadores.c2,
-                qtd_realizada: itemAtivo.qtd_misturas_planejadas // Placeholder para qtd_realizada
+                qtd_realizada: itemAtivo.qtd_misturas_planejadas
             });
+
+            // INTEGRACAO ESTOQUE: Registrar a entrada física do Produto Acabado
+            // Assumimos que cada mistura gera uma quantidade baseada na unidade de medida (ex: 1)
+            await store.addProducao({
+                produto_acabado_id: itemAtivo.id_produto_acabado,
+                quantidade_produzida: itemAtivo.qtd_misturas_planejadas,
+                usuario_id: 'Operador Padrão',
+                id_registro_pcp: registroAtivo.id // Link para rastreabilidade
+            } as any);
 
             setIsProduzindo(false);
             setRegistroAtivo(null);
-            setContadores({ c1: 0, c2: 0 });
+            // Removido o reset dos contadores para manter o valor final como inicial da próxima
             toast.success('Sucesso', '✅ Produção finalizada com sucesso!', { style: { backgroundColor: '#22c55e', color: 'white' } });
 
             // Simulação de envio de notificação (WhatsApp/SMS)
@@ -203,6 +245,35 @@ const PCPProducao: React.FC = () => {
             <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4">
                 <span className="flex items-center gap-1"><Clock size={12} /> Última sincronização: Agora</span>
                 <span className="text-blue-600">QuartzRevest PCP Operations</span>
+            </div>
+
+            {/* Histórico Recente de Produção */}
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 className="font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <Clock size={18} className="text-blue-500" /> Histórico Recente (Hoje)
+                    </h3>
+                </div>
+                <div className="divide-y divide-slate-50">
+                    {proximasPoolHistory.length > 0 ? (
+                        proximasPoolHistory.map((reg) => (
+                            <div key={reg.id} className="p-4 hover:bg-slate-50 transition-colors flex justify-between items-center">
+                                <div>
+                                    <div className="font-black text-slate-800 uppercase">{reg.item?.nome_produto_acabado}</div>
+                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                        Fim: {new Date(reg.data_hora_fim).toLocaleTimeString()} • {reg.nome_operador}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-lg font-black text-blue-600">+{reg.qtd_realizada} un</div>
+                                    <div className="text-[9px] font-black text-green-500 uppercase">Estoque Atualizado</div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="p-10 text-center text-slate-400 italic text-sm">Nenhum registro finalizado hoje.</div>
+                    )}
+                </div>
             </div>
         </div>
     );
