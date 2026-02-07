@@ -11,7 +11,9 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Badge, Skeleton } from '../../components/ui/Utility';
 import { Dialog } from '../../components/ui/Dialog';
 import { manutencaoService } from '../../services/manutencaoService';
+import { store } from '../../services/store';
 import { Maquina, MaquinaItem, Aprendizado } from '../../types_manutencao';
+import { MecanicaInsumo } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 
 const MaquinaDetalhes: React.FC = () => {
@@ -26,6 +28,39 @@ const MaquinaDetalhes: React.FC = () => {
     // Modals
     const [isItemOpen, setIsItemOpen] = useState(false);
     const [isAprenderOpen, setIsAprenderOpen] = useState(false);
+
+    // Form State
+    const [pecasEstoque, setPecasEstoque] = useState<MecanicaInsumo[]>([]);
+    const [newItem, setNewItem] = useState<{
+        nome: string;
+        peca_estoque_id: string;
+        periodicidade_hours: string;
+    }>({ nome: '', peca_estoque_id: '', periodicidade_hours: '' });
+
+    useEffect(() => {
+        if (isItemOpen) {
+            store.getPecas().then(setPecasEstoque).catch(console.error);
+        }
+    }, [isItemOpen]);
+
+    const handleSaveItem = async () => {
+        if (!maquina || !newItem.nome) return;
+        try {
+            await manutencaoService.upsertItemMaquina({
+                maquina_id: maquina.id,
+                nome: newItem.nome,
+                peca_estoque_id: newItem.peca_estoque_id || undefined,
+                periodicidade_horas: newItem.periodicidade_hours ? Number(newItem.periodicidade_hours) : undefined,
+                status: 'OK'
+            });
+            toast.success('Sucesso', 'Item adicionado.');
+            setIsItemOpen(false);
+            setNewItem({ nome: '', peca_estoque_id: '', periodicidade_hours: '' });
+            loadData();
+        } catch (error) {
+            toast.error('Erro', 'Falha ao salvar item.');
+        }
+    };
 
     useEffect(() => {
         if (id) loadData();
@@ -128,7 +163,14 @@ const MaquinaDetalhes: React.FC = () => {
                         <TableBody>
                             {itens.map(item => (
                                 <TableRow key={item.id} className="hover:bg-slate-50 border-slate-50">
-                                    <TableCell className="font-bold text-slate-700">{item.nome}</TableCell>
+                                    <TableCell className="font-bold text-slate-700">
+                                        {item.nome}
+                                        {item.peca_estoque && (
+                                            <span className="block text-[9px] text-blue-500 font-normal uppercase tracking-wide">
+                                                Link: {item.peca_estoque.nome} ({item.peca_estoque.quantidade_atual} {item.peca_estoque.unidade_medida})
+                                            </span>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="text-xs font-medium text-slate-500">
                                         {item.periodicidade_horas ? `${item.periodicidade_horas}h` : `${item.periodicidade_dias} dias`}
                                     </TableCell>
@@ -202,7 +244,55 @@ const MaquinaDetalhes: React.FC = () => {
             {/* Dialogs Mocks (Logic omitted for brevity in this step) */}
             {isItemOpen && (
                 <Dialog isOpen={isItemOpen} onClose={() => setIsItemOpen(false)} title="Add Componente">
-                    <div className="p-4 text-center">Formulário para adicionar itens aqui...</div>
+                    <div className="space-y-4 p-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Vincular Peça de Estoque (Opcional)</label>
+                            <select
+                                className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
+                                value={newItem.peca_estoque_id}
+                                onChange={(e) => {
+                                    const selectedId = e.target.value;
+                                    const selectedPeca = pecasEstoque.find(p => p.id === selectedId);
+                                    setNewItem(prev => ({
+                                        ...prev,
+                                        peca_estoque_id: selectedId,
+                                        nome: selectedPeca ? selectedPeca.nome : prev.nome
+                                    }));
+                                }}
+                            >
+                                <option value="">-- Selecione uma peça --</option>
+                                {pecasEstoque.map(p => (
+                                    <option key={p.id} value={p.id}>[{p.categoria}] {p.nome} (Estoque: {p.quantidade_atual} {p.unidade_medida})</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nome do Componente</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                                placeholder="Ex: Correia dentada"
+                                value={newItem.nome}
+                                onChange={e => setNewItem(prev => ({ ...prev, nome: e.target.value }))}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Periodicidade (Horas)</label>
+                            <input
+                                type="number"
+                                className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                                placeholder="Ex: 500"
+                                value={newItem.periodicidade_hours}
+                                onChange={e => setNewItem(prev => ({ ...prev, periodicidade_hours: e.target.value }))}
+                            />
+                        </div>
+
+                        <div className="flex justify-end pt-4">
+                            <Button variant="primary" onClick={handleSaveItem}>Salvar Componente</Button>
+                        </div>
+                    </div>
                 </Dialog>
             )}
             {isAprenderOpen && (

@@ -96,16 +96,25 @@ export const manutencaoService = {
     async getItensMaquina(maquinaId: string): Promise<MaquinaItem[]> {
         const { data, error } = await supabase
             .from('manutencao_maquina_item')
-            .select('*')
+            .select(`
+                *,
+                peca_estoque:mecanica_insumo (
+                    nome,
+                    unidade_medida,
+                    quantidade_atual
+                )
+            `)
             .eq('maquina_id', maquinaId);
         if (error) throw error;
         return data || [];
     },
 
     async upsertItemMaquina(item: Partial<MaquinaItem>): Promise<void> {
+        // Sanitize to remove joined fields not present in table
+        const { peca_estoque, ...dbItem } = item;
         const { error } = await supabase
             .from('manutencao_maquina_item')
-            .upsert(item);
+            .upsert(dbItem);
         if (error) throw error;
     },
 

@@ -31,6 +31,12 @@ export interface MaquinaItem {
     ultima_revisao_data?: string;
     ultima_revisao_horas?: number;
     status: 'OK' | 'Revisão Pendente' | 'Crítico';
+    peca_estoque_id?: string;
+    peca_estoque?: {
+        nome: string;
+        unidade_medida: string;
+        quantidade_atual: number;
+    };
 }
 
 export interface Aprendizado {
