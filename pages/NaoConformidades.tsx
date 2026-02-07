@@ -235,7 +235,7 @@ const NaoConformidades: React.FC = () => {
                                 <div className="flex items-center gap-6">
                                     <div className="text-right">
                                         <div className="text-xs text-slate-400 uppercase font-bold mb-1">Status</div>
-                                        <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 bg-slate-100 px-3 py-1 rounded-full">
+                                        <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 bg-slate-100 px-3 py-1 rounded-full whitespace-nowrap">
                                             {oc.status === 'EM_ANALISE' && <Search size={14} />}
                                             {oc.status === 'ACAO_DEFINIDA' && <CheckCircle size={14} className="text-green-600" />}
                                             {oc.status.replace('_', ' ')}
