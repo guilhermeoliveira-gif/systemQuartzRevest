@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle } from 'lucide-react';
+import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield } from 'lucide-react';
 
 interface ModuleSelectorProps {
   onLogout: () => void;
@@ -67,6 +67,18 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
       iconColor: 'text-red-600',
       active: true,
       path: '/qualidade/nao-conformidades'
+    },
+    {
+      id: 'seguranca',
+      name: 'Segurança',
+      description: 'Gestão de Usuários, Perfis e Permissões de Acesso.',
+      icon: Shield,
+      color: 'from-purple-600 to-purple-700',
+      borderColor: 'border-purple-200',
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+      active: true,
+      path: '/seguranca/usuarios'
     },
     {
       id: 'analytics',

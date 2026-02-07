@@ -5,7 +5,7 @@ import Logo from './Logo';
 import { APP_VERSION } from '../src/version';
 import {
   LayoutDashboard, Package, Box, FlaskConical, AlertTriangle,
-  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo
+  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo, Shield, Users, Key
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -36,7 +36,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     { name: 'Não Conformidades', path: '/qualidade/nao-conformidades', icon: AlertTriangle },
     { name: 'Planos de Ação', path: '/qualidade/planos-acao', icon: ClipboardCheck },
     { name: 'Minhas Tarefas', path: '/qualidade/tarefas', icon: ListTodo },
-    { name: 'Configurações', path: '/qualidade/configuracoes', icon: Settings }, // Placeholder
+    { name: 'Configurações', path: '/qualidade/configuracoes', icon: Settings },
+  ];
+
+  const securityNavItems = [
+    { name: 'Usuários', path: '/seguranca/usuarios', icon: Users },
+    { name: 'Perfis', path: '/seguranca/perfis', icon: Shield },
+    { name: 'Permissões', path: '/seguranca/permissoes', icon: Key },
   ];
 
   const generalNavItems = [
@@ -55,6 +61,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     navItems = stockNavItems;
     moduleName = 'Estoque';
     moduleColor = 'bg-blue-600';
+  } else if (currentModule === 'seguranca') {
+    navItems = securityNavItems;
+    moduleName = 'Segurança';
+    moduleColor = 'bg-purple-600';
   }
 
   return (

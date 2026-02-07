@@ -21,6 +21,9 @@ import ConferenciaEstoque from './pages/ConferenciaEstoque';
 import Relatorios from './pages/Relatorios';
 import Configuracoes from './pages/Configuracoes';
 import MinhasTarefas from './pages/MinhasTarefas';
+import CadastroUsuarios from './pages/CadastroUsuarios';
+import CadastroPerfis from './pages/CadastroPerfis';
+import PerfilPermissoes from './pages/PerfilPermissoes';
 
 const App: React.FC = () => {
   return (
@@ -56,6 +59,11 @@ const App: React.FC = () => {
               <Route path="/qualidade/planos-acao" element={<PlanosAcao />} />
               <Route path="/qualidade/configuracoes" element={<Configuracoes />} />
               <Route path="/qualidade/tarefas" element={<MinhasTarefas />} />
+
+              {/* Security Module */}
+              <Route path="/seguranca/usuarios" element={<CadastroUsuarios />} />
+              <Route path="/seguranca/perfis" element={<CadastroPerfis />} />
+              <Route path="/seguranca/permissoes" element={<PerfilPermissoes />} />
             </Route>
           </Route>
 
