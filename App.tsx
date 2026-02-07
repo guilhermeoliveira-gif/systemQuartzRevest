@@ -22,6 +22,7 @@ import ConferenciaEstoque from './pages/ConferenciaEstoque';
 import Relatorios from './pages/Relatorios';
 import Configuracoes from './pages/Configuracoes';
 import MinhasTarefas from './pages/MinhasTarefas';
+import Perfil from './pages/Perfil';
 import CadastroUsuarios from './pages/CadastroUsuarios';
 import CadastroPerfis from './pages/CadastroPerfis';
 import PerfilPermissoes from './pages/PerfilPermissoes';
@@ -59,6 +60,8 @@ const App: React.FC = () => {
               <Route element={<MainLayout />}>
                 <Route path="/" element={<ModuleSelector />} />
                 <Route path="/dashboard" element={<DashboardGlobal />} />
+                <Route path="/minhas-tarefas" element={<MinhasTarefas />} />
+                <Route path="/perfil" element={<Perfil />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
 
                 {/* Stock Module */}

@@ -108,61 +108,53 @@ const MinhasTarefas: React.FC = () => {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto pb-20">
-            <header>
-                <h1 className="text-3xl font-bold text-neutral-900">Minhas Tarefas</h1>
-                <p className="text-neutral-500">Todas as suas tarefas em um só lugar</p>
+            <header className="px-1">
+                <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Minhas Tarefas</h1>
+                <p className="text-slate-500 font-medium text-sm">Todas as suas pendências unificadas</p>
             </header>
 
             {/* KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-bold text-slate-500 uppercase">Pendentes</p>
-                            <p className="text-2xl font-black text-slate-800">{tarefasPendentes.length}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-1">
+                <div className="bg-white p-3 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Clock className="text-blue-600" size={18} />
                         </div>
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Clock className="text-blue-600" size={24} />
-                        </div>
+                        <p className="text-2xl font-black text-slate-800 leading-none">{tarefasPendentes.length}</p>
                     </div>
+                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">Pendentes</p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-bold text-slate-500 uppercase">Atrasadas</p>
-                            <p className="text-2xl font-black text-red-600">{tarefasAtrasadas.length}</p>
+                <div className="bg-white p-3 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                            <AlertCircle className="text-red-600" size={18} />
                         </div>
-                        <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                            <AlertCircle className="text-red-600" size={24} />
-                        </div>
+                        <p className="text-2xl font-black text-red-600 leading-none">{tarefasAtrasadas.length}</p>
                     </div>
+                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">Atrasadas</p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-bold text-slate-500 uppercase">Para Hoje</p>
-                            <p className="text-2xl font-black text-orange-600">{tarefasHoje.length}</p>
+                <div className="bg-white p-3 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <Clock className="text-orange-600" size={18} />
                         </div>
-                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <Clock className="text-orange-600" size={24} />
-                        </div>
+                        <p className="text-2xl font-black text-orange-600 leading-none">{tarefasHoje.length}</p>
                     </div>
+                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">Hoje</p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-bold text-slate-500 uppercase">Concluídas</p>
-                            <p className="text-2xl font-black text-green-600">
-                                {tarefas.filter(t => t.status === 'CONCLUIDA').length}
-                            </p>
+                <div className="bg-white p-3 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <CheckCircle className="text-green-600" size={18} />
                         </div>
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <CheckCircle className="text-green-600" size={24} />
-                        </div>
+                        <p className="text-2xl font-black text-green-600 leading-none">
+                            {tarefas.filter(t => t.status === 'CONCLUIDA').length}
+                        </p>
                     </div>
+                    <p className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">Concluídas</p>
                 </div>
             </div>
 

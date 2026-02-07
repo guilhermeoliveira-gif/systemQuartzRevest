@@ -7,7 +7,7 @@ import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useAuth } from '../contexts/AuthContext';
-import { Cpu } from 'lucide-react';
+import { Cpu, Search } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
     const { signOut, loading } = useAuth();
@@ -42,7 +42,15 @@ const MainLayout: React.FC = () => {
                     </div>
                     <span className="text-lg font-black tracking-tighter uppercase">QuartzRevest</span>
                 </div>
-                <NotificationBell />
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+                        className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                    >
+                        <Search size={22} />
+                    </button>
+                    <NotificationBell />
+                </div>
             </header>
 
             {/* Sidebar Overlay for Mobile */}
