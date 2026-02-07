@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { qualidadeService } from '../services/qualidadeService';
-import { Tarefa } from '../types_plano_acao';
-import { CheckCircle, Clock, AlertCircle, FileText, User } from 'lucide-react';
-
-interface TarefaComPlano extends Tarefa {
-    plano_acao?: {
-        titulo: string;
-    };
-}
+import { useNavigate } from 'react-router-dom';
+import { notificacoesService } from '../services/notificacoesService';
+import { TarefaUnificada } from '../types_notificacoes';
+import { CheckCircle, Clock, AlertCircle, FileText, User, Filter, FolderKanban, ClipboardList } from 'lucide-react';
 
 const MinhasTarefas: React.FC = () => {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [tarefas, setTarefas] = useState<TarefaComPlano[]>([]);
-    const [filtroResponsavel, setFiltroResponsavel] = useState('');
+    const [tarefas, setTarefas] = useState<TarefaUnificada[]>([]);
+    const [filtroOrigem, setFiltroOrigem] = useState<string>('TODAS');
     const [filtroStatus, setFiltroStatus] = useState('TODOS');
+    const [filtroPrioridade, setFiltroPrioridade] = useState('TODAS');
 
     useEffect(() => {
         fetchTarefas();
@@ -22,8 +19,8 @@ const MinhasTarefas: React.FC = () => {
     const fetchTarefas = async () => {
         try {
             setLoading(true);
-            const data = await qualidadeService.getTodasTarefas();
-            setTarefas(data as unknown as TarefaComPlano[]);
+            const data = await notificacoesService.getMinhasTarefas();
+            setTarefas(data);
         } catch (error) {
             console.error('Erro ao buscar tarefas:', error);
         } finally {
@@ -36,6 +33,8 @@ const MinhasTarefas: React.FC = () => {
             case 'CONCLUIDA': return 'bg-green-100 text-green-800 border-green-200';
             case 'EM_ANDAMENTO': return 'bg-blue-100 text-blue-800 border-blue-200';
             case 'PENDENTE': return 'bg-orange-100 text-orange-800 border-orange-200';
+            case 'BLOQUEADA': return 'bg-red-100 text-red-800 border-red-200';
+            case 'CANCELADA': return 'bg-gray-100 text-gray-800 border-gray-200';
             default: return 'bg-gray-100 text-gray-800 border-gray-200';
         }
     };
@@ -45,128 +44,243 @@ const MinhasTarefas: React.FC = () => {
             case 'CONCLUIDA': return <CheckCircle size={16} />;
             case 'EM_ANDAMENTO': return <Clock size={16} />;
             case 'PENDENTE': return <AlertCircle size={16} />;
+            case 'BLOQUEADA': return <AlertCircle size={16} />;
             default: return <Clock size={16} />;
+        }
+    };
+
+    const getPrioridadeColor = (prioridade: string) => {
+        switch (prioridade) {
+            case 'URGENTE': return 'bg-red-500 text-white';
+            case 'ALTA': return 'bg-orange-500 text-white';
+            case 'MEDIA': return 'bg-blue-500 text-white';
+            case 'BAIXA': return 'bg-slate-400 text-white';
+            default: return 'bg-slate-400 text-white';
+        }
+    };
+
+    const getOrigemIcon = (origem: string) => {
+        switch (origem) {
+            case 'PROJETO': return <FolderKanban size={14} className="text-teal-600" />;
+            case 'PLANO_ACAO': return <ClipboardList size={14} className="text-red-600" />;
+            default: return <FileText size={14} />;
+        }
+    };
+
+    const getOrigemLabel = (origem: string) => {
+        switch (origem) {
+            case 'PROJETO': return 'Projeto';
+            case 'PLANO_ACAO': return 'Qualidade';
+            default: return origem;
         }
     };
 
     const formatarData = (data: string) => {
         if (!data) return '-';
-        return new Date(data).toLocaleDateString('pt-BR');
+        const date = new Date(data);
+        const hoje = new Date();
+        const diff = Math.ceil((date.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diff < 0) return `${Math.abs(diff)}d atrasado`;
+        if (diff === 0) return 'Hoje';
+        if (diff === 1) return 'Amanhã';
+        return `${diff}d restantes`;
+    };
+
+    const isAtrasada = (prazo: string, status: string) => {
+        if (status === 'CONCLUIDA' || status === 'CANCELADA') return false;
+        return new Date(prazo) < new Date();
     };
 
     const tarefasFiltradas = tarefas.filter(tarefa => {
-        const matchResponsavel = filtroResponsavel
-            ? tarefa.responsavel.toLowerCase().includes(filtroResponsavel.toLowerCase())
-            : true;
+        const matchOrigem = filtroOrigem !== 'TODAS' ? tarefa.origem === filtroOrigem : true;
         const matchStatus = filtroStatus !== 'TODOS' ? tarefa.status === filtroStatus : true;
-        return matchResponsavel && matchStatus;
+        const matchPrioridade = filtroPrioridade !== 'TODAS' ? tarefa.prioridade === filtroPrioridade : true;
+        return matchOrigem && matchStatus && matchPrioridade;
+    });
+
+    const tarefasPendentes = tarefas.filter(t => t.status !== 'CONCLUIDA' && t.status !== 'CANCELADA');
+    const tarefasAtrasadas = tarefasPendentes.filter(t => isAtrasada(t.prazo, t.status));
+    const tarefasHoje = tarefasPendentes.filter(t => {
+        const diff = Math.ceil((new Date(t.prazo).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        return diff === 0;
     });
 
     return (
-        <div className="space-y-8 max-w-6xl mx-auto pb-20">
+        <div className="space-y-6 max-w-7xl mx-auto pb-20">
             <header>
                 <h1 className="text-3xl font-bold text-neutral-900">Minhas Tarefas</h1>
-                <p className="text-neutral-500">Acompanhe e gerencie as tarefas atribuídas a você.</p>
+                <p className="text-neutral-500">Todas as suas tarefas em um só lugar</p>
             </header>
 
-            {/* Filtros */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-end md:items-center">
-                <div className="flex-1 w-full">
-                    <label className="block text-xs font-bold text-neutral-500 uppercase mb-1">Filtrar por Responsável</label>
-                    <div className="relative">
-                        <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Digite o nome..."
-                            value={filtroResponsavel}
-                            onChange={(e) => setFiltroResponsavel(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+            {/* KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-bold text-slate-500 uppercase">Pendentes</p>
+                            <p className="text-2xl font-black text-slate-800">{tarefasPendentes.length}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Clock className="text-blue-600" size={24} />
+                        </div>
                     </div>
                 </div>
 
-                <div className="w-full md:w-48">
-                    <label className="block text-xs font-bold text-neutral-500 uppercase mb-1">Status</label>
-                    <select
-                        value={filtroStatus}
-                        onChange={(e) => setFiltroStatus(e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    >
-                        <option value="TODOS">Todos</option>
-                        <option value="PENDENTE">Pendente</option>
-                        <option value="EM_ANDAMENTO">Em Andamento</option>
-                        <option value="CONCLUIDA">Concluída</option>
-                    </select>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-bold text-slate-500 uppercase">Atrasadas</p>
+                            <p className="text-2xl font-black text-red-600">{tarefasAtrasadas.length}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <AlertCircle className="text-red-600" size={24} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-bold text-slate-500 uppercase">Para Hoje</p>
+                            <p className="text-2xl font-black text-orange-600">{tarefasHoje.length}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <Clock className="text-orange-600" size={24} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-bold text-slate-500 uppercase">Concluídas</p>
+                            <p className="text-2xl font-black text-green-600">
+                                {tarefas.filter(t => t.status === 'CONCLUIDA').length}
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <CheckCircle className="text-green-600" size={24} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filtros */}
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                    <Filter size={18} className="text-slate-600" />
+                    <h3 className="font-bold text-slate-800">Filtros</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-neutral-500 uppercase mb-1">Origem</label>
+                        <select
+                            value={filtroOrigem}
+                            onChange={(e) => setFiltroOrigem(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                            <option value="TODAS">Todas</option>
+                            <option value="PROJETO">Projetos</option>
+                            <option value="PLANO_ACAO">Qualidade</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-neutral-500 uppercase mb-1">Status</label>
+                        <select
+                            value={filtroStatus}
+                            onChange={(e) => setFiltroStatus(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                            <option value="TODOS">Todos</option>
+                            <option value="PENDENTE">Pendente</option>
+                            <option value="EM_ANDAMENTO">Em Andamento</option>
+                            <option value="BLOQUEADA">Bloqueada</option>
+                            <option value="CONCLUIDA">Concluída</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-neutral-500 uppercase mb-1">Prioridade</label>
+                        <select
+                            value={filtroPrioridade}
+                            onChange={(e) => setFiltroPrioridade(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                            <option value="TODAS">Todas</option>
+                            <option value="URGENTE">Urgente</option>
+                            <option value="ALTA">Alta</option>
+                            <option value="MEDIA">Média</option>
+                            <option value="BAIXA">Baixa</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {/* Lista de Tarefas */}
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {loading ? (
-                    <div className="text-center py-10 text-slate-400">Carregando tarefas...</div>
+                    <div className="text-center py-10 text-slate-400">
+                        <Clock size={48} className="mx-auto mb-2 animate-spin" />
+                        <p>Carregando tarefas...</p>
+                    </div>
                 ) : tarefasFiltradas.length > 0 ? (
                     tarefasFiltradas.map((tarefa) => (
                         <div
                             key={tarefa.id}
-                            className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row gap-6 relative overflow-hidden"
+                            onClick={() => navigate(tarefa.link)}
+                            className={`bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer ${isAtrasada(tarefa.prazo, tarefa.status) ? 'border-red-300 bg-red-50' : 'border-slate-200'
+                                }`}
                         >
-                            {/* Barra lateral colorida baseada no status */}
-                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${tarefa.status === 'CONCLUIDA' ? 'bg-green-500' :
-                                    tarefa.status === 'EM_ANDAMENTO' ? 'bg-blue-500' : 'bg-orange-500'
-                                }`} />
-
-                            <div className="flex-1 space-y-2">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 ${getStatusColor(tarefa.status)}`}>
-                                        {getStatusIcon(tarefa.status)}
-                                        {tarefa.status.replace('_', ' ')}
-                                    </span>
-                                    <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                                        <Clock size={12} />
-                                        Prazo: {formatarData(tarefa.prazo)}
-                                    </span>
-                                </div>
-
-                                <h3 className="text-lg font-bold text-slate-800">{tarefa.descricao}</h3>
-
-                                {tarefa.plano_acao?.titulo && (
-                                    <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg w-fit">
-                                        <FileText size={14} />
-                                        <span className="font-medium">Plano:</span> {tarefa.plano_acao.titulo}
+                            <div className="flex flex-col md:flex-row gap-4 justify-between">
+                                <div className="flex-1 space-y-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 ${getStatusColor(tarefa.status)}`}>
+                                            {getStatusIcon(tarefa.status)}
+                                            {tarefa.status.replace('_', ' ')}
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getPrioridadeColor(tarefa.prioridade)}`}>
+                                            {tarefa.prioridade}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 flex items-center gap-1">
+                                            {getOrigemIcon(tarefa.origem)}
+                                            {getOrigemLabel(tarefa.origem)}
+                                        </span>
                                     </div>
-                                )}
 
-                                {tarefa.observacoes && (
-                                    <p className="text-sm text-slate-600 mt-2 bg-yellow-50 p-3 rounded-lg border border-yellow-100">
-                                        <span className="font-bold text-yellow-700 block text-xs mb-1 uppercase">Observações</span>
-                                        {tarefa.observacoes}
-                                    </p>
-                                )}
-                            </div>
+                                    <h3 className="text-lg font-bold text-slate-800">{tarefa.titulo}</h3>
 
-                            <div className="md:w-48 flex flex-col justify-between border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 gap-4">
-                                <div>
-                                    <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Responsável</span>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs uppercase">
-                                            {tarefa.responsavel.substring(0, 2)}
+                                    {tarefa.descricao && (
+                                        <p className="text-sm text-slate-600 line-clamp-2">{tarefa.descricao}</p>
+                                    )}
+
+                                    {tarefa.contexto && (
+                                        <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg w-fit">
+                                            <FileText size={14} />
+                                            <span className="font-medium">{tarefa.contexto}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-slate-700 truncate">{tarefa.responsavel}</span>
-                                    </div>
+                                    )}
                                 </div>
 
-                                {tarefa.status !== 'CONCLUIDA' && (
-                                    <button className="w-full py-2 px-4 bg-slate-800 text-white rounded-lg text-sm font-bold hover:bg-slate-700 transition-colors">
-                                        Ver Detalhes
-                                    </button>
-                                )}
+                                <div className="flex flex-col justify-between items-end gap-2 min-w-[140px]">
+                                    <div className="text-right">
+                                        <p className="text-xs font-bold text-slate-400 uppercase">Prazo</p>
+                                        <p className={`text-sm font-bold ${isAtrasada(tarefa.prazo, tarefa.status) ? 'text-red-600' : 'text-slate-700'
+                                            }`}>
+                                            {new Date(tarefa.prazo).toLocaleDateString('pt-BR')}
+                                        </p>
+                                        <p className="text-xs text-slate-500">{formatarData(tarefa.prazo)}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     ))
                 ) : (
                     <div className="bg-slate-50 rounded-xl p-10 text-center border-2 border-dashed border-slate-200">
+                        <CheckCircle size={48} className="mx-auto mb-2 text-slate-300" />
                         <h3 className="text-lg font-bold text-slate-600 mb-2">Nenhuma tarefa encontrada</h3>
-                        <p className="text-slate-400 text-sm">Tente ajustar os filtros ou adicione tarefas aos planos de ação.</p>
+                        <p className="text-slate-400 text-sm">Tente ajustar os filtros ou você está em dia com suas tarefas! 🎉</p>
                     </div>
                 )}
             </div>
