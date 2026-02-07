@@ -116,24 +116,63 @@ class StoreService {
     public async getPecas(): Promise<MecanicaInsumo[]> {
         const { data, error } = await supabase
             .from('mecanica_insumo')
-            .select('*')
+            .select(`
+                *,
+                mecanica_insumo_maquina(maquina_id)
+            `)
             .order('nome');
 
         if (error) throw error;
-        return data || [];
+
+        return (data || []).map(p => ({
+            ...p,
+            maquina_ids: p.mecanica_insumo_maquina?.map((m: any) => m.maquina_id) || []
+        }));
     }
 
     public async addPeca(peca: Omit<MecanicaInsumo, 'id'>): Promise<void> {
-        const { error } = await supabase.from('mecanica_insumo').insert(peca);
+        const { maquina_ids, ...pecaData } = peca as any;
+
+        const { data, error } = await supabase
+            .from('mecanica_insumo')
+            .insert(pecaData)
+            .select()
+            .single();
+
         if (error) throw error;
+
+        if (maquina_ids && maquina_ids.length > 0) {
+            const relations = maquina_ids.map((mId: string) => ({
+                insumo_id: data.id,
+                maquina_id: mId
+            }));
+            const { error: relError } = await supabase.from('mecanica_insumo_maquina').insert(relations);
+            if (relError) throw relError;
+        }
     }
 
     public async updatePeca(id: string, updates: Partial<MecanicaInsumo>): Promise<void> {
+        const { maquina_ids, ...pecaData } = updates as any;
+
         const { error } = await supabase
             .from('mecanica_insumo')
-            .update(updates)
+            .update(pecaData)
             .eq('id', id);
+
         if (error) throw error;
+
+        if (maquina_ids) {
+            // Delete old relations and insert new ones (Sync)
+            await supabase.from('mecanica_insumo_maquina').delete().eq('insumo_id', id);
+
+            if (maquina_ids.length > 0) {
+                const relations = maquina_ids.map((mId: string) => ({
+                    insumo_id: id,
+                    maquina_id: mId
+                }));
+                await supabase.from('mecanica_insumo_maquina').insert(relations);
+            }
+        }
     }
 
     public async updatePecaInsumoStock(id: string, quantityToAdd: number): Promise<void> {
@@ -156,7 +195,8 @@ class StoreService {
         tipo: 'ENTRADA' | 'SAIDA',
         quantidade: number,
         motivo: string,
-        userId: string
+        userId: string,
+        maquinaId?: string
     ): Promise<void> {
         // 1. Registrar Movimento
         const { error: movError } = await supabase
@@ -167,6 +207,7 @@ class StoreService {
                 quantidade,
                 motivo_maquina: motivo,
                 usuario_id: userId,
+                maquina_id: maquinaId,
                 data_movimento: new Date().toISOString()
             });
 

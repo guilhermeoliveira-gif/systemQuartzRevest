@@ -4,14 +4,20 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
     ClipboardCheck, Plus, Search, Calendar, User,
     MapPin, HelpCircle, DollarSign, Wrench, Activity,
-    CheckCircle, XCircle, Save, ArrowLeft, Filter, Trash2, CheckSquare, ListCheck
+    CheckCircle, XCircle, Save, ArrowLeft, Filter, Trash2, CheckSquare, ListCheck, CheckCircle2
 } from 'lucide-react';
 import { PlanoAcao, Tarefa } from '../types_plano_acao';
 import { qualidadeService } from '../services/qualidadeService';
+import { manutencaoService } from '../services/manutencaoService';
+import { Maquina } from '../types_manutencao';
+import OSModal from '../components/Manutencao/OSModal';
+import { Settings as MachineIcon } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 const PlanosAcao: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const toast = useToast();
     const searchParams = new URLSearchParams(location.search);
     const ncIdParam = searchParams.get('nc_id');
     const ncTitleParam = searchParams.get('nc_title');
@@ -22,6 +28,9 @@ const PlanosAcao: React.FC = () => {
     const [viewMode, setViewMode] = useState<'LIST' | 'FORM' | 'STANDALONE'>('LIST');
     const [currentTasks, setCurrentTasks] = useState<Tarefa[]>([]);
     const [selectedPlanoId, setSelectedPlanoId] = useState<string | null>(null);
+    const [maquinas, setMaquinas] = useState<Maquina[]>([]);
+    const [isOSModalOpen, setIsOSModalOpen] = useState(false);
+    const [taskParaOS, setTaskParaOS] = useState<Tarefa | null>(null);
 
     // Standalone Tasks State (kept for backward compatibility)
     const [standaloneTasks, setStandaloneTasks] = useState<Tarefa[]>([]);
@@ -30,7 +39,8 @@ const PlanosAcao: React.FC = () => {
     const [newTask, setNewTask] = useState<Partial<Tarefa>>({
         descricao: '',
         responsavel: '',
-        prazo: ''
+        prazo: '',
+        maquina_id: ''
     });
 
     const mockUsers = ['João Silva', 'Maria Oliveira', 'Carlos Supervisor', 'Ana RH', 'Pedro Engenheiro'];
@@ -44,7 +54,11 @@ const PlanosAcao: React.FC = () => {
     const loadPlanosAcao = async () => {
         try {
             setLoading(true);
-            const data = await qualidadeService.getPlanosAcao();
+            const [data, maquinasData] = await Promise.all([
+                qualidadeService.getPlanosAcao(),
+                manutencaoService.getMaquinas()
+            ]);
+            setMaquinas(maquinasData);
 
             // Load tasks for each plano
             const planosWithTasks = await Promise.all(
@@ -96,13 +110,15 @@ const PlanosAcao: React.FC = () => {
                 responsavel: newTask.responsavel,
                 prazo: newTask.prazo || new Date().toISOString(),
                 status: 'PENDENTE',
-                observacoes: ''
+                observacoes: '',
+                maquina_id: newTask.maquina_id
             };
 
             await qualidadeService.createTarefa(task);
+            toast.success('Tarefa Adicionada', 'A tarefa foi vinculada ao plano de ação.');
             await loadPlanosAcao();
 
-            setNewTask({ descricao: '', responsavel: '', prazo: '' });
+            setNewTask({ descricao: '', responsavel: '', prazo: '', maquina_id: '' });
         } catch (error) {
             console.error('Erro ao adicionar tarefa:', error);
             alert('Erro ao adicionar tarefa. Tente novamente.');
@@ -160,7 +176,8 @@ const PlanosAcao: React.FC = () => {
                             responsavel: task.responsavel,
                             prazo: task.prazo,
                             status: task.status,
-                            observacoes: task.observacoes
+                            observacoes: task.observacoes,
+                            maquina_id: task.maquina_id
                         })
                     )
                 );
@@ -187,19 +204,45 @@ const PlanosAcao: React.FC = () => {
             prazo: newTask.prazo || new Date().toISOString(),
             status: 'PENDENTE',
             observacoes: '',
+            maquina_id: newTask.maquina_id,
             created_at: new Date().toISOString()
         };
 
         setCurrentTasks([...currentTasks, task]);
-        setNewTask({ descricao: '', responsavel: '', prazo: '' });
+        setNewTask({ descricao: '', responsavel: '', prazo: '', maquina_id: '' });
     };
 
     const handleDeleteTask = (id: string) => {
         setCurrentTasks(currentTasks.filter(t => t.id !== id));
     };
 
-    const toggleTaskStatus = (id: string) => {
-        setCurrentTasks(currentTasks.map(t => t.id === id ? { ...t, status: t.status === 'CONCLUIDA' ? 'PENDENTE' : 'CONCLUIDA' } : t));
+    const toggleTaskStatus = async (task: Tarefa) => {
+        if (task.status === 'CONCLUIDA') {
+            await qualidadeService.updateTarefa(task.id, { status: 'PENDENTE' });
+            await loadPlanosAcao();
+            return;
+        }
+
+        if (task.maquina_id) {
+            setTaskParaOS(task);
+            setIsOSModalOpen(true);
+        } else {
+            await qualidadeService.updateTarefa(task.id, { status: 'CONCLUIDA' });
+            toast.success('Tarefa Concluída', 'O status foi atualizado.');
+            await loadPlanosAcao();
+        }
+    };
+
+    const handleOSSuccess = async (osId: string) => {
+        if (taskParaOS) {
+            await qualidadeService.updateTarefa(taskParaOS.id, {
+                status: 'CONCLUIDA',
+                os_id: osId
+            });
+            await loadPlanosAcao();
+            setIsOSModalOpen(false);
+            setTaskParaOS(null);
+        }
     };
 
     if (loading) {
@@ -238,7 +281,7 @@ const PlanosAcao: React.FC = () => {
                         </div>
                         <button
                             onClick={() => {
-                                setFormData({ status: 'PENDENTE', how_much: '0,00', origem: 'MANUAL' });
+                                setFormData({ status_acao: 'PENDENTE', how_much: '0,00' });
                                 setCurrentTasks([]);
                                 setViewMode('FORM');
                             }}
@@ -269,10 +312,9 @@ const PlanosAcao: React.FC = () => {
                         {planos.map(plano => (
                             <div key={plano.id} className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group">
                                 <div className="flex justify-between items-start mb-4">
-                                    {/* ... existing plan item content ... */}
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                                            {plano.origem === 'RNC' && (
+                                            {plano.nao_conformidade_id && (
                                                 <span className="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold border border-red-200">
                                                     RNC
                                                 </span>
@@ -280,14 +322,11 @@ const PlanosAcao: React.FC = () => {
                                             <span className="text-slate-400 text-xs font-mono">#{plano.id.substring(0, 6).toUpperCase()}</span>
                                         </div>
                                         <h3 className="font-bold text-lg text-slate-800">{plano.titulo}</h3>
-                                        {plano.nc_id && (
-                                            <p className="text-xs text-slate-500 mt-1">Vinculado à RNC: {plano.nc_id}</p>
-                                        )}
                                         {plano.tarefas && plano.tarefas.length > 0 && (
                                             <div className="mt-2 text-xs font-medium text-slate-500 flex items-center gap-2">
                                                 <ListCheck size={14} />
                                                 <span>
-                                                    {plano.tarefas.filter(t => t.concluida).length}/{plano.tarefas.length} Tarefas concluídas
+                                                    {plano.tarefas.filter(t => t.status === 'CONCLUIDA').length}/{plano.tarefas.length} Tarefas concluídas
                                                 </span>
                                             </div>
                                         )}
@@ -307,7 +346,7 @@ const PlanosAcao: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-2 text-slate-600">
                                         <Calendar size={16} className="text-slate-400" />
-                                        <span><strong className="text-slate-800">Quando:</strong> {new Date(plano.when).toLocaleDateString()}</span>
+                                        <span><strong className="text-slate-800">Quando:</strong> {new Date(plano.when_date || '').toLocaleDateString()}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-slate-600">
                                         <DollarSign size={16} className="text-slate-400" />
@@ -335,10 +374,9 @@ const PlanosAcao: React.FC = () => {
                     </div>
 
                     <div className="p-8">
-                        {/* Add New Task */}
                         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-8">
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                                <div className="md:col-span-5">
+                                <div className="md:col-span-12 lg:col-span-4">
                                     <label className="block text-xs font-bold text-slate-500 mb-1">Descrição</label>
                                     <input
                                         className="w-full px-3 py-2 border rounded text-sm"
@@ -347,34 +385,36 @@ const PlanosAcao: React.FC = () => {
                                         onChange={e => setNewTask({ ...newTask, descricao: e.target.value })}
                                     />
                                 </div>
-                                <div className="md:col-span-3">
+                                <div className="md:col-span-6 lg:col-span-3">
                                     <label className="block text-xs font-bold text-slate-500 mb-1">Responsável</label>
                                     <select
                                         className="w-full px-3 py-2 border rounded text-sm"
-                                        value={newTask.responsavel_id}
-                                        onChange={e => setNewTask({ ...newTask, responsavel_id: e.target.value })}
+                                        value={newTask.responsavel}
+                                        onChange={e => setNewTask({ ...newTask, responsavel: e.target.value })}
                                     >
                                         <option value="">Selecione...</option>
                                         {mockUsers.map(user => <option key={user} value={user}>{user}</option>)}
                                     </select>
                                 </div>
-                                <div className="md:col-span-3 grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 mb-1">Início</label>
-                                        <input type="date" className="w-full px-2 py-2 border rounded text-sm"
-                                            value={newTask.data_inicio}
-                                            onChange={e => setNewTask({ ...newTask, data_inicio: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 mb-1">Fim</label>
-                                        <input type="date" className="w-full px-2 py-2 border rounded text-sm"
-                                            value={newTask.data_termino}
-                                            onChange={e => setNewTask({ ...newTask, data_termino: e.target.value })}
-                                        />
-                                    </div>
+                                <div className="md:col-span-6 lg:col-span-2">
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Prazo</label>
+                                    <input type="date" className="w-full px-2 py-2 border rounded text-sm"
+                                        value={newTask.prazo}
+                                        onChange={e => setNewTask({ ...newTask, prazo: e.target.value })}
+                                    />
                                 </div>
-                                <div className="md:col-span-1">
+                                <div className="md:col-span-6 lg:col-span-2">
+                                    <label className="block text-xs font-bold text-slate-500 mb-1 font-black">Ativo</label>
+                                    <select
+                                        className="w-full px-3 py-2 border rounded text-sm"
+                                        value={newTask.maquina_id}
+                                        onChange={e => setNewTask({ ...newTask, maquina_id: e.target.value })}
+                                    >
+                                        <option value="">Nenhum</option>
+                                        {maquinas.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                                    </select>
+                                </div>
+                                <div className="md:col-span-6 lg:col-span-1">
                                     <button
                                         type="button"
                                         onClick={handleAddStandaloneTask}
@@ -386,24 +426,24 @@ const PlanosAcao: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Task List */}
                         <div className="space-y-3">
                             {standaloneTasks.map(task => (
                                 <div key={task.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-lg shadow-sm hover:shadow-md transition">
                                     <div className="flex items-center gap-4">
                                         <button
-                                            className={`p-1 rounded-full transition ${task.concluida ? 'text-green-500 bg-green-50' : 'text-slate-300 hover:text-slate-500'}`}
-                                            onClick={() => toggleStandaloneTask(task.id)}
+                                            className={`p-1 rounded-full transition ${task.status === 'CONCLUIDA' ? 'text-green-500 bg-green-50' : 'text-slate-300 hover:text-slate-500'}`}
+                                            onClick={() => toggleTaskStatus(task)}
                                         >
-                                            <CheckCircle size={24} className={task.concluida ? 'fill-current' : ''} />
+                                            <CheckCircle size={24} className={task.status === 'CONCLUIDA' ? 'fill-current' : ''} />
                                         </button>
                                         <div>
-                                            <h4 className={`font-bold text-slate-800 ${task.concluida ? 'line-through text-slate-400' : ''}`}>
+                                            <h4 className={`font-bold text-slate-800 ${task.status === 'CONCLUIDA' ? 'line-through text-slate-400' : ''}`}>
                                                 {task.descricao}
                                             </h4>
                                             <div className="flex gap-4 text-xs text-slate-500 mt-1">
-                                                <span className="flex items-center gap-1"><User size={12} /> {task.responsavel_id}</span>
-                                                <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(task.data_inicio).toLocaleDateString()} - {new Date(task.data_termino).toLocaleDateString()}</span>
+                                                <span className="flex items-center gap-1"><User size={12} /> {task.responsavel}</span>
+                                                <span className="flex items-center gap-1"><Calendar size={12} /> Prazo: {new Date(task.prazo).toLocaleDateString()}</span>
+                                                {task.maquina_id && <span className="flex items-center gap-1 text-orange-600"><MachineIcon size={12} /> {maquinas.find(m => m.id === task.maquina_id)?.nome}</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -424,7 +464,7 @@ const PlanosAcao: React.FC = () => {
                     <div className="bg-slate-50 px-8 py-6 border-b border-slate-200 flex justify-between items-center">
                         <div>
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                {formData.origem === 'RNC' ? <Activity className="text-red-500" /> : <Plus className="text-blue-500" />}
+                                {formData.nao_conformidade_id ? <Activity className="text-red-500" /> : <Plus className="text-blue-500" />}
                                 {formData.id ? 'Editar Plano de Ação' : 'Novo Plano de Ação'}
                             </h2>
                             <p className="text-slate-500 text-sm mt-1">Preencha todos os campos da metodologia 5W2H</p>
@@ -435,7 +475,6 @@ const PlanosAcao: React.FC = () => {
                     </div>
 
                     <form onSubmit={handleSavePlano} className="p-8">
-                        {/* Header Info */}
                         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-bold text-slate-700 mb-1">Título do Plano</label>
@@ -447,20 +486,9 @@ const PlanosAcao: React.FC = () => {
                                     onChange={e => setFormData({ ...formData, titulo: e.target.value })}
                                 />
                             </div>
-                            {formData.origem === 'RNC' && (
-                                <div className="bg-red-50 border border-red-100 p-4 rounded-lg md:col-span-2">
-                                    <span className="text-red-800 font-bold text-sm flex items-center gap-2 mb-1">
-                                        <Activity size={16} /> Vinculado à Não Conformidade
-                                    </span>
-                                    <p className="text-red-600 text-sm">Este plano está atrelado à correção de uma falha registrada.</p>
-                                </div>
-                            )}
                         </div>
 
-                        {/* 5W2H Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-
-                            {/* WHAT */}
                             <div className="md:col-span-2 relative">
                                 <div className="absolute -left-3 top-0 bottom-0 w-1 bg-blue-500 rounded-full"></div>
                                 <label className="block text-sm font-bold text-slate-800 mb-1 flex items-center gap-2">
@@ -476,7 +504,6 @@ const PlanosAcao: React.FC = () => {
                                 />
                             </div>
 
-                            {/* WHY */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
                                     <HelpCircle size={16} className="text-slate-400" />
@@ -491,7 +518,6 @@ const PlanosAcao: React.FC = () => {
                                 />
                             </div>
 
-                            {/* WHERE */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
                                     <MapPin size={16} className="text-slate-400" />
@@ -501,12 +527,11 @@ const PlanosAcao: React.FC = () => {
                                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="Local de execução"
                                     required
-                                    value={formData.where}
-                                    onChange={e => setFormData({ ...formData, where: e.target.value })}
+                                    value={formData.where_loc}
+                                    onChange={e => setFormData({ ...formData, where_loc: e.target.value })}
                                 />
                             </div>
 
-                            {/* WHEN */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
                                     <Calendar size={16} className="text-slate-400" />
@@ -516,12 +541,11 @@ const PlanosAcao: React.FC = () => {
                                     type="date"
                                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                                     required
-                                    value={formData.when}
-                                    onChange={e => setFormData({ ...formData, when: e.target.value })}
+                                    value={formData.when_date}
+                                    onChange={e => setFormData({ ...formData, when_date: e.target.value })}
                                 />
                             </div>
 
-                            {/* WHO */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
                                     <User size={16} className="text-slate-400" />
@@ -536,7 +560,6 @@ const PlanosAcao: React.FC = () => {
                                 />
                             </div>
 
-                            {/* HOW */}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
                                     <Wrench size={16} className="text-slate-400" />
@@ -551,7 +574,6 @@ const PlanosAcao: React.FC = () => {
                                 />
                             </div>
 
-                            {/* HOW MUCH */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
                                     <DollarSign size={16} className="text-slate-400" />
@@ -566,7 +588,6 @@ const PlanosAcao: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Tasks Checklist */}
                         <div className="mt-8 pt-8 border-t border-slate-200">
                             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                                 <ListCheck size={20} className="text-slate-600" />
@@ -588,62 +609,61 @@ const PlanosAcao: React.FC = () => {
                                         <label className="block text-xs font-bold text-slate-500 mb-1">Responsável</label>
                                         <select
                                             className="w-full px-3 py-2 border rounded text-sm"
-                                            value={newTask.responsavel_id}
-                                            onChange={e => setNewTask({ ...newTask, responsavel_id: e.target.value })}
+                                            value={newTask.responsavel}
+                                            onChange={e => setNewTask({ ...newTask, responsavel: e.target.value })}
                                         >
                                             <option value="">Selecione...</option>
                                             {mockUsers.map(user => <option key={user} value={user}>{user}</option>)}
                                         </select>
                                     </div>
-                                    <div className="md:col-span-3 grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">Início</label>
-                                            <input type="date" className="w-full px-2 py-2 border rounded text-sm"
-                                                value={newTask.data_inicio}
-                                                onChange={e => setNewTask({ ...newTask, data_inicio: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">Fim</label>
-                                            <input type="date" className="w-full px-2 py-2 border rounded text-sm"
-                                                value={newTask.data_termino}
-                                                onChange={e => setNewTask({ ...newTask, data_termino: e.target.value })}
-                                            />
-                                        </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Ativo</label>
+                                        <select
+                                            className="w-full px-3 py-2 border rounded text-sm"
+                                            value={newTask.maquina_id}
+                                            onChange={e => setNewTask({ ...newTask, maquina_id: e.target.value })}
+                                        >
+                                            <option value="">Nenhum</option>
+                                            {maquinas.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                                        </select>
                                     </div>
-                                    <div className="md:col-span-1">
+                                    <div className="md:col-span-2">
                                         <button
                                             type="button"
                                             onClick={handleAddTask}
-                                            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 flex justify-center"
+                                            className="w-full bg-slate-800 text-white px-6 py-2 rounded-lg font-black text-xs hover:bg-slate-900 transition-all shadow-lg flex items-center justify-center gap-2"
                                         >
-                                            <Plus size={18} />
+                                            <Plus size={16} />
+                                            ADD
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                {currentTasks.length === 0 && (
-                                    <p className="text-slate-400 text-sm text-center py-4 italic">Nenhuma tarefa adicionada ainda.</p>
-                                )}
                                 {currentTasks.map(task => (
                                     <div key={task.id} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
                                         <div className="flex items-center gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleTaskStatus(task.id)}
-                                                className={`p-1 rounded ${task.concluida ? 'text-green-500' : 'text-slate-300 hover:text-slate-500'}`}
+                                            <div
+                                                onClick={() => toggleTaskStatus(task)}
+                                                className={`cursor-pointer transition-colors ${task.status === 'CONCLUIDA' ? 'text-teal-600' : 'text-slate-300 hover:text-teal-400'}`}
                                             >
-                                                <CheckSquare size={20} className={task.concluida ? 'fill-current' : ''} />
-                                            </button>
-                                            <div>
-                                                <p className={`font-medium text-sm ${task.concluida ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                                <CheckCircle2 size={24} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className={`text-slate-700 font-bold ${task.status === 'CONCLUIDA' ? 'line-through opacity-50' : ''}`}>
                                                     {task.descricao}
                                                 </p>
-                                                <div className="flex gap-3 text-xs text-slate-500 mt-0.5">
-                                                    <span className="flex items-center gap-1"><User size={10} /> {task.responsavel_id}</span>
-                                                    <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(task.data_inicio).toLocaleDateString()} - {new Date(task.data_termino).toLocaleDateString()}</span>
+                                                <div className="flex gap-4 mt-1">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1">
+                                                        <User size={12} /> {task.responsavel}
+                                                    </span>
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1">
+                                                        <Calendar size={12} /> Prazo: {new Date(task.prazo).toLocaleDateString()}
+                                                    </span>
+                                                    {task.maquina_id && <span className="text-[10px] font-black text-orange-500 uppercase flex items-center gap-1">
+                                                        <MachineIcon size={12} /> {maquinas.find(m => m.id === task.maquina_id)?.nome}
+                                                    </span>}
                                                 </div>
                                             </div>
                                         </div>
@@ -677,6 +697,20 @@ const PlanosAcao: React.FC = () => {
                         </div>
                     </form>
                 </div>
+            )}
+
+            {isOSModalOpen && taskParaOS && (
+                <OSModal
+                    isOpen={isOSModalOpen}
+                    onClose={() => {
+                        setIsOSModalOpen(false);
+                        setTaskParaOS(null);
+                    }}
+                    onSuccess={handleOSSuccess}
+                    maquinaId={taskParaOS.maquina_id!}
+                    maquinaNome={maquinas.find(m => m.id === taskParaOS.maquina_id)?.nome || 'Ativo'}
+                    taskTitle={taskParaOS.descricao}
+                />
             )}
         </div>
     );

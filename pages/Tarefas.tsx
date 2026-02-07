@@ -12,6 +12,10 @@ import { TarefaProjeto, StatusTarefa, Prioridade, Projeto } from '../types_proje
 import { Usuario } from '../types_seguranca';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { manutencaoService } from '../services/manutencaoService';
+import { Maquina } from '../types_manutencao';
+import { Settings as MachineIcon } from 'lucide-react';
+import OSModal from '../components/Manutencao/OSModal';
 
 const Tarefas: React.FC = () => {
     const navigate = useNavigate();
@@ -21,6 +25,7 @@ const Tarefas: React.FC = () => {
     const [tarefas, setTarefas] = useState<TarefaProjeto[]>([]);
     const [projetos, setProjetos] = useState<Projeto[]>([]);
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+    const [maquinas, setMaquinas] = useState<Maquina[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'FORM'>('LIST');
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,6 +34,8 @@ const Tarefas: React.FC = () => {
     // UX State
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [tarefaToDelete, setTarefaToDelete] = useState<string | null>(null);
+    const [isOSModalOpen, setIsOSModalOpen] = useState(false);
+    const [tarefaParaOS, setTarefaParaOS] = useState<TarefaProjeto | null>(null);
 
     // Form State for new entry
     const [formData, setFormData] = useState<Partial<TarefaProjeto>>({
@@ -39,7 +46,8 @@ const Tarefas: React.FC = () => {
         data_fim_prevista: '',
         status: 'PENDENTE',
         prioridade: 'MEDIA',
-        horas_estimadas: 0
+        horas_estimadas: 0,
+        maquina_id: ''
     });
 
     // Load data
@@ -50,14 +58,16 @@ const Tarefas: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [tarefasData, projetosData, usuariosData] = await Promise.all([
+            const [tarefasData, projetosData, usuariosData, maquinasData] = await Promise.all([
                 projetosService.getTodasTarefas(),
                 projetosService.getProjetos(),
-                segurancaService.getUsuarios()
+                segurancaService.getUsuarios(),
+                manutencaoService.getMaquinas()
             ]);
             setTarefas(tarefasData);
             setProjetos(projetosData.filter(p => p.status !== 'CONCLUIDO' && p.status !== 'CANCELADO'));
             setUsuarios(usuariosData.filter(u => u.ativo));
+            setMaquinas(maquinasData);
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             toast.error('Erro de Conexão', 'Não foi possível carregar as tarefas.');
@@ -96,6 +106,36 @@ const Tarefas: React.FC = () => {
         }
     };
 
+    const toggleStatus = async (tarefa: TarefaProjeto) => {
+        if (tarefa.status === 'CONCLUIDA') {
+            await projetosService.updateTarefa(tarefa.id, { status: 'PENDENTE' });
+            toast.success('Status Atualizado', 'Tarefa retornada para Pendente.');
+            await loadData();
+            return;
+        }
+
+        if (tarefa.maquina_id) {
+            setTarefaParaOS(tarefa);
+            setIsOSModalOpen(true);
+        } else {
+            await projetosService.updateTarefa(tarefa.id, { status: 'CONCLUIDA' });
+            toast.success('Tarefa Concluída', 'O status foi atualizado com sucesso.');
+            await loadData();
+        }
+    };
+
+    const handleOSSuccess = async (osId: string) => {
+        if (tarefaParaOS) {
+            await projetosService.updateTarefa(tarefaParaOS.id, {
+                status: 'CONCLUIDA',
+                os_id: osId
+            });
+            await loadData();
+            setIsOSModalOpen(false);
+            setTarefaParaOS(null);
+        }
+    };
+
     const resetForm = () => {
         setFormData({
             projeto_id: '',
@@ -105,7 +145,8 @@ const Tarefas: React.FC = () => {
             data_fim_prevista: '',
             status: 'PENDENTE',
             prioridade: 'MEDIA',
-            horas_estimadas: 0
+            horas_estimadas: 0,
+            maquina_id: ''
         });
     };
 
@@ -244,6 +285,14 @@ const Tarefas: React.FC = () => {
                                                 Vence: {new Date(tarefa.data_fim_prevista).toLocaleDateString()}
                                             </span>
                                         </div>
+                                        {tarefa.maquina_id && (
+                                            <div className="flex items-center gap-2 text-orange-500">
+                                                <MachineIcon size={14} />
+                                                <span className="text-[10px] font-black uppercase tracking-tighter">
+                                                    {maquinas.find(m => m.id === tarefa.maquina_id)?.nome || 'Ativo Industrial'}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -263,10 +312,10 @@ const Tarefas: React.FC = () => {
                                             }`}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            // Handle fast complete toggle
+                                            toggleStatus(tarefa);
                                         }}
                                     >
-                                        <CheckSquare size={20} />
+                                        {tarefa.status === 'CONCLUIDA' ? <CheckCircle2 size={20} /> : <CheckSquare size={20} />}
                                     </button>
                                     <button
                                         onClick={(e) => {
@@ -384,6 +433,21 @@ const Tarefas: React.FC = () => {
                             </div>
 
                             <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Ativo Relacionado (Opcional)</label>
+                                <select
+                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 text-lg transition-all outline-none font-medium appearance-none"
+                                    value={formData.maquina_id}
+                                    onChange={e => setFormData({ ...formData, maquina_id: e.target.value })}
+                                >
+                                    <option value="">Não relacionado a máquina</option>
+                                    {maquinas.map(m => (
+                                        <option key={m.id} value={m.id}>{m.nome} ({m.modelo})</option>
+                                    ))}
+                                </select>
+                                <p className="text-[9px] font-bold text-slate-400 mt-1 ml-1 uppercase">Se selecionado, será exigido preenchimento de OS ao concluir.</p>
+                            </div>
+
+                            <div>
                                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Prioridade</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     {['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'].map(prio => (
@@ -436,6 +500,20 @@ const Tarefas: React.FC = () => {
                     setTarefaToDelete(null);
                 }}
             />
+
+            {isOSModalOpen && tarefaParaOS && (
+                <OSModal
+                    isOpen={isOSModalOpen}
+                    onClose={() => {
+                        setIsOSModalOpen(false);
+                        setTarefaParaOS(null);
+                    }}
+                    onSuccess={handleOSSuccess}
+                    maquinaId={tarefaParaOS.maquina_id!}
+                    maquinaNome={maquinas.find(m => m.id === tarefaParaOS.maquina_id)?.nome || 'Ativo'}
+                    taskTitle={tarefaParaOS.titulo}
+                />
+            )}
         </div>
     );
 };

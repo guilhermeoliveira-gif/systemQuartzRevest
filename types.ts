@@ -32,6 +32,7 @@ export interface MecanicaInsumo {
   custo_unitario?: number;
   sub_categoria?: string;
   maquina_uso?: string;
+  maquina_ids?: string[];
   created_at?: string;
 }
 
@@ -42,6 +43,7 @@ export interface MovimentoPeca {
   quantidade: number;
   data_movimento: string;
   motivo_maquina?: string; // Onde foi usada ou motivo da retirada
+  maquina_id?: string;
   usuario_id: string;
   peca?: { nome: string; unidade_medida: string };
 }

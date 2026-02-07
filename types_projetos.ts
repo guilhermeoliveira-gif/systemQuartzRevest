@@ -47,6 +47,8 @@ export interface TarefaProjeto {
     dependencias?: string[];
     tags?: string[];
     observacoes?: string;
+    maquina_id?: string;
+    os_id?: string;
     created_at: string;
     updated_at?: string;
 

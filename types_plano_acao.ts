@@ -7,6 +7,8 @@ export interface Tarefa {
     prazo: string;
     status: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDA';
     observacoes?: string;
+    maquina_id?: string;
+    os_id?: string;
     created_at: string;
     updated_at?: string;
 }

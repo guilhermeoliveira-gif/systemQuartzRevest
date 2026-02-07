@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { store } from '../services/store';
 import { MecanicaInsumo } from '../types';
-import { Plus, Search, Wrench, Package, ArrowUp, ArrowDown, Trash2, MapPin, AlertCircle, X } from 'lucide-react';
+import { Plus, Search, Wrench, Package, ArrowUp, ArrowDown, Trash2, MapPin, AlertCircle, X, Settings as MachineIcon } from 'lucide-react';
+import { manutencaoService } from '../services/manutencaoService';
+import { Maquina } from '../types_manutencao';
 
 const EstoquePecas: React.FC = () => {
     const [pecas, setPecas] = useState<MecanicaInsumo[]>([]);
@@ -10,6 +12,7 @@ const EstoquePecas: React.FC = () => {
     const [categoryFilter, setCategoryFilter] = useState('ALL');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [customCategoryMode, setCustomCategoryMode] = useState(false);
+    const [maquinas, setMaquinas] = useState<Maquina[]>([]);
 
     // Dynamic Categories
     const availableCategories = React.useMemo(() => {
@@ -28,6 +31,7 @@ const EstoquePecas: React.FC = () => {
 
     const [moveQty, setMoveQty] = useState('');
     const [moveReason, setMoveReason] = useState('');
+    const [selectedMaquinaId, setSelectedMaquinaId] = useState('');
 
     const [itemsLoading, setItemsLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -52,8 +56,12 @@ const EstoquePecas: React.FC = () => {
     const loadData = async () => {
         setItemsLoading(true);
         try {
-            const data = await store.getPecas();
+            const [data, maquinasData] = await Promise.all([
+                store.getPecas(),
+                manutencaoService.getMaquinas()
+            ]);
             setPecas(data);
+            setMaquinas(maquinasData);
         } catch (error) {
             console.error(error);
         } finally {
@@ -114,6 +122,9 @@ const EstoquePecas: React.FC = () => {
         setMoveModal({ open: true, type, item });
         setMoveQty('');
         setMoveReason('');
+        // Se houver apenas uma máquina vinculada, pré-seleciona ela
+        const initialMachine = item.maquina_ids && item.maquina_ids.length === 1 ? item.maquina_ids[0] : '';
+        setSelectedMaquinaId(initialMachine);
     };
 
     const handleMoveSubmit = async (e: React.FormEvent) => {
@@ -126,7 +137,8 @@ const EstoquePecas: React.FC = () => {
                     moveModal.type,
                     Number(moveQty),
                     moveReason || (moveModal.type === 'ENTRADA' ? 'Compra/Reposição' : 'Uso Interno'),
-                    'CURRENT_USER'
+                    'CURRENT_USER',
+                    selectedMaquinaId
                 );
 
                 await loadData();
@@ -237,14 +249,29 @@ const EstoquePecas: React.FC = () => {
                                 onChange={e => setNewItem({ ...newItem, nome: e.target.value })}
                             />
                         </div>
-                        <div className="md:col-span-1">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Máquina Relacionada (Opcional)</label>
-                            <input
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                placeholder="Ex: Moinho 01"
-                                value={newItem.maquina_uso}
-                                onChange={e => setNewItem({ ...newItem, maquina_uso: e.target.value })}
-                            />
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Máquinas que utilizam esta peça</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto max-h-40 p-3 border rounded-lg bg-slate-50">
+                                {maquinas.map(m => (
+                                    <label key={m.id} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded text-blue-600 focus:ring-blue-500"
+                                            checked={newItem.maquina_ids?.includes(m.id)}
+                                            onChange={e => {
+                                                const currentIds = newItem.maquina_ids || [];
+                                                if (e.target.checked) {
+                                                    setNewItem({ ...newItem, maquina_ids: [...currentIds, m.id] });
+                                                } else {
+                                                    setNewItem({ ...newItem, maquina_ids: currentIds.filter(id => id !== m.id) });
+                                                }
+                                            }}
+                                        />
+                                        <span className="text-sm text-slate-700 truncate">{m.nome}</span>
+                                    </label>
+                                ))}
+                                {maquinas.length === 0 && <p className="text-xs text-slate-400 italic col-span-full">Nenhuma máquina cadastrada</p>}
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Categoria Principal</label>
@@ -390,9 +417,24 @@ const EstoquePecas: React.FC = () => {
                             </div>
                         </div>
 
-                        {item.maquina_uso && (
+                        {(item.maquina_ids && item.maquina_ids.length > 0) && (
+                            <div className="mx-2 mb-2 p-1.5 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700 font-medium">
+                                <div className="flex items-center gap-1 mb-1 border-b border-blue-200 pb-0.5">
+                                    <MachineIcon size={12} /> Máquinas Relacionadas:
+                                </div>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {item.maquina_ids.map(mId => {
+                                        const maq = maquinas.find(m => m.id === mId);
+                                        return maq ? (
+                                            <span key={mId} className="bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200">{maq.nome}</span>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        {(!item.maquina_ids?.length && item.maquina_uso) && (
                             <div className="mx-2 mb-2 p-1.5 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700 font-medium flex items-center gap-1">
-                                <Wrench size={12} /> Máquina: {item.maquina_uso}
+                                <MachineIcon size={12} /> Máquina: {item.maquina_uso}
                             </div>
                         )}
 
@@ -483,17 +525,44 @@ const EstoquePecas: React.FC = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    {moveModal.type === 'ENTRADA' ? 'Origem / Fornecedor' : 'Motivo / Máquina Destino'}
+                                    {moveModal.type === 'ENTRADA' ? 'Origem / Fornecedor' : 'Justificativa da Retirada'}
                                 </label>
                                 <textarea
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     rows={2}
-                                    placeholder={moveModal.type === 'SAIDA' ? "Ex: Manutenção Esteira 01..." : "Ex: Compra NF 123..."}
+                                    placeholder={moveModal.type === 'SAIDA' ? "Ex: Desgaste natural, quebra..." : "Ex: Compra NF 123..."}
                                     value={moveReason}
                                     onChange={e => setMoveReason(e.target.value)}
                                     required
                                 />
                             </div>
+
+                            {moveModal.type === 'SAIDA' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Máquina Destino</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                        value={selectedMaquinaId}
+                                        onChange={e => setSelectedMaquinaId(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Selecione a Máquina...</option>
+                                        {/* Mostra primeiro as máquinas vinculadas à peça, depois o resto */}
+                                        {maquinas
+                                            .sort((a, b) => {
+                                                const aVenc = moveModal.item?.maquina_ids?.includes(a.id) ? 0 : 1;
+                                                const bVenc = moveModal.item?.maquina_ids?.includes(b.id) ? 0 : 1;
+                                                return aVenc - bVenc;
+                                            })
+                                            .map(m => (
+                                                <option key={m.id} value={m.id}>
+                                                    {moveModal.item?.maquina_ids?.includes(m.id) ? '★ ' : ''}
+                                                    {m.nome}
+                                                </option>
+                                            ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div className="flex gap-3 pt-2">
                                 <button
@@ -519,12 +588,12 @@ const EstoquePecas: React.FC = () => {
             )}
 
             {/* History Section */}
-            <MovimentacaoHistorico search={filter} />
+            <MovimentacaoHistorico search={filter} maquinas={maquinas} />
         </div>
     );
 };
 
-const MovimentacaoHistorico: React.FC<{ search: string }> = ({ search }) => {
+const MovimentacaoHistorico: React.FC<{ search: string, maquinas: Maquina[] }> = ({ search, maquinas }) => {
     const [historico, setHistorico] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -590,7 +659,14 @@ const MovimentacaoHistorico: React.FC<{ search: string }> = ({ search }) => {
                                 </td>
                                 <td className="p-4 font-medium text-slate-800">{mov.peca?.nome || 'Item excluído'}</td>
                                 <td className="p-4 font-bold text-slate-700">{mov.quantidade} <span className="text-xs font-normal text-slate-400">{mov.peca?.unidade_medida}</span></td>
-                                <td className="p-4 text-slate-600 max-w-xs truncate" title={mov.motivo_maquina}>{mov.motivo_maquina || '-'}</td>
+                                <td className="p-4 text-slate-600 max-w-xs" title={mov.motivo_maquina}>
+                                    <div className="font-medium text-slate-800">{mov.motivo_maquina || '-'}</div>
+                                    {mov.maquina_id && (
+                                        <div className="flex items-center gap-1 text-[10px] text-blue-600 font-bold uppercase mt-1">
+                                            <MachineIcon size={10} /> {maquinas.find(m => m.id === mov.maquina_id)?.nome || 'Máquina não encontrada'}
+                                        </div>
+                                    )}
+                                </td>
                                 <td className="p-4 text-slate-400 text-xs">{mov.usuario_id}</td>
                             </tr>
                         ))}
