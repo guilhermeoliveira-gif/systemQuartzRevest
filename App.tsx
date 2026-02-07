@@ -36,6 +36,7 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/" element={<ModuleSelector />} />
+              <Route path="/configuracoes" element={<Configuracoes />} />
 
               {/* Stock Module */}
               <Route path="/estoque/dashboard" element={<Dashboard />} />

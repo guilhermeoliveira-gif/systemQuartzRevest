@@ -41,6 +41,27 @@ const PlanosAcao: React.FC = () => {
         how_much: '0,00'
     });
 
+    const loadPlanosAcao = async () => {
+        try {
+            setLoading(true);
+            const data = await qualidadeService.getPlanosAcao();
+
+            // Load tasks for each plano
+            const planosWithTasks = await Promise.all(
+                data.map(async (plano) => {
+                    const tarefas = await qualidadeService.getTarefasByPlano(plano.id);
+                    return { ...plano, tarefas };
+                })
+            );
+
+            setPlanos(planosWithTasks);
+        } catch (error) {
+            console.error('Erro ao carregar planos de ação:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Load data from Supabase on mount
     useEffect(() => {
         loadPlanosAcao();
@@ -64,27 +85,6 @@ const PlanosAcao: React.FC = () => {
             setViewMode('FORM');
         }
     }, [ncIdParam, ncTitleParam]);
-
-    const loadPlanosAcao = async () => {
-        try {
-            setLoading(true);
-            const data = await qualidadeService.getPlanosAcao();
-
-            // Load tasks for each plano
-            const planosWithTasks = await Promise.all(
-                data.map(async (plano) => {
-                    const tarefas = await qualidadeService.getTarefasByPlano(plano.id);
-                    return { ...plano, tarefas };
-                })
-            );
-
-            setPlanos(planosWithTasks);
-        } catch (error) {
-            console.error('Erro ao carregar planos de ação:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleAddStandaloneTask = async () => {
         if (!newTask.descricao || !newTask.responsavel || !selectedPlanoId) return;
@@ -320,7 +320,7 @@ const PlanosAcao: React.FC = () => {
                 </>
             ) : viewMode === 'STANDALONE' ? (
                 /* Standalone Tasks Mode */
-                <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-in slide-in-from-right-4">
+                <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
                     <div className="bg-purple-50 px-8 py-6 border-b border-purple-100 flex justify-between items-center">
                         <div>
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -420,7 +420,7 @@ const PlanosAcao: React.FC = () => {
                 </div>
             ) : (
                 /* Form Mode */
-                <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-in slide-in-from-right-4">
+                <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
                     <div className="bg-slate-50 px-8 py-6 border-b border-slate-200 flex justify-between items-center">
                         <div>
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">

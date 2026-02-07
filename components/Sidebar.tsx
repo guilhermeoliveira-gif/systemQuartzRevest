@@ -39,9 +39,23 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     { name: 'Configurações', path: '/qualidade/configuracoes', icon: Settings }, // Placeholder
   ];
 
-  const navItems = currentModule === 'qualidade' ? qualityNavItems : stockNavItems;
-  const moduleName = currentModule === 'qualidade' ? 'Não Conformidade' : 'Estoque';
-  const moduleColor = currentModule === 'qualidade' ? 'bg-red-600' : 'bg-blue-600';
+  const generalNavItems = [
+    { name: 'Configurações', path: '/configuracoes', icon: Settings },
+  ];
+
+  let navItems = generalNavItems;
+  let moduleName = 'Menu Principal';
+  let moduleColor = 'bg-slate-700';
+
+  if (currentModule === 'qualidade') {
+    navItems = qualityNavItems;
+    moduleName = 'Qualidade';
+    moduleColor = 'bg-red-600';
+  } else if (currentModule === 'estoque') {
+    navItems = stockNavItems;
+    moduleName = 'Estoque';
+    moduleColor = 'bg-blue-600';
+  }
 
   return (
     <div className="flex flex-col h-full">
