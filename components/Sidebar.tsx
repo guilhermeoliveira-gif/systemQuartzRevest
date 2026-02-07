@@ -2,9 +2,10 @@
 import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import Logo from './Logo';
+import { APP_VERSION } from '../src/version';
 import {
   LayoutDashboard, Package, Box, FlaskConical, AlertTriangle,
-  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench
+  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -19,6 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
 
   const stockNavItems = [
     { name: 'Dashboard', path: '/estoque/dashboard', icon: LayoutDashboard },
+    { name: 'Minhas Tarefas', path: '/estoque/tarefas', icon: ListTodo },
     { name: 'Matéria-Prima', path: '/estoque/cadastro/mp', icon: Package },
     { name: 'Produto Acabado', path: '/estoque/cadastro/pa', icon: Box },
     { name: 'Peças e Insumos', path: '/estoque/pecas', icon: Wrench },
@@ -33,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
   const qualityNavItems = [
     { name: 'Não Conformidades', path: '/qualidade/nao-conformidades', icon: AlertTriangle },
     { name: 'Planos de Ação', path: '/qualidade/planos-acao', icon: ClipboardCheck },
+    { name: 'Minhas Tarefas', path: '/qualidade/tarefas', icon: ListTodo },
     { name: 'Configurações', path: '/qualidade/configuracoes', icon: Settings }, // Placeholder
   ];
 
@@ -84,11 +87,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
       <div className="p-4 border-t border-slate-600/50">
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-4 py-3 w-full text-left text-slate-400 hover:text-white hover:bg-red-600/20 hover:text-red-400 rounded-lg transition-colors"
+          className="flex items-center gap-3 px-4 py-3 w-full text-left text-slate-400 hover:text-white hover:bg-red-600/20 hover:text-red-400 rounded-lg transition-colors mb-2"
         >
           <LogOut size={18} />
           <span className="font-medium text-sm">Sair do Sistema</span>
         </button>
+        <div className="px-4 text-[10px] sm:text-xs text-slate-500 font-mono tracking-wide">
+          v{APP_VERSION}
+        </div>
       </div>
     </div>
   );

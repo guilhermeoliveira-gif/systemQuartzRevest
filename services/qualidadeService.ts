@@ -196,6 +196,28 @@ export const qualidadeService = {
         return data || [];
     },
 
+    // Listar todas as tarefas (para visualização geral ou por responsável)
+    async getTodasTarefas(): Promise<Tarefa[]> {
+        const { data, error } = await supabase
+            .from('tarefa')
+            .select(`
+                *,
+                plano_acao:plano_acao(titulo)
+            `)
+            .order('prazo', { ascending: true });
+
+        if (error) {
+            console.error('Erro ao buscar todas as tarefas:', error);
+            throw error;
+        }
+
+        // Mapear para adicionar título do plano se necessário, ou retornar como está
+        // O tipo Tarefa precisaria ser estendido se quisermos incluir o título do plano no objeto, 
+        // mas por enquanto retornamos os dados "como vêm" do supabase com o join, 
+        // precisaremos ajustar o componente para ler isso.
+        return data as any || [];
+    },
+
     // Criar nova tarefa
     async createTarefa(tarefa: Omit<Tarefa, 'id' | 'created_at' | 'updated_at'>): Promise<Tarefa> {
         const { data, error } = await supabase

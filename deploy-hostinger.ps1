@@ -21,7 +21,29 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "✅ Dependências instaladas" -ForegroundColor Green
-Write-Host ""
+
+# 2.5 Auto-increment Version in src/version.ts
+if (Test-Path "src/version.ts") {
+    $versionContent = Get-Content "src/version.ts" -Raw
+    if ($versionContent -match "APP_VERSION = '(\d+)\.(\d+)\.(\d+)'") {
+        $major = $matches[1]
+        $minor = $matches[2]
+        $patch = $matches[3]
+        $newPatch = [int]$patch + 1
+        $newVersion = "$major.$minor.$newPatch"
+        
+        $newContent = "export const APP_VERSION = '$newVersion';"
+        Set-Content -Path "src/version.ts" -Value $newContent
+        
+        Write-Host "Versao atualizada para: $newVersion" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Nao foi possivel ler a versao em src/version.ts" -ForegroundColor Yellow
+    }
+}
+else {
+    Write-Host "src/version.ts nao encontrado" -ForegroundColor Yellow
+}
 
 # 3. Verificar variáveis de ambiente
 if (-Not (Test-Path ".env")) {
@@ -33,7 +55,8 @@ if (-Not (Test-Path ".env")) {
         Write-Host "Configure as variáveis em .env antes de continuar!" -ForegroundColor Yellow
         Write-Host "Pressione Enter para continuar após configurar..."
         Read-Host
-    } else {
+    }
+    else {
         Write-Host "❌ .env.example não encontrado!" -ForegroundColor Red
         exit 1
     }
@@ -67,7 +90,8 @@ Write-Host ""
 if (Test-Path ".htaccess") {
     Copy-Item ".htaccess" "dist/"
     Write-Host "✅ .htaccess copiado para dist/" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⚠️  .htaccess não encontrado" -ForegroundColor Yellow
 }
 

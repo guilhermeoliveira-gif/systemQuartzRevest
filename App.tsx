@@ -15,6 +15,7 @@ import ControleProducao from './pages/ControleProducao';
 import ConferenciaEstoque from './pages/ConferenciaEstoque';
 import Relatorios from './pages/Relatorios';
 import Configuracoes from './pages/Configuracoes';
+import MinhasTarefas from './pages/MinhasTarefas';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 import AIChatAssistant from './components/AIChatAssistant';
@@ -73,11 +74,15 @@ const AppContent: React.FC<{ isAuthenticated: boolean; onLogin: () => void; onLo
           <Route path="/estoque/conferencia" element={<ConferenciaEstoque />} />
           <Route path="/estoque/relatorios" element={<Relatorios />} />
           <Route path="/estoque/configuracoes" element={<Configuracoes />} />
+          <Route path="/estoque/tarefas" element={<MinhasTarefas />} />
 
           {/* Quality Module */}
           <Route path="/qualidade/nao-conformidades" element={<NaoConformidades />} />
           <Route path="/qualidade/planos-acao" element={<PlanosAcao />} />
           <Route path="/qualidade/configuracoes" element={<Configuracoes />} />
+
+          {/* General/User Routes */}
+          <Route path="/qualidade/tarefas" element={<MinhasTarefas />} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

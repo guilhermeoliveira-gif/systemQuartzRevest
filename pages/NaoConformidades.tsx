@@ -189,6 +189,52 @@ const NaoConformidades: React.FC = () => {
 
             {viewMode === 'LIST' && (
                 <>
+                    {/* Dashboard KPIs */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de RNCs</p>
+                                    <h3 className="text-2xl font-black text-slate-800 mt-1">{ocorrencias.length}</h3>
+                                </div>
+                                <div className="p-2 bg-slate-100 rounded-lg text-slate-600"><FileText size={20} /></div>
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Em Aberto</p>
+                                    <h3 className="text-2xl font-black text-blue-600 mt-1">
+                                        {ocorrencias.filter(o => o.status !== 'CONCLUIDO' && o.status !== 'CANCELADO').length}
+                                    </h3>
+                                </div>
+                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><Clock size={20} /></div>
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Críticas</p>
+                                    <h3 className="text-2xl font-black text-red-600 mt-1">
+                                        {ocorrencias.filter(o => o.severidade === 'CRITICA').length}
+                                    </h3>
+                                </div>
+                                <div className="p-2 bg-red-100 rounded-lg text-red-600"><AlertTriangle size={20} /></div>
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Concluídas</p>
+                                    <h3 className="text-2xl font-black text-green-600 mt-1">
+                                        {ocorrencias.filter(o => o.status === 'CONCLUIDO').length}
+                                    </h3>
+                                </div>
+                                <div className="p-2 bg-green-100 rounded-lg text-green-600"><CheckCircle size={20} /></div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Controls */}
                     <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 gap-4">
                         <div className="relative w-full md:w-96 order-1 md:order-1">
@@ -198,13 +244,15 @@ const NaoConformidades: React.FC = () => {
                                 placeholder="Buscar ocorrência..."
                             />
                         </div>
-                        <button
-                            onClick={() => setViewMode('FORM')}
-                            className="bg-red-600 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition shadow-sm font-bold text-base order-2 md:order-2 w-full md:w-auto"
-                        >
-                            <Plus size={20} />
-                            Nova Ocorrência
-                        </button>
+                        <div className="flex gap-2 w-full md:w-auto order-2 md:order-2">
+                            <button
+                                onClick={() => setViewMode('FORM')}
+                                className="bg-red-600 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition shadow-sm font-bold text-base w-full md:w-auto"
+                            >
+                                <Plus size={20} />
+                                Nova Ocorrência
+                            </button>
+                        </div>
                     </div>
 
                     {/* List */}
