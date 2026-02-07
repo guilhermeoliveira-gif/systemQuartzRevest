@@ -169,8 +169,8 @@ const DashboardGlobal: React.FC = () => {
                                     <div key={idx} className="flex justify-between items-center">
                                         <span className="text-sm text-slate-600">{stat.label}</span>
                                         <span className={`text-lg font-black ${stat.urgent ? 'text-red-600' :
-                                                stat.highlight ? colors.text :
-                                                    'text-slate-800'
+                                            stat.highlight ? colors.text :
+                                                'text-slate-800'
                                             }`}>
                                             {stat.value}
                                         </span>
@@ -230,14 +230,14 @@ const DashboardGlobal: React.FC = () => {
                         <p className="text-sm font-bold text-slate-800">Nova NC</p>
                     </button>
                     <button
-                        onClick={() => navigate('/projetos/cadastro')}
+                        onClick={() => navigate('/projetos/consulta')}
                         className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition text-left"
                     >
                         <FolderKanban size={20} className="text-teal-600 mb-2" />
                         <p className="text-sm font-bold text-slate-800">Novo Projeto</p>
                     </button>
                     <button
-                        onClick={() => navigate('/projetos/cadastro-tarefa')}
+                        onClick={() => navigate('/projetos/tarefas-consulta')}
                         className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition text-left"
                     >
                         <CheckSquare size={20} className="text-blue-600 mb-2" />

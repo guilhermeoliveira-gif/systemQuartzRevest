@@ -47,8 +47,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
 
   const projectsNavItems = [
     { name: 'Dashboard', path: '/projetos/dashboard', icon: LayoutDashboard },
-    { name: 'Projetos', path: '/projetos/cadastro', icon: FolderKanban },
-    { name: 'Tarefas', path: '/projetos/tarefas', icon: ListTodo },
+    { name: 'Projetos', path: '/projetos/consulta', icon: FolderKanban },
+    { name: 'Tarefas', path: '/projetos/tarefas-consulta', icon: ListTodo },
   ];
 
   const generalNavItems = [

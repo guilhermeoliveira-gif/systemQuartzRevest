@@ -113,7 +113,33 @@ export const qualidadeService = {
         return data;
     },
 
+    // Deletar não conformidade
+    async deleteNaoConformidade(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('nao_conformidade')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Erro ao deletar não conformidade:', error);
+            throw error;
+        }
+    },
+
     // ==================== PLANOS DE AÇÃO ====================
+
+    // Deletar plano de ação
+    async deletePlanoAcao(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('plano_acao')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Erro ao deletar plano de ação:', error);
+            throw error;
+        }
+    },
 
     // Listar todos os planos de ação
     async getPlanosAcao(): Promise<PlanoAcao[]> {

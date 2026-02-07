@@ -72,7 +72,7 @@ const ProjetosDashboard: React.FC = () => {
                     <p className="text-slate-500">Visão geral dos projetos em andamento</p>
                 </div>
                 <button
-                    onClick={() => navigate('/projetos/cadastro')}
+                    onClick={() => navigate('/projetos/consulta')}
                     className="bg-teal-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-teal-700 transition shadow-sm font-medium"
                 >
                     <Plus size={20} />

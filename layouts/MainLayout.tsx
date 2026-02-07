@@ -5,8 +5,9 @@ import BottomNav from '../components/BottomNav';
 import AIChatAssistant from '../components/AIChatAssistant';
 import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { useAuth } from '../contexts/AuthContext';
-import { Cpu, Loader2 } from 'lucide-react';
+import { Cpu } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
     const { signOut, loading } = useAuth();
@@ -21,8 +22,12 @@ const MainLayout: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
-                <Loader2 className="animate-spin text-blue-600" size={48} />
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+                <div className="relative">
+                    <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <Cpu className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600" size={24} />
+                </div>
+                <p className="mt-4 text-slate-600 font-medium animate-pulse">Iniciando sistema...</p>
             </div>
         );
     }
@@ -50,15 +55,16 @@ const MainLayout: React.FC = () => {
 
             {/* Sidebar Navigation - Desktop Only */}
             <aside className={`
-        fixed md:relative z-50 w-64 h-full bg-slate-900 text-white flex-shrink-0 transition-transform duration-300
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        hidden md:block shadow-xl border-r border-slate-800
-      `}>
+                fixed md:relative z-50 w-64 h-full bg-slate-900 text-white flex-shrink-0 transition-transform duration-300
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                hidden md:block shadow-xl border-r border-slate-800
+            `}>
                 <Sidebar onLogout={handleLogout} onCloseSidebar={() => setIsSidebarOpen(false)} />
             </aside>
 
             {/* Main Content */}
             <main className="flex-1 overflow-x-hidden min-h-screen p-4 md:p-8 lg:p-10 bg-slate-50 pb-20 md:pb-8">
+                <Breadcrumbs />
                 <Outlet />
             </main>
 

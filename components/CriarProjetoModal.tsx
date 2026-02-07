@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, FolderKanban, Calendar, User } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
+import { useToast } from '../contexts/ToastContext';
 
 interface CriarProjetoModalProps {
     ncId: string;
@@ -10,6 +11,7 @@ interface CriarProjetoModalProps {
 }
 
 const CriarProjetoModal: React.FC<CriarProjetoModalProps> = ({ ncId, ncTitulo, onClose, onSuccess }) => {
+    const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [usuarios, setUsuarios] = useState<any[]>([]);
     const [formData, setFormData] = useState({
@@ -45,12 +47,12 @@ const CriarProjetoModal: React.FC<CriarProjetoModalProps> = ({ ncId, ncTitulo, o
 
             if (error) throw error;
 
-            alert('Projeto criado com sucesso!');
+            toast.success('Projeto Criado', 'O projeto vinculado foi gerado com sucesso.');
             onSuccess();
             onClose();
         } catch (error: any) {
             console.error('Erro ao criar projeto:', error);
-            alert('Erro ao criar projeto: ' + error.message);
+            toast.error('Erro ao Criar', 'Não foi possível gerar o projeto: ' + error.message);
         } finally {
             setLoading(false);
         }

@@ -1,18 +1,27 @@
 ﻿
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Plus, Search, Filter, CheckCircle, Clock, XCircle, FileText, ChevronRight, Save, ShieldAlert, Upload, Image as ImageIcon } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Filter, CheckCircle, Clock, XCircle, FileText, ChevronRight, Save, ShieldAlert, Upload, Image as ImageIcon, Trash2, FolderPlus } from 'lucide-react';
 import { NaoConformidade } from '../types_nc';
 import { qualidadeService } from '../services/qualidadeService';
+import { useToast } from '../contexts/ToastContext';
+import ConfirmDialog from '../components/ConfirmDialog';
+import CriarProjetoModal from '../components/CriarProjetoModal';
 
 const NaoConformidades: React.FC = () => {
     const navigate = useNavigate();
+    const toast = useToast();
 
     // State
     const [ocorrencias, setOcorrencias] = useState<NaoConformidade[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'FORM' | 'ANALYSIS'>('LIST');
     const [selectedOcorrencia, setSelectedOcorrencia] = useState<NaoConformidade | null>(null);
+
+    // UX State
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [ncToDelete, setNcToDelete] = useState<string | null>(null);
+    const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
 
     // Form State for new entry
     const [formData, setFormData] = useState<Partial<NaoConformidade> & { responsavel_contencao?: string }>({
@@ -82,17 +91,25 @@ const NaoConformidades: React.FC = () => {
         if (!selectedOcorrencia) return;
 
         try {
-            // Save analysis to database
             await qualidadeService.saveAnaliseCausa(selectedOcorrencia.id, fiveWhys);
-
-            // Reload data
             await loadNaoConformidades();
-
-            // Redirect to Action Plan creation
+            toast.success('Análise de Causa Salva', 'A análise foi registrada com sucesso.');
             navigate(`/qualidade/planos-acao?nc_id=${selectedOcorrencia.id}&nc_title=${encodeURIComponent(selectedOcorrencia.titulo)}`);
         } catch (error) {
             console.error('Erro ao salvar análise:', error);
-            alert('Erro ao salvar análise. Tente novamente.');
+            toast.error('Erro ao Salvar', 'Não foi possível salvar a análise. Tente novamente.');
+        }
+    };
+
+    const handleDeleteNC = async (id: string) => {
+        try {
+            await qualidadeService.deleteNaoConformidade(id);
+            await loadNaoConformidades();
+            toast.success('RNC Excluída', 'O registro foi removido com sucesso.');
+            if (viewMode !== 'LIST') setViewMode('LIST');
+        } catch (error) {
+            console.error('Erro ao excluir NC:', error);
+            toast.error('Erro ao Excluir', 'Não foi possível excluir a RNC.');
         }
     };
 
@@ -114,6 +131,7 @@ const NaoConformidades: React.FC = () => {
             };
 
             const createdNC = await qualidadeService.createNaoConformidade(newEntry);
+            toast.success('NC Registrada', 'Não conformidade registrada com sucesso.');
 
             // Se houver Ação de Contenção, criar Plano e Tarefa Imediata
             if (formData.acao_contencao && formData.responsavel_contencao) {
@@ -143,14 +161,10 @@ const NaoConformidades: React.FC = () => {
                     }
                 } catch (taskError) {
                     console.error('Erro ao criar tarefa de contenção:', taskError);
-                    // Não falhar o fluxo principal, apenas logar
                 }
             }
 
-            // Reload data
             await loadNaoConformidades();
-
-            // Reset form
             setViewMode('LIST');
             setFormData({
                 severidade: 'MEDIA',
@@ -161,7 +175,7 @@ const NaoConformidades: React.FC = () => {
             });
         } catch (error) {
             console.error('Erro ao criar não conformidade:', error);
-            alert('Erro ao criar não conformidade. Tente novamente.');
+            toast.error('Erro ao Registrar', 'Não foi possível registrar a RNC. Verifique os dados.');
         }
     };
 
@@ -169,90 +183,90 @@ const NaoConformidades: React.FC = () => {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600">Carregando não conformidades...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-slate-600 font-medium tracking-tight">Carregando registros...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-20">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <AlertTriangle className="text-red-600" />
-                    Gestão de Não Conformidades
-                </h1>
-                <p className="text-slate-500">RNC - Registro, Análise de Causa Raiz e Planos de Ação (5W2H)</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-800 flex items-center gap-2 tracking-tight">
+                        <AlertTriangle className="text-red-600" size={32} />
+                        Gestão de Não Conformidades
+                    </h1>
+                    <p className="text-slate-500 font-medium">RNC - Registro, Análise de Causa Raiz e Planos de Ação (5W2H)</p>
+                </div>
+                {viewMode === 'LIST' && (
+                    <button
+                        onClick={() => setViewMode('FORM')}
+                        className="bg-red-600 text-white px-6 py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 font-bold text-base"
+                    >
+                        <Plus size={20} />
+                        Nova RNC
+                    </button>
+                )}
             </div>
 
             {viewMode === 'LIST' && (
                 <>
                     {/* Dashboard KPIs */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-200 transition-colors">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de RNCs</p>
-                                    <h3 className="text-2xl font-black text-slate-800 mt-1">{ocorrencias.length}</h3>
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Total de RNCs</p>
+                                    <h3 className="text-3xl font-black text-slate-800 mt-1">{ocorrencias.length}</h3>
                                 </div>
-                                <div className="p-2 bg-slate-100 rounded-lg text-slate-600"><FileText size={20} /></div>
+                                <div className="p-3 bg-slate-100 rounded-xl text-slate-600"><FileText size={24} /></div>
                             </div>
                         </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-200 transition-colors">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Em Aberto</p>
-                                    <h3 className="text-2xl font-black text-blue-600 mt-1">
-                                        {ocorrencias.filter(o => o.status !== 'CONCLUIDO' && o.status !== 'CANCELADO').length}
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Em Aberto</p>
+                                    <h3 className="text-3xl font-black text-blue-600 mt-1">
+                                        {ocorrencias.filter(o => o.status !== 'CONCLUIDA' && o.status !== 'CANCELADA').length}
                                     </h3>
                                 </div>
-                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><Clock size={20} /></div>
+                                <div className="p-3 bg-blue-100 rounded-xl text-blue-600"><Clock size={24} /></div>
                             </div>
                         </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-red-200 transition-colors">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Críticas</p>
-                                    <h3 className="text-2xl font-black text-red-600 mt-1">
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Críticas</p>
+                                    <h3 className="text-3xl font-black text-red-600 mt-1">
                                         {ocorrencias.filter(o => o.severidade === 'CRITICA').length}
                                     </h3>
                                 </div>
-                                <div className="p-2 bg-red-100 rounded-lg text-red-600"><AlertTriangle size={20} /></div>
+                                <div className="p-3 bg-red-100 rounded-xl text-red-600"><AlertTriangle size={24} /></div>
                             </div>
                         </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-green-200 transition-colors">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Concluídas</p>
-                                    <h3 className="text-2xl font-black text-green-600 mt-1">
-                                        {ocorrencias.filter(o => o.status === 'CONCLUIDO').length}
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Concluídas</p>
+                                    <h3 className="text-3xl font-black text-green-600 mt-1">
+                                        {ocorrencias.filter(o => o.status === 'CONCLUIDA').length}
                                     </h3>
                                 </div>
-                                <div className="p-2 bg-green-100 rounded-lg text-green-600"><CheckCircle size={20} /></div>
+                                <div className="p-3 bg-green-100 rounded-xl text-green-600"><CheckCircle size={24} /></div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Controls */}
-                    <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200 gap-4">
-                        <div className="relative w-full md:w-96 order-1 md:order-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                            <input
-                                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
-                                placeholder="Buscar ocorrência..."
-                            />
-                        </div>
-                        <div className="flex gap-2 w-full md:w-auto order-2 md:order-2">
-                            <button
-                                onClick={() => setViewMode('FORM')}
-                                className="bg-red-600 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition shadow-sm font-bold text-base w-full md:w-auto"
-                            >
-                                <Plus size={20} />
-                                Nova Ocorrência
-                            </button>
-                        </div>
+                    {/* Search Bar */}
+                    <div className="relative mb-6">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                        <input
+                            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg transition-all outline-none"
+                            placeholder="Pesquisar por título, origem ou tipo..."
+                        />
                     </div>
 
                     {/* List */}
@@ -260,60 +274,97 @@ const NaoConformidades: React.FC = () => {
                         {ocorrencias.map(oc => (
                             <div
                                 key={oc.id}
-                                onClick={() => handleOpenAnalysis(oc)}
-                                className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow cursor-pointer flex justify-between items-center group"
+                                className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group flex flex-col md:flex-row justify-between md:items-center gap-4"
                             >
-                                <div>
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${oc.severidade === 'CRITICA' ? 'bg-red-100 text-red-700' :
+                                <div onClick={() => handleOpenAnalysis(oc)} className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-black tracking-wider ${oc.severidade === 'CRITICA' ? 'bg-red-100 text-red-700' :
                                             oc.severidade === 'ALTA' ? 'bg-orange-100 text-orange-700' :
-                                                'bg-blue-100 text-blue-700'
+                                                'bg-indigo-100 text-indigo-700'
                                             }`}>
                                             {oc.severidade}
                                         </span>
-                                        <span className="text-xs text-slate-400 font-mono">#{oc.id.substring(0, 6).toUpperCase()}</span>
-                                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                                        <span className="text-xs text-slate-400 font-mono font-bold tracking-tighter">#{oc.id.substring(0, 6).toUpperCase()}</span>
+                                        <span className="text-xs text-slate-500 font-bold flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg">
                                             <Clock size={12} /> {new Date(oc.data_ocorrencia).toLocaleDateString()}
                                         </span>
                                     </div>
-                                    <h3 className="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{oc.titulo}</h3>
-                                    <p className="text-slate-500 text-sm mt-1">{oc.origem} • {oc.tipo}</p>
+                                    <h3 className="font-extrabold text-slate-800 text-xl group-hover:text-indigo-600 transition-colors tracking-tight">{oc.titulo}</h3>
+                                    <p className="text-slate-500 text-sm mt-1 font-medium">{oc.origem} • {oc.tipo}</p>
                                 </div>
 
-                                <div className="flex items-center gap-6">
-                                    <div className="text-right">
-                                        <div className="text-xs text-slate-400 uppercase font-bold mb-1">Status</div>
-                                        <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 bg-slate-100 px-3 py-1 rounded-full whitespace-nowrap">
-                                            {oc.status === 'EM_ANALISE' && <Search size={14} />}
-                                            {oc.status === 'ACAO_DEFINIDA' && <CheckCircle size={14} className="text-green-600" />}
-                                            {oc.status.replace('_', ' ')}
+                                <div className="flex items-center gap-4 justify-between md:justify-end border-t md:border-t-0 pt-4 md:pt-0">
+                                    <div className="text-right hidden md:block mr-4">
+                                        <div className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Status</div>
+                                        <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap shadow-sm border ${oc.status === 'CONCLUIDA' ? 'bg-green-50 text-green-700 border-green-100' :
+                                            oc.status === 'EM_ANALISE' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                'bg-slate-50 text-slate-700 border-slate-200'
+                                            }`}>
+                                            {oc.status.replace(/_/g, ' ')}
                                         </div>
                                     </div>
-                                    <ChevronRight className="text-slate-300 group-hover:text-blue-500" />
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setNcToDelete(oc.id);
+                                                setIsDeleteDialogOpen(true);
+                                            }}
+                                            className="p-3 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-xl transition-all"
+                                            title="Excluir"
+                                        >
+                                            <Trash2 size={20} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleOpenAnalysis(oc)}
+                                            className="p-3 text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-all"
+                                        >
+                                            <ChevronRight size={24} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
+
+                        {ocorrencias.length === 0 && (
+                            <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-20 text-center">
+                                <div className="mx-auto w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-300">
+                                    <FileText size={40} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800">Nenhum registro encontrado</h3>
+                                <p className="text-slate-500 mt-2">Inicie o registro de sua primeira Não Conformidade.</p>
+                                <button
+                                    onClick={() => setViewMode('FORM')}
+                                    className="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20"
+                                >
+                                    Começar agora
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </>
             )}
 
             {viewMode === 'FORM' && (
                 /* Form Mode */
-                <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-right-4">
-                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
-                        <h2 className="text-lg md:text-xl font-bold text-slate-800">Registrar Não Conformidade</h2>
-                        <button onClick={() => setViewMode('LIST')} className="text-slate-400 hover:text-slate-600">
-                            <XCircle size={24} />
+                <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+                    <div className="bg-slate-900 p-8 flex justify-between items-center">
+                        <div>
+                            <h2 className="text-2xl font-black text-white tracking-tight">Registar RNC</h2>
+                            <p className="text-slate-400 text-sm font-medium">Relatório de Não Conformidade</p>
+                        </div>
+                        <button onClick={() => setViewMode('LIST')} className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition text-white">
+                            <XCircle size={28} />
                         </button>
                     </div>
 
-                    <form onSubmit={handleSave} className="space-y-6 pb-20 md:pb-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <form onSubmit={handleSave} className="p-8 space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="col-span-1 md:col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Título da Ocorrência</label>
+                                <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-widest">Título da Ocorrência *</label>
                                 <input
-                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-base"
-                                    placeholder="Resumo do problema (Ex: Vazamento no Moinho 3)"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-lg transition-all outline-none font-medium"
+                                    placeholder="Ex: Divergência de estoque no almoxarifado 2"
                                     required
                                     value={formData.titulo}
                                     onChange={e => setFormData({ ...formData, titulo: e.target.value })}
@@ -321,9 +372,9 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Origem / Local</label>
+                                <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-widest">Origem / Local *</label>
                                 <input
-                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 text-base"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-lg transition-all outline-none font-medium"
                                     placeholder="Onde aconteceu?"
                                     required
                                     value={formData.origem}
@@ -332,10 +383,10 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Data da Ocorrência</label>
+                                <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-widest">Data da Ocorrência *</label>
                                 <input
                                     type="date"
-                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 text-base"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-lg transition-all outline-none font-medium"
                                     required
                                     value={formData.data_ocorrencia}
                                     onChange={e => setFormData({ ...formData, data_ocorrencia: e.target.value })}
@@ -343,31 +394,31 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de Problema</label>
+                                <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-widest">Tipo de Categoria *</label>
                                 <select
-                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 bg-white text-base"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-lg transition-all outline-none font-medium appearance-none"
                                     value={formData.tipo}
                                     onChange={e => setFormData({ ...formData, tipo: e.target.value as any })}
                                 >
-                                    <option value="PROCESSO">Falha de Processo</option>
-                                    <option value="PRODUTO">Defeito em Produto</option>
-                                    <option value="SEGURANCA">Segurança / EPI</option>
-                                    <option value="AMBIENTAL">Ambiental</option>
+                                    <option value="PROCESSO">Qualidade de Processo</option>
+                                    <option value="PRODUTO">Qualidade de Produto</option>
+                                    <option value="SEGURANCA">Segurança do Trabalho</option>
+                                    <option value="AMBIENTAL">Risco Ambiental</option>
                                     <option value="OUTROS">Outros</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Severidade Estimada</label>
-                                <div className="grid grid-cols-2 md:flex gap-2">
+                                <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-widest">Impacto / Severidade *</label>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                                     {['BAIXA', 'MEDIA', 'ALTA', 'CRITICA'].map(sev => (
                                         <button
                                             type="button"
                                             key={sev}
                                             onClick={() => setFormData({ ...formData, severidade: sev as any })}
-                                            className={`flex-1 py-3 px-4 text-sm font-bold rounded-lg border transition-all ${formData.severidade === sev
-                                                ? (sev === 'CRITICA' ? 'bg-red-600 text-white border-red-600' : 'bg-slate-800 text-white border-slate-800')
-                                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                                            className={`py-4 px-2 text-xs font-black rounded-xl border transition-all shadow-sm ${formData.severidade === sev
+                                                ? (sev === 'CRITICA' ? 'bg-red-600 text-white border-red-600' : 'bg-slate-900 text-white border-slate-900')
+                                                : 'bg-white text-slate-400 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
                                                 }`}
                                         >
                                             {sev}
@@ -377,61 +428,59 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div className="col-span-1 md:col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Descrição Detalhada do Problema (O Que e Como)</label>
+                                <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-widest">Descrição do Problema *</label>
                                 <textarea
-                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 h-32 text-base"
-                                    placeholder="Descreva o que aconteceu com o máximo de detalhes possível..."
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-lg transition-all outline-none font-medium h-32"
+                                    placeholder="Explique detalhadamente o que foi observado..."
                                     required
                                     value={formData.descricao}
                                     onChange={e => setFormData({ ...formData, descricao: e.target.value })}
                                 />
-
                             </div>
 
-                            <div className="col-span-1 md:col-span-2 bg-orange-50 p-4 rounded-lg border border-orange-100">
-                                <label className="block text-sm font-bold text-orange-800 mb-2 flex items-center gap-2">
-                                    <ShieldAlert size={18} />
-                                    Ação de Contenção Imediata (Bloqueio)
-                                </label>
-                                <p className="text-xs text-orange-600 mb-3">O que foi feito *agora* para parar o problema/acidente? (Ex: Parar máquina, segregar lote)</p>
-                                <textarea
-                                    className="w-full px-4 py-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white text-base"
-                                    placeholder="Descreva a ação imediata..."
-                                    required
-                                    value={formData.acao_contencao}
-                                    onChange={e => setFormData({ ...formData, acao_contencao: e.target.value })}
-                                />
+                            <div className="col-span-1 md:col-span-2 bg-indigo-50/50 p-8 rounded-3xl border border-indigo-100/50">
+                                <div className="flex items-center gap-2 mb-6 text-indigo-900">
+                                    <ShieldAlert size={28} />
+                                    <h3 className="text-xl font-black tracking-tight">Contenção Imediata</h3>
+                                </div>
 
-                                <div className="mt-3">
-                                    <label className="block text-xs font-bold text-orange-800 mb-1">Responsável pela Ação</label>
-                                    <select
-                                        className="w-full px-4 py-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white text-base"
-                                        value={formData.responsavel_contencao || ''}
-                                        onChange={e => setFormData({ ...formData, responsavel_contencao: e.target.value })}
-                                        required={!!formData.acao_contencao}
-                                    >
-                                        <option value="">Selecione o responsável...</option>
-                                        {MOCK_RESPONSAVEIS.map(resp => (
-                                            <option key={resp} value={resp}>{resp}</option>
-                                        ))}
-                                    </select>
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-indigo-900 mb-2">Ação de Bloqueio Efetuada</label>
+                                        <textarea
+                                            className="w-full px-5 py-4 bg-white border border-indigo-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 text-lg transition-all outline-none font-medium h-24"
+                                            placeholder="Ex: Lote segregado no setor de qualidade, máquina parada para manutenção..."
+                                            value={formData.acao_contencao}
+                                            onChange={e => setFormData({ ...formData, acao_contencao: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-indigo-900 mb-2">Responsável pela Contenção</label>
+                                        <select
+                                            className="w-full px-5 py-4 bg-white border border-indigo-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 text-lg transition-all outline-none font-medium appearance-none"
+                                            value={formData.responsavel_contencao || ''}
+                                            onChange={e => setFormData({ ...formData, responsavel_contencao: e.target.value })}
+                                        >
+                                            <option value="">Selecione o responsável...</option>
+                                            {MOCK_RESPONSAVEIS.map(resp => (
+                                                <option key={resp} value={resp}>{resp}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="col-span-1 md:col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                                    <ImageIcon size={18} className="text-slate-400" />
-                                    Evidências (Fotos do Problema)
-                                </label>
-
-                                <div className="space-y-4">
-                                    {/* Photo Input Area */}
-                                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 transition cursor-pointer min-h-[120px] relative">
+                                <label className="block text-sm font-black text-slate-700 mb-4 uppercase tracking-widest">Evidências Visuais</label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {/* Upload Trigger */}
+                                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-indigo-50 hover:border-indigo-200 transition-all cursor-pointer aspect-square relative group">
                                         <input
                                             type="file"
                                             accept="image/*"
                                             capture="environment"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
@@ -447,55 +496,50 @@ const NaoConformidades: React.FC = () => {
                                                 }
                                             }}
                                         />
-                                        <div className="flex flex-col items-center gap-2 pointer-events-none">
-                                            <div className="bg-blue-100 p-3 rounded-full text-blue-600 mb-1">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="p-3 bg-slate-100 rounded-xl group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
                                                 <Upload size={24} />
                                             </div>
-                                            <p className="font-bold text-slate-700 text-center">Tirar Foto ou Upload</p>
-                                            <p className="text-xs text-slate-400 text-center">Toque para abrir a câmera</p>
+                                            <span className="text-[10px] font-black uppercase tracking-tighter">Capturar</span>
                                         </div>
                                     </div>
 
-                                    {/* Preview Area */}
-                                    {formData.evidencias && formData.evidencias.length > 0 && (
-                                        <div className="grid grid-cols-2 gap-2 mt-4">
-                                            {formData.evidencias.map((img, index) => (
-                                                <div key={index} className="relative group rounded-lg overflow-hidden border border-slate-200 aspect-video bg-black">
-                                                    <img src={img} alt={`Evidência ${index + 1}`} className="w-full h-full object-contain" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                evidencias: prev.evidencias?.filter((_, i) => i !== index)
-                                                            }));
-                                                        }}
-                                                        className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full shadow-md opacity-90 hover:opacity-100"
-                                                    >
-                                                        <XCircle size={16} />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                    {/* Preview List */}
+                                    {formData.evidencias?.map((img, index) => (
+                                        <div key={index} className="relative aspect-square rounded-2xl overflow-hidden border border-slate-200 group">
+                                            <img src={img} alt={`Evidência ${index + 1}`} className="w-full h-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        evidencias: prev.evidencias?.filter((_, i) => i !== index)
+                                                    }));
+                                                }}
+                                                className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                            >
+                                                <XCircle size={16} />
+                                            </button>
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-col-reverse md:flex-row justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+                        <div className="flex flex-col-reverse md:flex-row justify-end gap-4">
                             <button
                                 type="button"
                                 onClick={() => setViewMode('LIST')}
-                                className="w-full md:w-auto px-6 py-3 text-slate-600 font-medium hover:bg-slate-100 rounded-lg border md:border-0 border-slate-200"
+                                className="px-8 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl transition"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
-                                className="w-full md:w-auto px-6 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 flex items-center justify-center gap-2"
+                                className="px-10 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3"
                             >
-                                <Save size={18} />
-                                Registrar RNC
+                                <Save size={20} />
+                                Salvar Registro
                             </button>
                         </div>
                     </form>
@@ -503,91 +547,85 @@ const NaoConformidades: React.FC = () => {
             )}
 
             {viewMode === 'ANALYSIS' && selectedOcorrencia && (
-                <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-right-4 pb-24 md:pb-8">
-                    <div className="flex justify-between items-start mb-4 pb-4 border-b border-slate-100">
-                        <div>
-                            <button onClick={() => setViewMode('LIST')} className="flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium mb-2">
-                                <ChevronRight className="rotate-180" size={16} />
-                                Voltar
+                <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+                    <div className="bg-indigo-900 p-8 flex justify-between items-center text-white">
+                        <div className="flex items-center gap-6">
+                            <button onClick={() => setViewMode('LIST')} className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl transition">
+                                <ChevronRight className="rotate-180" size={24} />
                             </button>
-                            <h2 className="text-lg md:text-2xl font-bold text-slate-800 flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
-                                <span className="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-slate-500 border border-slate-200 w-fit">
-                                    #{selectedOcorrencia.id.substring(0, 6).toUpperCase()}
-                                </span>
-                                Análise de Causa Raiz
-                            </h2>
+                            <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <span className="bg-indigo-700/50 px-3 py-1 rounded-lg text-xs font-black font-mono">
+                                        #{selectedOcorrencia.id.substring(0, 6).toUpperCase()}
+                                    </span>
+                                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${selectedOcorrencia.severidade === 'CRITICA' ? 'bg-red-500 text-white' : 'bg-orange-400 text-white'}`}>
+                                        {selectedOcorrencia.severidade}
+                                    </span>
+                                </div>
+                                <h2 className="text-2xl font-black tracking-tight">Análise de Causa Raiz</h2>
+                            </div>
                         </div>
-                        <div className="text-right">
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedOcorrencia.severidade === 'CRITICA' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
-                                {selectedOcorrencia.severidade}
-                            </span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsCreateProjectOpen(true)}
+                                className="bg-white text-indigo-900 px-5 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-lg"
+                            >
+                                <FolderPlus size={18} />
+                                Criar Projeto
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setNcToDelete(selectedOcorrencia.id);
+                                    setIsDeleteDialogOpen(true);
+                                }}
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-100 p-3 rounded-2xl transition border border-red-500/20"
+                            >
+                                <Trash2 size={24} />
+                            </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Left Column: Context Details */}
-                        <div className="lg:col-span-1 space-y-6">
-                            <div className="bg-slate-50 p-5 rounded-lg border border-slate-200">
-                                <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                                    <FileText size={18} className="text-blue-600" />
-                                    Detalhes da Ocorrência
-                                </h3>
-
-                                <div className="space-y-4 text-sm">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+                        {/* Sidebar: Details */}
+                        <div className="lg:col-span-4 p-8 bg-slate-50 border-r border-slate-100 space-y-8">
+                            <div>
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Informações da NC</h3>
+                                <div className="space-y-6">
                                     <div>
-                                        <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Título</label>
-                                        <p className="font-medium text-slate-800">{selectedOcorrencia.titulo}</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Tipo</label>
-                                            <p className="font-medium text-slate-800">{selectedOcorrencia.tipo}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Data</label>
-                                            <p className="font-medium text-slate-800">{new Date(selectedOcorrencia.data_ocorrencia).toLocaleDateString()}</p>
+                                        <p className="text-lg font-black text-slate-800 leading-tight">{selectedOcorrencia.titulo}</p>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            <span className="text-xs font-bold text-slate-500 bg-slate-200 px-2.5 py-1 rounded-lg">{selectedOcorrencia.tipo}</span>
+                                            <span className="text-xs font-bold text-slate-500 bg-slate-200 px-2.5 py-1 rounded-lg">{selectedOcorrencia.origem}</span>
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Origem / Local</label>
-                                        <p className="font-medium text-slate-800">{selectedOcorrencia.origem}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Descrição</label>
-                                        <p className="text-slate-600 leading-relaxed bg-white p-3 rounded border border-slate-200 mt-1 max-h-40 overflow-y-auto">
-                                            {selectedOcorrencia.descricao}
+                                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Descrição</p>
+                                        <p className="text-slate-600 font-medium leading-relaxed bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-h-48 overflow-y-auto italic">
+                                            "{selectedOcorrencia.descricao}"
                                         </p>
                                     </div>
+                                    {selectedOcorrencia.acao_contencao && (
+                                        <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100 shadow-sm">
+                                            <p className="text-xs font-black text-orange-800 uppercase tracking-widest mb-2">Contenção Efetuada</p>
+                                            <p className="text-orange-950 font-bold text-sm">
+                                                {selectedOcorrencia.acao_contencao}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
-
-                                {selectedOcorrencia.acao_contencao && (
-                                    <div className="bg-orange-50 p-3 rounded border border-orange-100 mt-2">
-                                        <label className="text-orange-800 font-bold text-xs uppercase tracking-wider flex items-center gap-1 mb-1">
-                                            <ShieldAlert size={12} /> Ação de Contenção
-                                        </label>
-                                        <p className="text-orange-900 font-medium leading-tight">
-                                            {selectedOcorrencia.acao_contencao}
-                                        </p>
-                                    </div>
-                                )}
                             </div>
 
-                            {/* Evidence Section - ADDED */}
                             {selectedOcorrencia.evidencias && selectedOcorrencia.evidencias.length > 0 && (
-                                <div className="bg-slate-50 p-5 rounded-lg border border-slate-200">
-                                    <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                                        <ImageIcon size={18} className="text-blue-600" />
-                                        Evidências Visuais
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Evidências Visuais</h3>
+                                    <div className="grid grid-cols-2 gap-3">
                                         {selectedOcorrencia.evidencias.map((img, idx) => (
-                                            <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-slate-200 bg-black relative group">
-                                                <img
-                                                    src={img}
-                                                    alt={`Evidência ${idx + 1}`}
-                                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                                    onClick={() => window.open(img, '_blank')}
-                                                />
+                                            <div
+                                                key={idx}
+                                                className="aspect-square rounded-2xl overflow-hidden border-2 border-white shadow-md bg-white cursor-zoom-in hover:scale-105 transition-transform"
+                                                onClick={() => window.open(img, '_blank')}
+                                            >
+                                                <img src={img} alt="NC evidence" className="w-full h-full object-cover" />
                                             </div>
                                         ))}
                                     </div>
@@ -595,38 +633,31 @@ const NaoConformidades: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Right Column: 5 Whys Methodology */}
-                        <div className="lg:col-span-2">
-                            <div className="bg-blue-50/50 p-4 md:p-6 rounded-xl border border-blue-100">
-                                <div className="mb-6">
-                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold font-serif">5</div>
-                                        Metodologia dos 5 Porquês
-                                    </h3>
-                                    <p className="text-slate-600 text-sm mt-1">
-                                        Pergunte "Por quê?" sucessivamente até encontrar a causa raiz do problema.
-                                    </p>
+                        {/* Analysis Body */}
+                        <div className="lg:col-span-8 p-8">
+                            <div className="max-w-2xl mx-auto">
+                                <div className="flex items-center gap-4 mb-10">
+                                    <div className="w-14 h-14 rounded-3xl bg-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-xl shadow-indigo-600/20">5</div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-800 tracking-tight">Análise dos 5 Porquês</h3>
+                                        <p className="text-slate-500 font-medium">Aprofunde na causa até encontrar a origem sistêmica.</p>
+                                    </div>
                                 </div>
 
-                                <form onSubmit={handleSaveAnalysis} className="space-y-4">
+                                <form onSubmit={handleSaveAnalysis} className="space-y-6">
                                     {[1, 2, 3, 4, 5].map((num) => (
-                                        <div key={num} className="relative pl-8">
-                                            {/* Connecting Line */}
-                                            {num < 5 && (
-                                                <div className="absolute left-[15px] top-8 w-0.5 h-full bg-slate-200 z-0"></div>
-                                            )}
-                                            {/* Number Bubble */}
-                                            <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-white border-2 border-slate-200 text-slate-400 font-bold flex items-center justify-center z-10 text-sm shadow-sm">
+                                        <div key={num} className="relative pl-14 pb-4">
+                                            {num < 5 && <div className="absolute left-[27px] top-10 w-1 h-full bg-slate-100 rounded-full"></div>}
+                                            <div className="absolute left-0 top-1 w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 text-slate-300 font-black flex items-center justify-center z-10 text-lg shadow-sm group-focus-within:border-indigo-500 group-focus-within:text-indigo-500 transition-all">
                                                 {num}
                                             </div>
-
-                                            <div className="relative">
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                                            <div className="group">
+                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                                                     {num}º Por Que?
                                                 </label>
                                                 <input
-                                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 shadow-sm text-base"
-                                                    placeholder={num === 1 ? "Por que o problema aconteceu?" : "Por que a causa anterior aconteceu?"}
+                                                    className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-lg transition-all outline-none font-medium text-slate-700"
+                                                    placeholder={num === 1 ? "Por que este problema foi gerado?" : "O que causou o porquê anterior?"}
                                                     value={(fiveWhys as any)[`pq${num}`]}
                                                     onChange={e => setFiveWhys({ ...fiveWhys, [`pq${num}`]: e.target.value })}
                                                 />
@@ -634,31 +665,31 @@ const NaoConformidades: React.FC = () => {
                                         </div>
                                     ))}
 
-                                    <div className="pt-6 mt-6 border-t border-blue-100">
-                                        <label className="block text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                            Causa Raiz Identificada
-                                        </label>
+                                    <div className="mt-10 p-8 bg-green-50 rounded-3xl border-2 border-dashed border-green-200">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                                            <h4 className="text-sm font-black text-green-900 uppercase tracking-widest">Causa Raiz Sistêmica</h4>
+                                        </div>
                                         <textarea
-                                            className="w-full px-4 py-3 bg-green-50 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 text-slate-800 font-medium"
-                                            placeholder="Descreva a conclusão final da causa raiz..."
+                                            className="w-full px-6 py-4 bg-white border border-green-200 rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 text-lg font-bold text-green-900 shadow-sm outline-none transition-all"
+                                            placeholder="Descreva aqui o erro de processo ou sistema identificado..."
                                             rows={2}
                                             required
                                             value={fiveWhys.causa_raiz}
                                             onChange={e => setFiveWhys({ ...fiveWhys, causa_raiz: e.target.value })}
                                         />
-                                        <p className="text-xs text-slate-500 mt-2">
-                                            * A causa raiz deve ser algo sobre o qual tenhamos controle para modificar.
+                                        <p className="text-[10px] text-green-700 mt-4 font-bold uppercase tracking-tight text-center">
+                                            * Esta causa será utilizada para o plano de ação corretiva.
                                         </p>
                                     </div>
 
-                                    <div className="flex justify-end pt-4">
+                                    <div className="flex justify-end pt-8">
                                         <button
                                             type="submit"
-                                            className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition flex items-center gap-2"
+                                            className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center gap-3"
                                         >
-                                            <CheckCircle size={18} />
-                                            Salvar Análise de Causa
+                                            <CheckCircle size={20} />
+                                            Salvar & Criar Plano de Ação
                                         </button>
                                     </div>
                                 </form>
@@ -666,9 +697,33 @@ const NaoConformidades: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            )
-            }
-        </div >
+            )}
+
+            {/* UX Support Components */}
+            <ConfirmDialog
+                isOpen={isDeleteDialogOpen}
+                title="Excluir Registro principal?"
+                message="Esta ação é irreversível e removerá todos os dados desta Não Conformidade, incluindo análises e planos vinculados."
+                confirmText="Sim, excluir permanentemente"
+                cancelText="Mantenha o registro"
+                onConfirm={() => ncToDelete && handleDeleteNC(ncToDelete)}
+                onCancel={() => {
+                    setIsDeleteDialogOpen(false);
+                    setNcToDelete(null);
+                }}
+            />
+
+            {isCreateProjectOpen && selectedOcorrencia && (
+                <CriarProjetoModal
+                    ncId={selectedOcorrencia.id}
+                    ncTitulo={selectedOcorrencia.titulo}
+                    onClose={() => setIsCreateProjectOpen(false)}
+                    onSuccess={() => {
+                        // Success toast handled inside modal
+                    }}
+                />
+            )}
+        </div>
     );
 };
 

@@ -145,16 +145,16 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
               disabled={!mod.active}
               onClick={() => mod.path && navigate(mod.path)}
               className={`
-                relative group bg-white rounded-lg border-2 transition-all duration-300 text-left overflow-hidden
+                relative group bg-white rounded-2xl border transition-all duration-500 text-left overflow-hidden p-0
                 ${mod.active
-                  ? `${mod.borderColor} hover:shadow-xl hover:scale-[1.02] cursor-pointer`
-                  : 'border-slate-200 opacity-60 cursor-not-allowed'}
+                  ? `border-slate-200 hover:border-indigo-400 hover:shadow-2xl shadow-sm hover:scale-[1.02] cursor-pointer`
+                  : 'border-slate-100 opacity-60 cursor-not-allowed'}
               `}
             >
               {/* Card Header with Icon */}
-              <div className={`p-6 ${mod.active ? `bg-gradient-to-r ${mod.color}` : 'bg-slate-100'}`}>
-                <div className={`w-14 h-14 rounded-lg flex items-center justify-center ${mod.active ? 'bg-white/20' : 'bg-slate-200'}`}>
-                  <mod.icon size={28} className={mod.active ? 'text-white' : 'text-slate-400'} />
+              <div className={`p-8 ${mod.active ? `bg-gradient-to-br ${mod.color}` : 'bg-slate-50'} rounded-t-[inherit] relative`}>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${mod.active ? 'bg-white/20 backdrop-blur-md border border-white/20' : 'bg-slate-200'}`}>
+                  <mod.icon size={24} className={mod.active ? 'text-white' : 'text-slate-400'} />
                 </div>
               </div>
 
@@ -179,10 +179,7 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
                 )}
               </div>
 
-              {/* Active Indicator */}
-              {mod.active && (
-                <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${mod.color} opacity-10 rounded-bl-full`}></div>
-              )}
+
             </button>
           ))}
         </div>
