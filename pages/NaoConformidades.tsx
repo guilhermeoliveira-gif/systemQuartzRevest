@@ -15,13 +15,16 @@ const NaoConformidades: React.FC = () => {
     const [selectedOcorrencia, setSelectedOcorrencia] = useState<NaoConformidade | null>(null);
 
     // Form State for new entry
-    const [formData, setFormData] = useState<Partial<NaoConformidade>>({
+    const [formData, setFormData] = useState<Partial<NaoConformidade> & { responsavel_contencao?: string }>({
         severidade: 'MEDIA',
         tipo: 'PROCESSO',
         data_ocorrencia: new Date().toISOString().split('T')[0],
         acao_contencao: '',
+        responsavel_contencao: '',
         evidencias: []
     });
+
+    const MOCK_RESPONSAVEIS = ['João Silva', 'Maria Souza', 'Carlos Oliveira', 'Ana Beatriz', 'Pedro Santos'];
 
     // Five Whys State
     const [fiveWhys, setFiveWhys] = useState({
@@ -110,7 +113,39 @@ const NaoConformidades: React.FC = () => {
                 evidencias: formData.evidencias || []
             };
 
-            await qualidadeService.createNaoConformidade(newEntry);
+            const createdNC = await qualidadeService.createNaoConformidade(newEntry);
+
+            // Se houver Ação de Contenção, criar Plano e Tarefa Imediata
+            if (formData.acao_contencao && formData.responsavel_contencao) {
+                try {
+                    // 1. Criar Plano de Ação Container (Automático)
+                    const plano = await qualidadeService.createPlanoAcao({
+                        nao_conformidade_id: createdNC.id,
+                        titulo: 'Contenção Imediata (Automático)',
+                        what: formData.acao_contencao,
+                        why: 'Ação imediata para contenção de danos/riscos',
+                        where_loc: formData.origem || 'Local da Ocorrência',
+                        when_date: new Date().toISOString(),
+                        who: formData.responsavel_contencao,
+                        how: 'Execução Imediata',
+                        status_acao: 'EM_ANDAMENTO'
+                    });
+
+                    // 2. Criar Tarefa 
+                    if (plano) {
+                        await qualidadeService.createTarefa({
+                            plano_acao_id: plano.id,
+                            descricao: formData.acao_contencao,
+                            responsavel: formData.responsavel_contencao,
+                            prazo: new Date().toISOString(),
+                            status: 'EM_ANDAMENTO'
+                        });
+                    }
+                } catch (taskError) {
+                    console.error('Erro ao criar tarefa de contenção:', taskError);
+                    // Não falhar o fluxo principal, apenas logar
+                }
+            }
 
             // Reload data
             await loadNaoConformidades();
@@ -318,6 +353,21 @@ const NaoConformidades: React.FC = () => {
                                     value={formData.acao_contencao}
                                     onChange={e => setFormData({ ...formData, acao_contencao: e.target.value })}
                                 />
+
+                                <div className="mt-3">
+                                    <label className="block text-xs font-bold text-orange-800 mb-1">Responsável pela Ação</label>
+                                    <select
+                                        className="w-full px-4 py-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white text-base"
+                                        value={formData.responsavel_contencao || ''}
+                                        onChange={e => setFormData({ ...formData, responsavel_contencao: e.target.value })}
+                                        required={!!formData.acao_contencao}
+                                    >
+                                        <option value="">Selecione o responsável...</option>
+                                        {MOCK_RESPONSAVEIS.map(resp => (
+                                            <option key={resp} value={resp}>{resp}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
                             <div className="col-span-1 md:col-span-2">
