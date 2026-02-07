@@ -58,6 +58,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     { name: 'Histórico', path: '/pcp/historico', icon: BarChart },
   ];
 
+  const maintenanceNavItems = [
+    { name: 'Dashboard Saúde', path: '/manutencao', icon: LayoutDashboard },
+    { name: 'Gestão da Frota', path: '/manutencao/maquinas', icon: Settings },
+    { name: 'Ordens de Serviço', path: '/manutencao/os', icon: ClipboardCheck },
+  ];
+
   const generalNavItems = [
     { name: 'Configurações', path: '/configuracoes', icon: Settings },
   ];
@@ -79,12 +85,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     moduleName = 'Segurança';
     moduleColor = 'bg-purple-600';
   } else if (currentModule === 'projetos') {
+    navItems = projectsNavItems;
     moduleName = 'Projetos';
     moduleColor = 'bg-teal-600';
   } else if (currentModule === 'pcp') {
     navItems = pcpNavItems;
     moduleName = 'Produção PCP';
     moduleColor = 'bg-blue-800';
+  } else if (currentModule === 'manutencao') {
+    navItems = maintenanceNavItems;
+    moduleName = 'Manutenção';
+    moduleColor = 'bg-orange-600';
   }
 
   return (

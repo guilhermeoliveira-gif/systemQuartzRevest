@@ -1,0 +1,257 @@
+
+import React, { useState, useEffect } from 'react';
+import {
+    Plus, Search, Filter, Pencil, Trash2,
+    ChevronLeft, FileText, Calendar, Clock,
+    ArrowRight, User, CheckCircle
+} from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
+import { Badge, Skeleton } from '../../components/ui/Utility';
+import { Dialog } from '../../components/ui/Dialog';
+import { manutencaoService } from '../../services/manutencaoService';
+import { OrdemServico, Maquina, StatusOS, TipoManutencao, PrioridadeOS } from '../../types_manutencao';
+import { useToast } from '../../contexts/ToastContext';
+import { useNavigate } from 'react-router-dom';
+
+const OrdensServico: React.FC = () => {
+    const toast = useToast();
+    const navigate = useNavigate();
+    const [oss, setOSS] = useState<OrdemServico[]>([]);
+    const [maquinas, setMaquinas] = useState<Maquina[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Modals
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [selectedOS, setSelectedOS] = useState<OrdemServico | null>(null);
+
+    // Form
+    const [formData, setFormData] = useState<Partial<OrdemServico>>({
+        maquina_id: '',
+        tipo: 'Corretiva',
+        prioridade: 'Média',
+        descricao: '',
+        status: 'Aberta'
+    });
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [osList, machines] = await Promise.all([
+                manutencaoService.getOrdensServico(),
+                manutencaoService.getMaquinas()
+            ]);
+            setOSS(osList);
+            setMaquinas(machines);
+        } catch (error) {
+            toast.error('Erro', 'Falha ao carregar ordens de serviço.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!formData.maquina_id || !formData.descricao) {
+            return toast.error('Ops', 'Selecionar máquina e descrição são obrigatórios.');
+        }
+        try {
+            await manutencaoService.createOS(formData);
+            toast.success('Sucesso', '✅ Ordem de Serviço aberta com sucesso!');
+            setIsAddOpen(false);
+            setFormData({
+                maquina_id: '',
+                tipo: 'Corretiva',
+                prioridade: 'Média',
+                descricao: '',
+                status: 'Aberta'
+            });
+            loadData();
+        } catch (error) {
+            toast.error('Erro', 'Falha ao abrir OS.');
+        }
+    };
+
+    const getStatusBadge = (status: StatusOS) => {
+        switch (status) {
+            case 'Aberta': return <Badge className="bg-slate-100 text-slate-700">Aberta</Badge>;
+            case 'Em Execução': return <Badge className="bg-blue-100 text-blue-700">Execução</Badge>;
+            case 'Concluída': return <Badge className="bg-green-100 text-green-700">Concluída</Badge>;
+            case 'Cancelada': return <Badge className="bg-red-100 text-red-700">Cancelada</Badge>;
+            default: return <Badge>{status}</Badge>;
+        }
+    };
+
+    const getPriorityBadge = (prio: PrioridadeOS) => {
+        switch (prio) {
+            case 'Baixa': return <Badge className="bg-slate-50 text-slate-400">Baixa</Badge>;
+            case 'Média': return <Badge className="bg-blue-50 text-blue-500">Média</Badge>;
+            case 'Alta': return <Badge className="bg-amber-100 text-amber-600">Alta</Badge>;
+            case 'Urgente': return <Badge className="bg-red-100 text-red-600">Urgente</Badge>;
+            default: return <Badge>{prio}</Badge>;
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/manutencao')}
+                        className="p-2 hover:bg-slate-100 rounded-full transition-colors text duration-300 text-slate-500"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">Histórico de OS</h1>
+                        <p className="text-slate-500 text-sm font-medium uppercase font-mono tracking-widest leading-none mt-1">Maintenance Service Orders</p>
+                    </div>
+                </div>
+                <Button onClick={() => setIsAddOpen(true)} className="bg-blue-800 text-white">
+                    <Plus size={18} className="mr-2" /> Abrir Chamado (OS)
+                </Button>
+            </header>
+
+            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                        type="text"
+                        placeholder="Buscar por descrição ou máquina..."
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 font-medium text-slate-700 text-sm"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Button variant="outline" className="text-slate-600 font-bold uppercase text-[10px] tracking-widest px-6">
+                    <Filter size={14} className="mr-2" /> Filtros Avançados
+                </Button>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Ativo / Tipo</TableHead>
+                            <TableHead>Prioridade</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead>Abertura</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {loading ? (
+                            Array(5).fill(0).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            oss.filter(o =>
+                                o.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                o.maquina?.nome.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map((os) => (
+                                <TableRow key={os.id} className="cursor-pointer group">
+                                    <TableCell>
+                                        <div className="font-black text-slate-800 uppercase tracking-tighter">{os.maquina?.nome}</div>
+                                        <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{os.tipo}</div>
+                                    </TableCell>
+                                    <TableCell>{getPriorityBadge(os.prioridade)}</TableCell>
+                                    <TableCell className="max-w-xs truncate text-slate-500 font-medium">{os.descricao}</TableCell>
+                                    <TableCell className="text-slate-400 font-bold text-xs">
+                                        {new Date(os.data_abertura).toLocaleDateString('pt-BR')}
+                                    </TableCell>
+                                    <TableCell>{getStatusBadge(os.status)}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-blue-600">
+                                            <ArrowRight size={18} />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+
+                {!loading && oss.length === 0 && (
+                    <div className="p-20 text-center flex flex-col items-center justify-center">
+                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-200">
+                            <FileText size={40} />
+                        </div>
+                        <p className="text-slate-400 font-medium">Nenhuma ordem de serviço registrada.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Modals */}
+            <Dialog
+                isOpen={isAddOpen}
+                onClose={() => setIsAddOpen(false)}
+                title="Abertura de OS Industrial"
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Selecione o Ativo</label>
+                        <select
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold appearance-none"
+                            value={formData.maquina_id}
+                            onChange={(e) => setFormData({ ...formData, maquina_id: e.target.value })}
+                        >
+                            <option value="">Selecione uma máquina...</option>
+                            {maquinas.map(m => (
+                                <option key={m.id} value={m.id}>{m.nome} ({m.modelo})</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tipo de Intervenção</label>
+                            <select
+                                className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold"
+                                value={formData.tipo}
+                                onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoManutencao })}
+                            >
+                                <option value="Corretiva">Corretiva</option>
+                                <option value="Preventiva">Preventiva</option>
+                                <option value="Preditiva">Preditiva</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Prioridade</label>
+                            <select
+                                className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold"
+                                value={formData.prioridade}
+                                onChange={(e) => setFormData({ ...formData, prioridade: e.target.value as PrioridadeOS })}
+                            >
+                                <option value="Baixa">Baixa</option>
+                                <option value="Média">Média</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Urgente">Urgente</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descrição do Problema / Solicitação</label>
+                        <textarea
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold h-32"
+                            placeholder="Descreva o que está acontecendo..."
+                            value={formData.descricao}
+                            onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button variant="ghost" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleSave} className="bg-blue-800 text-white">Criar OS</Button>
+                    </div>
+                </div>
+            </Dialog>
+        </div>
+    );
+};
+
+export default OrdensServico;

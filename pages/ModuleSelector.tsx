@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield, FolderKanban } from 'lucide-react';
+import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield, FolderKanban, Wrench } from 'lucide-react';
 
 interface ModuleSelectorProps {
   onLogout: () => void;
@@ -104,6 +104,18 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
       iconColor: 'text-purple-600',
       active: true,
       path: '/seguranca/usuarios'
+    },
+    {
+      id: 'manutencao',
+      name: 'Manutenção de Ativos',
+      description: 'Gestão de máquinas, OS e manutenção preventiva.',
+      icon: Wrench,
+      color: 'from-orange-600 to-orange-700',
+      borderColor: 'border-orange-200',
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      active: true,
+      path: '/manutencao'
     },
     {
       id: 'analytics',
