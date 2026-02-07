@@ -8,6 +8,7 @@ const ProjetosDashboard: React.FC = () => {
     const navigate = useNavigate();
     const [projetos, setProjetos] = useState<Projeto[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
@@ -17,14 +18,16 @@ const ProjetosDashboard: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
+            setError(null);
             const [projetosData, statsData] = await Promise.all([
                 projetosService.getProjetos(),
                 projetosService.getEstatisticas()
             ]);
             setProjetos(projetosData);
             setStats(statsData);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao carregar dados:', error);
+            setError(error.message || 'Erro ao carregar dados. Verifique se as tabelas foram criadas no Supabase.');
         } finally {
             setLoading(false);
         }
@@ -32,6 +35,24 @@ const ProjetosDashboard: React.FC = () => {
 
     if (loading) {
         return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div></div>;
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                <h2 className="text-red-800 font-bold text-lg mb-2">⚠️ Erro ao Carregar Dados</h2>
+                <p className="text-red-700 mb-4">{error}</p>
+                <p className="text-sm text-red-600">
+                    <strong>Solução:</strong> Execute o script <code className="bg-red-100 px-2 py-1 rounded">supabase_schema_projetos.sql</code> no Supabase SQL Editor.
+                </p>
+                <button
+                    onClick={loadData}
+                    className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                    Tentar Novamente
+                </button>
+            </div>
+        );
     }
 
     const projetosAtivos = projetos.filter(p => p.status === 'EM_ANDAMENTO');
@@ -113,16 +134,16 @@ const ProjetosDashboard: React.FC = () => {
                                 </div>
                                 <div className="flex gap-2">
                                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${projeto.status === 'CONCLUIDO' ? 'bg-green-100 text-green-700' :
-                                            projeto.status === 'EM_ANDAMENTO' ? 'bg-blue-100 text-blue-700' :
-                                                projeto.status === 'PAUSADO' ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-slate-100 text-slate-700'
+                                        projeto.status === 'EM_ANDAMENTO' ? 'bg-blue-100 text-blue-700' :
+                                            projeto.status === 'PAUSADO' ? 'bg-yellow-100 text-yellow-700' :
+                                                'bg-slate-100 text-slate-700'
                                         }`}>
                                         {projeto.status.replace('_', ' ')}
                                     </span>
                                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${projeto.prioridade === 'URGENTE' ? 'bg-red-100 text-red-700' :
-                                            projeto.prioridade === 'ALTA' ? 'bg-orange-100 text-orange-700' :
-                                                projeto.prioridade === 'MEDIA' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-slate-100 text-slate-700'
+                                        projeto.prioridade === 'ALTA' ? 'bg-orange-100 text-orange-700' :
+                                            projeto.prioridade === 'MEDIA' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-slate-100 text-slate-700'
                                         }`}>
                                         {projeto.prioridade}
                                     </span>
