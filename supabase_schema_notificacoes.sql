@@ -99,6 +99,10 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger para notificar quando tarefa é atribuída
+-- NOTA: Este trigger será criado no script migration_add_responsavel_id.sql
+-- após a coluna responsavel_id ser adicionada às tabelas
+
+/*
 CREATE OR REPLACE FUNCTION notificar_tarefa_atribuida()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -132,26 +136,13 @@ CREATE TRIGGER trigger_notificar_tarefa_projeto
   AFTER INSERT OR UPDATE OF responsavel_id ON tarefa_projeto
   FOR EACH ROW
   EXECUTE FUNCTION notificar_tarefa_atribuida();
+*/
 
 -- View para tarefas unificadas (todas as fontes)
+-- NOTA: Esta view será atualizada no script migration_add_responsavel_id.sql
+-- após a coluna responsavel_id ser adicionada
+
 CREATE OR REPLACE VIEW tarefas_unificadas AS
-SELECT 
-  t.id,
-  'PLANO_ACAO' as origem,
-  t.titulo,
-  t.descricao,
-  t.responsavel_id,
-  t.data_fim_prevista as prazo,
-  t.status,
-  t.prioridade,
-  pa.titulo as contexto,
-  '/qualidade/tarefas' as link,
-  t.created_at
-FROM tarefa t
-LEFT JOIN plano_acao pa ON t.plano_acao_id = pa.id
-
-UNION ALL
-
 SELECT 
   tp.id,
   'PROJETO' as origem,
