@@ -27,6 +27,7 @@ import PerfilPermissoes from './pages/PerfilPermissoes';
 import ProjetosDashboard from './pages/ProjetosDashboard';
 import CadastroProjeto from './pages/CadastroProjeto';
 import CadastroTarefa from './pages/CadastroTarefa';
+import DashboardGlobal from './pages/DashboardGlobal';
 
 const App: React.FC = () => {
   return (
@@ -42,6 +43,7 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/" element={<ModuleSelector />} />
+              <Route path="/dashboard" element={<DashboardGlobal />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
 
               {/* Stock Module */}

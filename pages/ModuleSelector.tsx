@@ -12,6 +12,18 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
 
   const modules = [
     {
+      id: 'dashboard',
+      name: 'Dashboard Global',
+      description: 'Visão geral de todos os módulos do sistema.',
+      icon: BarChart3,
+      color: 'from-indigo-600 to-indigo-700',
+      borderColor: 'border-indigo-200',
+      iconBg: 'bg-indigo-100',
+      iconColor: 'text-indigo-600',
+      active: true,
+      path: '/dashboard'
+    },
+    {
       id: 'estoque',
       name: 'Módulo Estoque',
       description: 'Gestão de MP, PA, Fórmulas e Conferência de Inventário.',
