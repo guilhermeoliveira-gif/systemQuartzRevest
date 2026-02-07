@@ -73,9 +73,13 @@ ALTER TABLE ajuste_estoque ENABLE ROW LEVEL SECURITY;
 ALTER TABLE alerta_estoque ENABLE ROW LEVEL SECURITY;
 
 -- Policies (acesso público autenticado por enquanto)
+DROP POLICY IF EXISTS "Todos podem ver histórico" ON historico_movimentacao;
+DROP POLICY IF EXISTS "Todos podem inserir histórico" ON historico_movimentacao;
+DROP POLICY IF EXISTS "Todos podem ver ajustes" ON ajuste_estoque;
+DROP POLICY IF EXISTS "Todos podem ver alertas" ON alerta_estoque;
+
 CREATE POLICY "Todos podem ver histórico" ON historico_movimentacao FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Todos podem inserir histórico" ON historico_movimentacao FOR INSERT TO authenticated WITH CHECK (true);
-
 CREATE POLICY "Todos podem ver ajustes" ON ajuste_estoque FOR ALL TO authenticated USING (true);
 CREATE POLICY "Todos podem ver alertas" ON alerta_estoque FOR ALL TO authenticated USING (true);
 
