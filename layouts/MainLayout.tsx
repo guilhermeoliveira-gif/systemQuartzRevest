@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import AIChatAssistant from '../components/AIChatAssistant';
 import NotificationBell from '../components/NotificationBell';
+import GlobalSearch from '../components/GlobalSearch';
 import { useAuth } from '../contexts/AuthContext';
 import { Cpu, Loader2 } from 'lucide-react';
 
@@ -68,6 +69,9 @@ const MainLayout: React.FC = () => {
             <div className="hidden lg:block">
                 <AIChatAssistant />
             </div>
+
+            {/* Global Search (Ctrl+K) */}
+            <GlobalSearch />
         </div>
     );
 };
