@@ -36,9 +36,8 @@ const AppContent: React.FC<{ isAuthenticated: boolean; onLogin: () => void; onLo
           <Cpu size={24} className="text-blue-600" />
           <span className="text-lg font-extrabold tracking-tight uppercase">QUARTZ 4.0</span>
         </div>
-        <button onClick={toggleSidebar} className="p-2 hover:bg-slate-100 rounded-lg transition">
-          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+
+        {/* Removed redundant Menu Button - using BottomNav instead */}
       </header>
 
       {/* Sidebar Overlay for Mobile */}

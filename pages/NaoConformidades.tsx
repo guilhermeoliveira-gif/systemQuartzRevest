@@ -224,12 +224,12 @@ const NaoConformidades: React.FC = () => {
                         </button>
                     </div>
 
-                    <form onSubmit={handleSave} className="space-y-6">
+                    <form onSubmit={handleSave} className="space-y-6 pb-20 md:pb-0">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Título da Ocorrência</label>
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Título da Ocorrência</label>
                                 <input
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-base"
                                     placeholder="Resumo do problema (Ex: Vazamento no Moinho 3)"
                                     required
                                     value={formData.titulo}
@@ -238,9 +238,9 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Origem / Local</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Origem / Local</label>
                                 <input
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 text-base"
                                     placeholder="Onde aconteceu?"
                                     required
                                     value={formData.origem}
@@ -249,10 +249,10 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Data da Ocorrência</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Data da Ocorrência</label>
                                 <input
                                     type="date"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 text-base"
                                     required
                                     value={formData.data_ocorrencia}
                                     onChange={e => setFormData({ ...formData, data_ocorrencia: e.target.value })}
@@ -260,9 +260,9 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Problema</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de Problema</label>
                                 <select
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 bg-white text-base"
                                     value={formData.tipo}
                                     onChange={e => setFormData({ ...formData, tipo: e.target.value as any })}
                                 >
@@ -275,14 +275,14 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Severidade Estimada</label>
-                                <div className="flex gap-2">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Severidade Estimada</label>
+                                <div className="grid grid-cols-2 md:flex gap-2">
                                     {['BAIXA', 'MEDIA', 'ALTA', 'CRITICA'].map(sev => (
                                         <button
                                             type="button"
                                             key={sev}
                                             onClick={() => setFormData({ ...formData, severidade: sev as any })}
-                                            className={`flex-1 py-2 text-sm font-bold rounded-lg border transition-all ${formData.severidade === sev
+                                            className={`flex-1 py-3 px-4 text-sm font-bold rounded-lg border transition-all ${formData.severidade === sev
                                                 ? (sev === 'CRITICA' ? 'bg-red-600 text-white border-red-600' : 'bg-slate-800 text-white border-slate-800')
                                                 : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                                                 }`}
@@ -293,10 +293,10 @@ const NaoConformidades: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição Detalhada do Problema (O Que e Como)</label>
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Descrição Detalhada do Problema (O Que e Como)</label>
                                 <textarea
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 h-32"
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 h-32 text-base"
                                     placeholder="Descreva o que aconteceu com o máximo de detalhes possível..."
                                     required
                                     value={formData.descricao}
@@ -305,14 +305,14 @@ const NaoConformidades: React.FC = () => {
 
                             </div>
 
-                            <div className="col-span-2 bg-orange-50 p-4 rounded-lg border border-orange-100">
-                                <label className="block text-sm font-bold text-orange-800 mb-1 flex items-center gap-2">
+                            <div className="col-span-1 md:col-span-2 bg-orange-50 p-4 rounded-lg border border-orange-100">
+                                <label className="block text-sm font-bold text-orange-800 mb-2 flex items-center gap-2">
                                     <ShieldAlert size={18} />
                                     Ação de Contenção Imediata (Bloqueio)
                                 </label>
-                                <p className="text-xs text-orange-600 mb-2">O que foi feito *agora* para parar o problema/acidente? (Ex: Parar máquina, segregar lote)</p>
+                                <p className="text-xs text-orange-600 mb-3">O que foi feito *agora* para parar o problema/acidente? (Ex: Parar máquina, segregar lote)</p>
                                 <textarea
-                                    className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
+                                    className="w-full px-4 py-3 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white text-base"
                                     placeholder="Descreva a ação imediata..."
                                     required
                                     value={formData.acao_contencao}
@@ -320,30 +320,30 @@ const NaoConformidades: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
                                     <ImageIcon size={18} className="text-slate-400" />
                                     Evidências (Fotos do Problema)
                                 </label>
-                                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 transition cursor-pointer">
+                                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 transition cursor-pointer min-h-[120px]">
                                     <Upload size={32} className="mb-2" />
-                                    <p className="text-sm font-medium">Clique para fazer upload ou arraste fotos aqui</p>
+                                    <p className="text-sm font-medium text-center">Clique para fazer upload ou arraste fotos aqui</p>
                                     <p className="text-xs mt-1">PNG, JPG (Máx 5MB)</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+                        <div className="flex flex-col-reverse md:flex-row justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
                             <button
                                 type="button"
                                 onClick={() => setViewMode('LIST')}
-                                className="px-6 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg"
+                                className="w-full md:w-auto px-6 py-3 text-slate-600 font-medium hover:bg-slate-100 rounded-lg border md:border-0 border-slate-200"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
-                                className="px-6 py-2 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 flex items-center gap-2"
+                                className="w-full md:w-auto px-6 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 flex items-center justify-center gap-2"
                             >
                                 <Save size={18} />
                                 Registrar RNC
