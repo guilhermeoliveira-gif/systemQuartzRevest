@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import AIChatAssistant from '../components/AIChatAssistant';
+import NotificationBell from '../components/NotificationBell';
 import { useAuth } from '../contexts/AuthContext';
 import { Cpu, Loader2 } from 'lucide-react';
 
@@ -35,6 +36,7 @@ const MainLayout: React.FC = () => {
                     </div>
                     <span className="text-lg font-black tracking-tighter uppercase">QuartzRevest</span>
                 </div>
+                <NotificationBell />
             </header>
 
             {/* Sidebar Overlay for Mobile */}
