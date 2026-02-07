@@ -147,9 +147,9 @@ const NaoConformidades: React.FC = () => {
             <div>
                 <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                     <AlertTriangle className="text-red-600" />
-                    GestÃ£o de NÃ£o Conformidades
+                    Gestão de Não Conformidades
                 </h1>
-                <p className="text-slate-500">RNC - Registro, AnÃ¡lise de Causa Raiz e Planos de AÃ§Ã£o (5W2H)</p>
+                <p className="text-slate-500">RNC - Registro, Análise de Causa Raiz e Planos de Ação (5W2H)</p>
             </div>
 
             {viewMode === 'LIST' && (
@@ -160,7 +160,7 @@ const NaoConformidades: React.FC = () => {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                             <input
                                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                placeholder="Buscar ocorrÃªncia..."
+                                placeholder="Buscar ocorrência..."
                             />
                         </div>
                         <button
@@ -168,7 +168,7 @@ const NaoConformidades: React.FC = () => {
                             className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-700 transition shadow-sm font-medium"
                         >
                             <Plus size={20} />
-                            Nova OcorrÃªncia
+                            Nova Ocorrência
                         </button>
                     </div>
 
@@ -194,7 +194,7 @@ const NaoConformidades: React.FC = () => {
                                         </span>
                                     </div>
                                     <h3 className="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{oc.titulo}</h3>
-                                    <p className="text-slate-500 text-sm mt-1">{oc.origem} â€¢ {oc.tipo}</p>
+                                    <p className="text-slate-500 text-sm mt-1">{oc.origem} • {oc.tipo}</p>
                                 </div>
 
                                 <div className="flex items-center gap-6">
@@ -218,7 +218,7 @@ const NaoConformidades: React.FC = () => {
                 /* Form Mode */
                 <div className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-right-4">
                     <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
-                        <h2 className="text-xl font-bold text-slate-800">Registrar NÃ£o Conformidade</h2>
+                        <h2 className="text-xl font-bold text-slate-800">Registrar Não Conformidade</h2>
                         <button onClick={() => setViewMode('LIST')} className="text-slate-400 hover:text-slate-600">
                             <XCircle size={24} />
                         </button>
@@ -227,7 +227,7 @@ const NaoConformidades: React.FC = () => {
                     <form onSubmit={handleSave} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">TÃ­tulo da OcorrÃªncia</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Título da Ocorrência</label>
                                 <input
                                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                                     placeholder="Resumo do problema (Ex: Vazamento no Moinho 3)"
@@ -249,7 +249,7 @@ const NaoConformidades: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Data da OcorrÃªncia</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Data da Ocorrência</label>
                                 <input
                                     type="date"
                                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
@@ -268,7 +268,7 @@ const NaoConformidades: React.FC = () => {
                                 >
                                     <option value="PROCESSO">Falha de Processo</option>
                                     <option value="PRODUTO">Defeito em Produto</option>
-                                    <option value="SEGURANCA">SeguranÃ§a / EPI</option>
+                                    <option value="SEGURANCA">Segurança / EPI</option>
                                     <option value="AMBIENTAL">Ambiental</option>
                                     <option value="OUTROS">Outros</option>
                                 </select>
@@ -297,7 +297,7 @@ const NaoConformidades: React.FC = () => {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Descrição Detalhada do Problema (O Que e Como)</label>
                                 <textarea
                                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 h-32"
-                                    placeholder="Descreva o que aconteceu com o mÃ¡ximo de detalhes possÃ­vel..."
+                                    placeholder="Descreva o que aconteceu com o máximo de detalhes possível..."
                                     required
                                     value={formData.descricao}
                                     onChange={e => setFormData({ ...formData, descricao: e.target.value })}
@@ -310,10 +310,10 @@ const NaoConformidades: React.FC = () => {
                                     <ShieldAlert size={18} />
                                     Ação de Contenção Imediata (Bloqueio)
                                 </label>
-                                <p className="text-xs text-orange-600 mb-2">O que foi feito *agora* para parar o problema/acidente? (Ex: Parar mÃ¡quina, segregar lote)</p>
+                                <p className="text-xs text-orange-600 mb-2">O que foi feito *agora* para parar o problema/acidente? (Ex: Parar máquina, segregar lote)</p>
                                 <textarea
                                     className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
-                                    placeholder="Descreva a aÃ§Ã£o imediata..."
+                                    placeholder="Descreva a ação imediata..."
                                     required
                                     value={formData.acao_contencao}
                                     onChange={e => setFormData({ ...formData, acao_contencao: e.target.value })}
@@ -323,12 +323,12 @@ const NaoConformidades: React.FC = () => {
                             <div className="col-span-2">
                                 <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
                                     <ImageIcon size={18} className="text-slate-400" />
-                                    EvidÃªncias (Fotos do Problema)
+                                    Evidências (Fotos do Problema)
                                 </label>
                                 <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 transition cursor-pointer">
                                     <Upload size={32} className="mb-2" />
                                     <p className="text-sm font-medium">Clique para fazer upload ou arraste fotos aqui</p>
-                                    <p className="text-xs mt-1">PNG, JPG (MÃ¡x 5MB)</p>
+                                    <p className="text-xs mt-1">PNG, JPG (Máx 5MB)</p>
                                 </div>
                             </div>
                         </div>
@@ -365,7 +365,7 @@ const NaoConformidades: React.FC = () => {
                                 <span className="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-slate-500 border border-slate-200">
                                     #{selectedOcorrencia.id.substring(0, 6).toUpperCase()}
                                 </span>
-                                AnÃ¡lise de Causa Raiz
+                                Análise de Causa Raiz
                             </h2>
                         </div>
                         <div className="text-right">
@@ -381,12 +381,12 @@ const NaoConformidades: React.FC = () => {
                             <div className="bg-slate-50 p-5 rounded-lg border border-slate-200">
                                 <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
                                     <FileText size={18} className="text-blue-600" />
-                                    Detalhes da OcorrÃªncia
+                                    Detalhes da Ocorrência
                                 </h3>
 
                                 <div className="space-y-4 text-sm">
                                     <div>
-                                        <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">TÃ­tulo</label>
+                                        <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Título</label>
                                         <p className="font-medium text-slate-800">{selectedOcorrencia.titulo}</p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -447,7 +447,7 @@ const NaoConformidades: React.FC = () => {
                                         Metodologia dos 5 Porquês
                                     </h3>
                                     <p className="text-slate-600 text-sm mt-1">
-                                        Pergunte "Por quÃª?" sucessivamente atÃ© encontrar a causa raiz do problema.
+                                        Pergunte "Por quê?" sucessivamente até encontrar a causa raiz do problema.
                                     </p>
                                 </div>
 
@@ -465,7 +465,7 @@ const NaoConformidades: React.FC = () => {
 
                                             <div className="relative">
                                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                                                    {num}Âº Por Que?
+                                                    {num}º Por Que?
                                                 </label>
                                                 <input
                                                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 shadow-sm"

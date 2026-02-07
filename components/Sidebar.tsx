@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
   ];
 
   const navItems = currentModule === 'qualidade' ? qualityNavItems : stockNavItems;
-  const moduleName = currentModule === 'qualidade' ? 'Qualidade' : 'Estoque';
+  const moduleName = currentModule === 'qualidade' ? 'Não Conformidade' : 'Estoque';
   const moduleColor = currentModule === 'qualidade' ? 'bg-red-600' : 'bg-blue-600';
 
   return (
