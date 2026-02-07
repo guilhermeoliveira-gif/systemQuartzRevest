@@ -216,9 +216,9 @@ const NaoConformidades: React.FC = () => {
 
             {viewMode === 'FORM' && (
                 /* Form Mode */
-                <div className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-right-4">
-                    <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
-                        <h2 className="text-xl font-bold text-slate-800">Registrar Não Conformidade</h2>
+                <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-right-4">
+                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
+                        <h2 className="text-lg md:text-xl font-bold text-slate-800">Registrar Não Conformidade</h2>
                         <button onClick={() => setViewMode('LIST')} className="text-slate-400 hover:text-slate-600">
                             <XCircle size={24} />
                         </button>
@@ -405,22 +405,22 @@ const NaoConformidades: React.FC = () => {
             )}
 
             {viewMode === 'ANALYSIS' && selectedOcorrencia && (
-                <div className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-right-4">
-                    <div className="flex justify-between items-start mb-6 pb-4 border-b border-slate-100">
+                <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-right-4 pb-24 md:pb-8">
+                    <div className="flex justify-between items-start mb-4 pb-4 border-b border-slate-100">
                         <div>
                             <button onClick={() => setViewMode('LIST')} className="flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium mb-2">
                                 <ChevronRight className="rotate-180" size={16} />
-                                Voltar para Lista
+                                Voltar
                             </button>
-                            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                                <span className="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-slate-500 border border-slate-200">
+                            <h2 className="text-lg md:text-2xl font-bold text-slate-800 flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                                <span className="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-slate-500 border border-slate-200 w-fit">
                                     #{selectedOcorrencia.id.substring(0, 6).toUpperCase()}
                                 </span>
                                 Análise de Causa Raiz
                             </h2>
                         </div>
                         <div className="text-right">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedOcorrencia.severidade === 'CRITICA' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedOcorrencia.severidade === 'CRITICA' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
                                 {selectedOcorrencia.severidade}
                             </span>
                         </div>
@@ -454,19 +454,6 @@ const NaoConformidades: React.FC = () => {
                                         <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Origem / Local</label>
                                         <p className="font-medium text-slate-800">{selectedOcorrencia.origem}</p>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Responsável</label>
-                                            <p className="font-medium text-slate-800">{selectedOcorrencia.responsavel_id}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Status Atual</label>
-                                            <p className="font-medium text-slate-800 flex items-center gap-1">
-                                                {selectedOcorrencia.status === 'EM_ANALISE' ? <Search size={12} /> : <CheckCircle size={12} />}
-                                                {selectedOcorrencia.status.replace('_', ' ')}
-                                            </p>
-                                        </div>
-                                    </div>
                                     <div>
                                         <label className="text-slate-400 font-medium text-xs uppercase tracking-wider">Descrição</label>
                                         <p className="text-slate-600 leading-relaxed bg-white p-3 rounded border border-slate-200 mt-1 max-h-40 overflow-y-auto">
@@ -486,12 +473,33 @@ const NaoConformidades: React.FC = () => {
                                     </div>
                                 )}
                             </div>
-                        </div>
 
+                            {/* Evidence Section - ADDED */}
+                            {selectedOcorrencia.evidencias && selectedOcorrencia.evidencias.length > 0 && (
+                                <div className="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                                    <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                        <ImageIcon size={18} className="text-blue-600" />
+                                        Evidências Visuais
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {selectedOcorrencia.evidencias.map((img, idx) => (
+                                            <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-slate-200 bg-black relative group">
+                                                <img
+                                                    src={img}
+                                                    alt={`Evidência ${idx + 1}`}
+                                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                                    onClick={() => window.open(img, '_blank')}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Right Column: 5 Whys Methodology */}
                         <div className="lg:col-span-2">
-                            <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+                            <div className="bg-blue-50/50 p-4 md:p-6 rounded-xl border border-blue-100">
                                 <div className="mb-6">
                                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold font-serif">5</div>
@@ -519,7 +527,7 @@ const NaoConformidades: React.FC = () => {
                                                     {num}º Por Que?
                                                 </label>
                                                 <input
-                                                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 shadow-sm"
+                                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 shadow-sm text-base"
                                                     placeholder={num === 1 ? "Por que o problema aconteceu?" : "Por que a causa anterior aconteceu?"}
                                                     value={(fiveWhys as any)[`pq${num}`]}
                                                     onChange={e => setFiveWhys({ ...fiveWhys, [`pq${num}`]: e.target.value })}
