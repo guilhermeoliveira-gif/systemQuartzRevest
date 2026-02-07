@@ -108,55 +108,105 @@ const MPCadastro: React.FC = () => {
         </button>
       </div>
 
-      {/* Table Section */}
+      {/* Responsive Layout */}
       <div className="bg-white border border-neutral-700 rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          {isLoading ? (
-            <div className="p-8 space-y-4">
-              <div className="text-center text-gray-500">Carregando dados do servidor...</div>
-            </div>
-          ) : materias.length === 0 ? (
-            <div className="p-12 text-center text-neutral-500">
-              <Package size={48} className="mx-auto mb-4 opacity-20" />
-              <p>Nenhuma matéria-prima cadastrada.</p>
-              <p>Clique em "Nova Matéria-Prima" para começar.</p>
-            </div>
-          ) : (
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-neutral-700">
-                <tr>
-                  <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Nome</th>
-                  <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Unidade</th>
-                  <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Custo Unitário</th>
-                  <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Min. Segurança</th>
-                  <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Qtd. Atual</th>
-                  <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-200">
-                {materias.map((mp) => (
-                  <tr key={mp.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-neutral-900">{mp.nome}</td>
-                    <td className="px-6 py-4 text-sm text-neutral-600">{mp.unidade_medida}</td>
-                    <td className="px-6 py-4 text-sm text-neutral-600">R$ {mp.custo_unitario?.toFixed(2)}</td>
-                    <td className="px-6 py-4 text-sm text-neutral-600">{mp.minimo_seguranca || 0}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-neutral-900">{mp.quantidade_atual}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => handleEdit(mp)} className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
-                          <Edit2 size={16} />
-                        </button>
-                        <button onClick={() => handleDelete(mp.id)} className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+        {isLoading ? (
+          <div className="p-8 space-y-4">
+            <div className="text-center text-gray-500">Carregando dados do servidor...</div>
+          </div>
+        ) : materias.length === 0 ? (
+          <div className="p-12 text-center text-neutral-500">
+            <Package size={48} className="mx-auto mb-4 opacity-20" />
+            <p>Nenhuma matéria-prima cadastrada.</p>
+            <p>Clique em "Nova Matéria-Prima" para começar.</p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table (Hidden on Mobile) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-neutral-700">
+                  <tr>
+                    <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Nome</th>
+                    <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Unidade</th>
+                    <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Custo Unitário</th>
+                    <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Min. Segurança</th>
+                    <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Qtd. Atual</th>
+                    <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase text-right">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody className="divide-y divide-neutral-200">
+                  {materias.map((mp) => (
+                    <tr key={mp.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-medium text-neutral-900">{mp.nome}</td>
+                      <td className="px-6 py-4 text-sm text-neutral-600">{mp.unidade_medida}</td>
+                      <td className="px-6 py-4 text-sm text-neutral-600">R$ {mp.custo_unitario?.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-neutral-600">{mp.minimo_seguranca || 0}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-neutral-900">{mp.quantidade_atual}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => handleEdit(mp)} className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
+                            <Edit2 size={16} />
+                          </button>
+                          <button onClick={() => handleDelete(mp.id)} className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards (Visible only on Mobile) */}
+            <div className="md:hidden grid gap-4 p-4 bg-slate-50">
+              {materias.map((mp) => (
+                <div key={mp.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-lg">{mp.nome}</h3>
+                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded mt-1 inline-block font-mono">
+                        UN: {mp.unidade_medida}
+                      </span>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${mp.quantidade_atual < (mp.minimo_seguranca || 0) ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-green-100 text-green-700'}`}>
+                      {mp.quantidade_atual}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm text-slate-600 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Custo Unit.</span>
+                      <span className="font-medium text-slate-900">R$ {mp.custo_unitario?.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Mínimo</span>
+                      <span className="font-medium text-slate-900">{mp.minimo_seguranca || 0}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 border-t border-slate-100 pt-3">
+                    <button
+                      onClick={() => handleEdit(mp)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-sm hover:bg-blue-100 transition-colors"
+                    >
+                      <Edit2 size={16} />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(mp.id)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 font-bold rounded-lg text-sm hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Dialog / Modal */}
