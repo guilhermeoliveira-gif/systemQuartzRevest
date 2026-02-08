@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { store } from '../services/store';
 import { MecanicaInsumo } from '../types';
-import { Plus, Search, Wrench, Package, ArrowUp, ArrowDown, Trash2, MapPin, AlertCircle, X, Settings as MachineIcon } from 'lucide-react';
+import { Plus, Search, Wrench, Package, ArrowUp, ArrowDown, Trash2, MapPin, AlertCircle, X, Settings as MachineIcon, Settings as SettingsIcon, CheckCircle2 } from 'lucide-react';
 import { manutencaoService } from '../services/manutencaoService';
 import { Maquina } from '../types_manutencao';
 
@@ -13,6 +13,11 @@ const EstoquePecas: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [customCategoryMode, setCustomCategoryMode] = useState(false);
     const [maquinas, setMaquinas] = useState<Maquina[]>([]);
+
+    // Category Manager State
+    const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState<string | null>(null);
+    const [newCategoryName, setNewCategoryName] = useState('');
 
     // Dynamic Categories
     const availableCategories = React.useMemo(() => {
@@ -186,6 +191,13 @@ const EstoquePecas: React.FC = () => {
                     </h1>
                     <p className="text-slate-500">Gerenciamento de manutenção e almoxarifado</p>
                 </div>
+                <button
+                    onClick={() => setIsCategoryManagerOpen(true)}
+                    className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
+                    title="Gerenciar Categorias"
+                >
+                    <SettingsIcon size={20} />
+                </button>
                 <button
                     onClick={() => setIsFormOpen(true)}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
@@ -607,6 +619,100 @@ const EstoquePecas: React.FC = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Category Manager Modal */}
+            {isCategoryManagerOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCategoryManagerOpen(false)} />
+                    <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-md animate-in zoom-in-95">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800">
+                                <Package size={24} className="text-blue-600" /> Gerenciar Categorias
+                            </h3>
+                            <button onClick={() => setIsCategoryManagerOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+                        </div>
+
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                            {availableCategories.map(cat => {
+                                const count = pecas.filter(p => p.categoria === cat).length;
+                                const isEditing = editingCategory === cat;
+
+                                return (
+                                    <div key={cat} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                        {isEditing ? (
+                                            <div className="flex-1 flex items-center gap-2">
+                                                <input
+                                                    autoFocus
+                                                    className="flex-1 px-2 py-1 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                                    value={newCategoryName}
+                                                    onChange={e => setNewCategoryName(e.target.value.toUpperCase())}
+                                                    placeholder="NOVO NOME"
+                                                />
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!newCategoryName.trim() || newCategoryName === cat) {
+                                                            setEditingCategory(null);
+                                                            return;
+                                                        }
+                                                        try {
+                                                            await store.renameCategoria(cat, newCategoryName);
+                                                            showFeedback('success', 'Categoria renomeada!');
+                                                            setEditingCategory(null);
+                                                            loadData();
+                                                        } catch (e) {
+                                                            showFeedback('error', 'Erro ao renomear.');
+                                                        }
+                                                    }}
+                                                    className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                                >
+                                                    <CheckCircle2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setEditingCategory(null)}
+                                                    className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
+                                                        {cat.substring(0, 2)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-slate-800 text-sm">{cat}</p>
+                                                        <p className="text-[10px] text-slate-500 font-bold uppercase">{count} itens vinculados</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingCategory(cat);
+                                                        setNewCategoryName(cat);
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                    title="Editar nome"
+                                                >
+                                                    <Wrench size={16} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+                            <button
+                                onClick={() => setIsCategoryManagerOpen(false)}
+                                className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200"
+                            >
+                                Fechar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -175,6 +175,23 @@ class StoreService {
         }
     }
 
+    // --- Gerenciamento de Categorias (Batch Operations) ---
+    public async renameCategoria(oldName: string, newName: string): Promise<void> {
+        const { error } = await supabase
+            .from('mecanica_insumo')
+            .update({ categoria: newName })
+            .eq('categoria', oldName);
+        if (error) throw error;
+    }
+
+    public async migrateCategoriaItems(oldCategory: string, newCategory: string): Promise<void> {
+        const { error } = await supabase
+            .from('mecanica_insumo')
+            .update({ categoria: newCategory })
+            .eq('categoria', oldCategory);
+        if (error) throw error;
+    }
+
     public async updatePecaInsumoStock(id: string, quantityToAdd: number): Promise<void> {
         // Usar RPC ou lógica fetch-update. Aqui faremos fetch-update simples.
         const { data: item } = await supabase.from('mecanica_insumo').select('quantidade_atual').eq('id', id).single();
