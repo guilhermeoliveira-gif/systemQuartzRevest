@@ -7,7 +7,7 @@ import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useAuth } from '../contexts/AuthContext';
-import { Cpu, Search } from 'lucide-react';
+import { Cpu, Search, Menu } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
     const { signOut, loading } = useAuth();
@@ -36,11 +36,19 @@ const MainLayout: React.FC = () => {
         <div className="min-h-screen bg-slate-50 text-neutral-900 flex flex-col md:flex-row">
             {/* Mobile Header */}
             <header className="md:hidden bg-white text-slate-900 p-4 flex justify-between items-center sticky top-0 z-50 border-b border-slate-200 shadow-sm">
-                <div className="flex items-center gap-2">
-                    <div className="bg-blue-600 p-1.5 rounded-lg text-white">
-                        <Cpu size={20} />
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={toggleSidebar}
+                        className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg active:scale-95 transition-transform"
+                    >
+                        <Menu size={24} />
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <div className="bg-blue-600 p-1.5 rounded-lg text-white">
+                            <Cpu size={20} />
+                        </div>
+                        <span className="text-lg font-black tracking-tighter uppercase">QuartzRevest</span>
                     </div>
-                    <span className="text-lg font-black tracking-tighter uppercase">QuartzRevest</span>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
@@ -56,16 +64,16 @@ const MainLayout: React.FC = () => {
             {/* Sidebar Overlay for Mobile */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+                    className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm animate-fade-in"
                     onClick={toggleSidebar}
                 />
             )}
 
-            {/* Sidebar Navigation - Desktop Only */}
+            {/* Sidebar Navigation */}
             <aside className={`
-                fixed md:relative z-50 w-64 h-full bg-slate-900 text-white flex-shrink-0 transition-transform duration-300
+                fixed md:relative z-50 w-72 md:w-64 h-full bg-slate-900 text-white flex-shrink-0 transition-transform duration-300 ease-spring
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-                hidden md:block shadow-xl border-r border-slate-800
+                top-0 left-0 shadow-2xl md:shadow-xl border-r border-slate-800
             `}>
                 <Sidebar onLogout={handleLogout} onCloseSidebar={() => setIsSidebarOpen(false)} />
             </aside>

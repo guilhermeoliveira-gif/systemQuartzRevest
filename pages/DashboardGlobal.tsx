@@ -31,44 +31,66 @@ const DashboardGlobal: React.FC = () => {
         try {
             setLoading(true);
 
+            // Using Promise.allSettled to prevent one failure from breaking everything
+            const [ncsResult, projetosResult, tarefasResult, estoqueResult] = await Promise.allSettled([
+                supabase.from('nao_conformidade').select('status, severidade'),
+                supabase.from('projeto').select('status, data_fim_prevista'),
+                supabase.from('tarefas_unificadas').select('status, prazo'),
+                supabase.from('alerta_estoque').select('nivel_alerta').is('resolved_at', null)
+            ]);
+
             // NCs
-            const { data: ncs } = await supabase.from('nao_conformidade').select('status, severidade');
-            const ncsStats = {
-                total: ncs?.length || 0,
-                abertas: ncs?.filter(nc => nc.status === 'ABERTA').length || 0,
-                criticas: ncs?.filter(nc => nc.severidade === 'CRITICA').length || 0
-            };
+            let ncsStats = { total: 0, abertas: 0, criticas: 0 };
+            if (ncsResult.status === 'fulfilled' && ncsResult.value.data) {
+                const ncs = ncsResult.value.data;
+                ncsStats = {
+                    total: ncs.length,
+                    abertas: ncs.filter(nc => nc.status === 'ABERTA').length,
+                    criticas: ncs.filter(nc => nc.severidade === 'CRITICA').length
+                };
+            }
 
             // Projetos
-            const { data: projetos } = await supabase.from('projeto').select('status, data_fim_prevista');
-            const projetosStats = {
-                total: projetos?.length || 0,
-                emAndamento: projetos?.filter(p => p.status === 'EM_ANDAMENTO').length || 0,
-                atrasados: projetos?.filter(p =>
-                    p.status !== 'CONCLUIDO' && new Date(p.data_fim_prevista) < new Date()
-                ).length || 0
-            };
+            let projetosStats = { total: 0, emAndamento: 0, atrasados: 0 };
+            if (projetosResult.status === 'fulfilled' && projetosResult.value.data) {
+                const projetos = projetosResult.value.data;
+                projetosStats = {
+                    total: projetos.length,
+                    emAndamento: projetos.filter(p => p.status === 'EM_ANDAMENTO').length,
+                    atrasados: projetos.filter(p =>
+                        p.status !== 'CONCLUIDO' && new Date(p.data_fim_prevista) < new Date()
+                    ).length
+                };
+            }
 
             // Tarefas
-            const { data: tarefas } = await supabase.from('tarefas_unificadas').select('status, prazo');
-            const tarefasStats = {
-                total: tarefas?.length || 0,
-                pendentes: tarefas?.filter(t => t.status !== 'CONCLUIDA').length || 0,
-                atrasadas: tarefas?.filter(t =>
-                    t.status !== 'CONCLUIDA' && new Date(t.prazo) < new Date()
-                ).length || 0
-            };
+            let tarefasStats = { total: 0, pendentes: 0, atrasadas: 0 };
+            if (tarefasResult.status === 'fulfilled' && tarefasResult.value.data) {
+                const tarefas = tarefasResult.value.data;
+                tarefasStats = {
+                    total: tarefas.length,
+                    pendentes: tarefas.filter(t => t.status !== 'CONCLUIDA').length,
+                    atrasadas: tarefas.filter(t =>
+                        t.status !== 'CONCLUIDA' && new Date(t.prazo) < new Date()
+                    ).length
+                };
+            }
 
             // Estoque
-            const { data: alertas } = await supabase.from('alerta_estoque').select('nivel_alerta').is('resolved_at', null);
-            const estoqueStats = {
-                alertas: alertas?.length || 0,
-                criticos: alertas?.filter(a => a.nivel_alerta === 'CRITICO').length || 0
-            };
+            let estoqueStats = { alertas: 0, criticos: 0 };
+            if (estoqueResult.status === 'fulfilled' && estoqueResult.value.data) {
+                const alertas = estoqueResult.value.data;
+                estoqueStats = {
+                    alertas: alertas.length,
+                    criticos: alertas.filter(a => a.nivel_alerta === 'CRITICO').length
+                };
+            }
 
             setStats({ ncs: ncsStats, projetos: projetosStats, tarefas: tarefasStats, estoque: estoqueStats });
-        } catch (error) {
-            console.error('Erro ao carregar estatísticas:', error);
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
         } finally {
             setLoading(false);
         }
