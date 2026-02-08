@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield, FolderKanban, Wrench } from 'lucide-react';
+import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield, FolderKanban, Wrench, Truck } from 'lucide-react';
 
 interface ModuleSelectorProps {
   onLogout: () => void;
@@ -116,6 +116,18 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
       iconColor: 'text-orange-600',
       active: true,
       path: '/manutencao'
+    },
+    {
+      id: 'frotas',
+      name: 'Gestão de Frotas',
+      description: 'Controle de veículos, abastecimentos, manutenção e pneus.',
+      icon: Truck,
+      color: 'from-cyan-600 to-cyan-700',
+      borderColor: 'border-cyan-200',
+      iconBg: 'bg-cyan-100',
+      iconColor: 'text-cyan-600',
+      active: true,
+      path: '/frotas'
     },
     {
       id: 'analytics',

@@ -44,6 +44,10 @@ import Maquinas from './pages/Manutencao/Maquinas';
 import MaquinaDetalhes from './pages/Manutencao/MaquinaDetalhes';
 import OrdensServico from './pages/Manutencao/OrdensServico';
 
+// Frotas Module
+import GestaoFrotas from './pages/Frotas/GestaoFrotas';
+import VeiculoDetalhes from './pages/Frotas/VeiculoDetalhes';
+
 const App: React.FC = () => {
   return (
     <Router>
@@ -105,6 +109,9 @@ const App: React.FC = () => {
                 <Route path="/manutencao/maquinas" element={<Maquinas />} />
                 <Route path="/manutencao/maquinas/:id" element={<MaquinaDetalhes />} />
                 <Route path="/manutencao/os" element={<OrdensServico />} />
+                {/* Frotas Module */}
+                <Route path="/frotas" element={<GestaoFrotas />} />
+                <Route path="/frotas/:id" element={<VeiculoDetalhes />} />
               </Route>
             </Route>
 

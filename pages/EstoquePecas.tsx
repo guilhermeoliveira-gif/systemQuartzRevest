@@ -19,6 +19,11 @@ const EstoquePecas: React.FC = () => {
     const [editingCategory, setEditingCategory] = useState<string | null>(null);
     const [newCategoryName, setNewCategoryName] = useState('');
 
+    // Quick Add Machine State
+    const [isMachineModalOpen, setIsMachineModalOpen] = useState(false);
+    const [newMachineName, setNewMachineName] = useState('');
+    const [newIntervaloPreventiva, setNewIntervaloPreventiva] = useState(500);
+
     // Dynamic Categories
     const availableCategories = React.useMemo(() => {
         const cats = new Set(pecas.map(p => p.categoria));
@@ -264,26 +269,36 @@ const EstoquePecas: React.FC = () => {
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-slate-700 mb-2">Máquinas que utilizam esta peça</label>
                             <div className="space-y-3">
-                                <select
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                                    value=""
-                                    onChange={(e) => {
-                                        const selectedId = e.target.value;
-                                        if (!selectedId) return;
-                                        const currentIds = newItem.maquina_ids || [];
-                                        if (!currentIds.includes(selectedId)) {
-                                            setNewItem({ ...newItem, maquina_ids: [...currentIds, selectedId] });
-                                        }
-                                    }}
-                                >
-                                    <option value="">+ Adicionar vínculo com máquina...</option>
-                                    {maquinas
-                                        .filter(m => !newItem.maquina_ids?.includes(m.id))
-                                        .sort((a, b) => a.nome.localeCompare(b.nome))
-                                        .map(m => (
-                                            <option key={m.id} value={m.id}>{m.nome}</option>
-                                        ))}
-                                </select>
+                                <div className="flex gap-2">
+                                    <select
+                                        className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                                        value=""
+                                        onChange={(e) => {
+                                            const selectedId = e.target.value;
+                                            if (!selectedId) return;
+                                            const currentIds = newItem.maquina_ids || [];
+                                            if (!currentIds.includes(selectedId)) {
+                                                setNewItem({ ...newItem, maquina_ids: [...currentIds, selectedId] });
+                                            }
+                                        }}
+                                    >
+                                        <option value="">+ Adicionar vínculo com máquina...</option>
+                                        {maquinas
+                                            .filter(m => !newItem.maquina_ids?.includes(m.id))
+                                            .sort((a, b) => a.nome.localeCompare(b.nome))
+                                            .map(m => (
+                                                <option key={m.id} value={m.id}>{m.nome}</option>
+                                            ))}
+                                    </select>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsMachineModalOpen(true)}
+                                        className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-blue-600 rounded-lg border border-slate-200 transition-colors"
+                                        title="Cadastrar Nova Máquina Rapidamente"
+                                    >
+                                        <Plus size={20} />
+                                    </button>
+                                </div>
 
                                 <div className="flex flex-wrap gap-2 min-h-[30px] p-2 bg-slate-50 rounded-lg border border-slate-100">
                                     {newItem.maquina_ids?.map(id => {
@@ -712,6 +727,103 @@ const EstoquePecas: React.FC = () => {
                             >
                                 Fechar
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Quick Add Machine Modal */}
+            {isMachineModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMachineModalOpen(false)} />
+                    <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in-95">
+                        <h3 className="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2">
+                            <MachineIcon className="text-blue-600" /> Nova Máquina
+                        </h3>
+                        <p className="text-sm text-slate-500 mb-4">
+                            Cadastre uma nova máquina rapidamente para vincular a esta peça. Você poderá editar detalhes completos depois no módulo de Manutenção.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Máquina</label>
+                                <input
+                                    autoFocus
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: Extrusora 02"
+                                    value={newMachineName}
+                                    onChange={e => setNewMachineName(e.target.value)}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Intervalo de Preventiva (Horas)</label>
+                                <input
+                                    type="number"
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Ex: 500"
+                                    value={newIntervaloPreventiva}
+                                    onChange={e => setNewIntervaloPreventiva(Number(e.target.value))}
+                                />
+                                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800 space-y-1">
+                                    <p className="font-bold flex items-center gap-1"><AlertCircle size={10} /> Referência de Horas (Turno 24h + Sáb 8h):</p>
+                                    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                                        <span>• 1 Semana: <strong>128h</strong></span>
+                                        <span>• 1 Mês (~4 sem): <strong>512h</strong></span>
+                                        <span>• 2 Meses: <strong>1.024h</strong></span>
+                                        <span>• 3 Meses: <strong>1.536h</strong></span>
+                                        <span>• 6 Meses: <strong>3.072h</strong></span>
+                                        <span>• 1 Ano: <strong>6.144h</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 justify-end pt-2">
+                                <button
+                                    onClick={() => {
+                                        setIsMachineModalOpen(false);
+                                        setNewMachineName('');
+                                    }}
+                                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (!newMachineName.trim()) return;
+                                        try {
+                                            const newMaq = await manutencaoService.createMaquina({
+                                                nome: newMachineName,
+                                                status: 'Operacional',
+                                                horas_uso_total: 0,
+                                                intervalo_manutencao_horas: newIntervaloPreventiva,
+                                                ultima_manutencao_horas: 0,
+                                                quantidade_manutencoes: 0
+                                            });
+
+                                            // Update local list
+                                            setMaquinas(prev => [...prev, newMaq]);
+
+                                            // Auto-select the new machine
+                                            setNewItem(prev => ({
+                                                ...prev,
+                                                maquina_ids: [...(prev.maquina_ids || []), newMaq.id]
+                                            }));
+
+                                            showFeedback('success', 'Máquina criada e vinculada!');
+                                            setIsMachineModalOpen(false);
+                                            setNewMachineName('');
+                                        } catch (e) {
+                                            console.error(e);
+                                            showFeedback('error', 'Erro ao criar máquina.');
+                                        }
+                                    }}
+                                    disabled={!newMachineName.trim()}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    Salvar e Vincular
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
