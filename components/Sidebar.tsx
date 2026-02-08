@@ -5,7 +5,7 @@ import Logo from './Logo';
 import { APP_VERSION } from '../src/version';
 import {
   LayoutDashboard, Package, Box, FlaskConical, AlertTriangle,
-  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo, Shield, Users, Key, FolderKanban
+  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo, Shield, Users, Key, FolderKanban, Truck, Fuel
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -64,6 +64,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     { name: 'Ordens de Serviço', path: '/manutencao/os', icon: ClipboardCheck },
   ];
 
+  const fleetNavItems = [
+    { name: 'Dashboard', path: '/frotas', icon: LayoutDashboard },
+    { name: 'Veículos', path: '/frotas/veiculos', icon: Truck },
+    { name: 'Abastecimentos', path: '/frotas/abastecimentos', icon: Fuel },
+    { name: 'Manutenções', path: '/frotas/manutencoes', icon: Wrench },
+  ];
+
   const generalNavItems = [
     { name: 'Configurações', path: '/configuracoes', icon: Settings },
   ];
@@ -96,6 +103,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     navItems = maintenanceNavItems;
     moduleName = 'Manutenção';
     moduleColor = 'bg-orange-600';
+  } else if (currentModule === 'frotas') {
+    navItems = fleetNavItems;
+    moduleName = 'Frotas';
+    moduleColor = 'bg-cyan-600';
   }
 
   return (

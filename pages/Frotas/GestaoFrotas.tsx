@@ -18,7 +18,7 @@ const GestaoFrotas: React.FC = () => {
         tipo: 'TRUCK',
         ano: new Date().getFullYear(),
         km_atual: 0,
-        status: 'ATIVO'
+        status: 'ATIVO' as StatusVeiculo
     });
 
     useEffect(() => {
@@ -43,11 +43,12 @@ const GestaoFrotas: React.FC = () => {
             setIsModalOpen(false);
             setNewItem({
                 placa: '', marca: '', modelo: '', tipo: 'TRUCK',
-                ano: new Date().getFullYear(), km_atual: 0, status: 'ATIVO'
+                ano: new Date().getFullYear(), km_atual: 0, status: 'ATIVO' as StatusVeiculo
             });
             loadVeiculos();
-        } catch (error) {
-            alert('Erro ao salvar veículo');
+        } catch (error: any) {
+            console.error(error);
+            alert(`Erro ao salvar veículo: ${error.message || 'Erro desconhecido'}`);
         }
     };
 

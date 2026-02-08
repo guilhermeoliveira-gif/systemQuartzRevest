@@ -1,6 +1,6 @@
 -- Tabela de Veículos
 CREATE TABLE IF NOT EXISTS frota_veiculos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     placa VARCHAR(20) NOT NULL UNIQUE,
     marca VARCHAR(50),
     modelo VARCHAR(50) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS frota_veiculos (
 
 -- Tabela de Abastecimentos
 CREATE TABLE IF NOT EXISTS frota_abastecimentos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     veiculo_id UUID REFERENCES frota_veiculos(id) ON DELETE CASCADE,
     data TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
     km INTEGER NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS frota_abastecimentos (
 
 -- Tabela de Manutenções da Frota
 CREATE TABLE IF NOT EXISTS frota_manutencoes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     veiculo_id UUID REFERENCES frota_veiculos(id) ON DELETE CASCADE,
     data TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
     km INTEGER NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS frota_manutencoes (
 
 -- Tabela de Outros Serviços (Lavagem, Calibragem, etc)
 CREATE TABLE IF NOT EXISTS frota_servicos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     veiculo_id UUID REFERENCES frota_veiculos(id) ON DELETE CASCADE,
     data TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
     km INTEGER NOT NULL,

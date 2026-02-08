@@ -62,7 +62,17 @@ export const frotaService = {
             .from('frota_abastecimentos')
             .select('*')
             .eq('veiculo_id', veiculoId)
-            .order('data', { ascending: false }); // Mais recentes primeiro
+            .order('data', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    async getAllAbastecimentos(): Promise<(Abastecimento & { veiculo?: Veiculo })[]> {
+        const { data, error } = await supabase
+            .from('frota_abastecimentos')
+            .select('*, veiculo:frota_veiculos(*)')
+            .order('data', { ascending: false });
 
         if (error) throw error;
         return data || [];
@@ -110,6 +120,16 @@ export const frotaService = {
             .from('frota_manutencoes')
             .select('*')
             .eq('veiculo_id', veiculoId)
+            .order('data', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    async getAllManutencoes(): Promise<(Manutencao & { veiculo?: Veiculo })[]> {
+        const { data, error } = await supabase
+            .from('frota_manutencoes')
+            .select('*, veiculo:frota_veiculos(*)')
             .order('data', { ascending: false });
 
         if (error) throw error;
