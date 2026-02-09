@@ -27,56 +27,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        let mounted = true;
+    const isMounted = React.useRef(true);
 
+    useEffect(() => {
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
+
+    useEffect(() => {
         // Safety timeout to prevent infinite loading
         const safetyTimeout = setTimeout(() => {
-            if (mounted) {
+            if (isMounted.current) {
                 console.warn('Authentication check timed out');
                 setLoading(false);
             }
         }, 5000);
 
-        // 1. Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (!mounted) return;
+        const initAuth = async () => {
+            try {
+                // 1. Check active session
+                const { data: { session }, error } = await supabase.auth.getSession();
 
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchProfile(session.user.id);
-            } else {
-                setLoading(false);
+                if (error) throw error;
+                if (!isMounted.current) return;
+
+                setSession(session);
+                setUser(session?.user ?? null);
+
+                if (session?.user) {
+                    await fetchUserProfile(session.user.id);
+                } else {
+                    setLoading(false);
+                }
+            } catch (err: any) {
+                // Ignore abort errors
+                if (err.name === 'AbortError' || err.message?.includes('aborted')) return;
+
+                console.error('Error checking session:', err);
+                if (isMounted.current) setLoading(false);
             }
-        }).catch(err => {
-            console.error('Error checking session:', err);
-            if (mounted) setLoading(false);
-        });
+        };
+
+        initAuth();
 
         // 2. Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (!mounted) return;
+            if (!isMounted.current) return;
 
             setSession(session);
             setUser(session?.user ?? null);
 
             if (session?.user) {
-                await fetchProfile(session.user.id);
+                await fetchUserProfile(session.user.id);
             } else {
                 setProfile(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => {
-            mounted = false;
             clearTimeout(safetyTimeout);
             subscription.unsubscribe();
         };
     }, []);
 
-    const fetchProfile = async (userId: string) => {
+    const fetchUserProfile = async (userId: string) => {
         try {
             const { data, error } = await supabase
                 .from('usuarios')
@@ -84,9 +100,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .eq('id', userId)
                 .single();
 
+            if (!isMounted.current) return;
+
             if (error) {
-                console.error('Erro ao buscar perfil:', error);
-                // Fallback if profile doesn't exist yet (e.g. trigger failed or delay)
+                // Ignore minor errors or specific aborted requests
+                if (error.code !== 'PGRST116') { // PGRST116 is "Row not found" - expected for new users
+                    console.error('Erro ao buscar perfil:', error);
+                }
+
+                // Fallback if profile doesn't exist yet
                 setProfile({
                     id: userId,
                     email: user?.email || '',
@@ -95,10 +117,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
                 setProfile(data);
             }
-        } catch (error) {
+        } catch (error: any) {
+            if (!isMounted.current) return;
             console.error('Erro inesperado ao buscar perfil:', error);
         } finally {
-            setLoading(false);
+            if (isMounted.current) setLoading(false);
         }
     };
 
