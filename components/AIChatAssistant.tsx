@@ -28,7 +28,7 @@ const AIChatAssistant: React.FC = () => {
     try {
       console.log("Enviando mensagem para n8n:", userMsg);
 
-      const response = await fetch("https://n8n.gestaoquartzrevest.com.br/webhook-test/57aff57d-e43c-41cf-87c4-7053c6924c84", {
+      const response = await fetch("https://n8n.gestaoquartzrevest.com.br/webhook/57aff57d-e43c-41cf-87c4-7053c6924c84", {
         method: "POST",
         mode: "cors", // Explicitly set CORS mode
         headers: {
