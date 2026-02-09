@@ -26,13 +26,19 @@ const AIChatAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
+      console.log("Enviando mensagem para n8n:", userMsg);
+
       const response = await fetch("https://n8n.gestaoquartzrevest.com.br/webhook-test/57aff57d-e43c-41cf-87c4-7053c6924c84", {
         method: "POST",
+        mode: "cors", // Explicitly set CORS mode
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Accept": "application/json, text/plain, */*"
         },
         body: JSON.stringify({ chatInput: userMsg })
       });
+
+      console.log("Resposta recebida:", response.status, response.statusText);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -44,18 +50,31 @@ const AIChatAssistant: React.FC = () => {
 
       if (contentType && contentType.indexOf("application/json") !== -1) {
         const data = await response.json();
+        console.log("Dados JSON recebidos:", data);
         // Adjust this based on actual n8n response structure. 
         // Assuming it might return { output: "..." } or similar, or just the text
-        botResponse = data.output || data.message || data.text || JSON.stringify(data);
+        botResponse = data.output || data.message || data.text || data.response || JSON.stringify(data);
       } else {
-        botResponse = await response.text();
+        const textData = await response.text();
+        console.log("Texto recebido:", textData);
+        botResponse = textData || "Resposta vazia do servidor.";
       }
 
       setMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
 
     } catch (error) {
       console.error("AI Assistant Error:", error);
-      setMessages(prev => [...prev, { role: 'bot', content: "Desculpe, não consegui conectar ao servidor de inteligência no momento." }]);
+
+      // More detailed error message
+      let errorMessage = "Desculpe, não consegui conectar ao servidor de inteligência no momento.";
+
+      if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
+        errorMessage = "Erro de conexão: Verifique se o servidor n8n está acessível e configurado para aceitar requisições CORS.";
+      } else if (error instanceof Error) {
+        errorMessage = `Erro: ${error.message}`;
+      }
+
+      setMessages(prev => [...prev, { role: 'bot', content: errorMessage }]);
     } finally {
       setIsLoading(false);
     }
