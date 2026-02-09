@@ -26,21 +26,36 @@ const AIChatAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: userMsg,
-        config: {
-          systemInstruction: `Você é o Assistente QuartzRevest, uma IA especializada no módulo de estoque do sistema QuartzRevest 4.0.
-          Seu objetivo é ajudar gestores a manter a acuracidade do estoque, prever necessidades de compra de matéria-prima e reduzir desperdícios na produção de revestimentos.
-          Responda de forma técnica, amigável e focada em resultados industriais.`,
-          temperature: 0.7,
+      const response = await fetch("https://n8n.gestaoquartzrevest.com.br/webhook-test/57aff57d-e43c-41cf-87c4-7053c6924c84", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
         },
+        body: JSON.stringify({ chatInput: userMsg })
       });
 
-      setMessages(prev => [...prev, { role: 'bot', content: response.text || "Erro de conexão com o cérebro da QuartzRevest." }]);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Check if response is JSON or text
+      const contentType = response.headers.get("content-type");
+      let botResponse = "Recebi sua mensagem, mas não consegui processar a resposta.";
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await response.json();
+        // Adjust this based on actual n8n response structure. 
+        // Assuming it might return { output: "..." } or similar, or just the text
+        botResponse = data.output || data.message || data.text || JSON.stringify(data);
+      } else {
+        botResponse = await response.text();
+      }
+
+      setMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
+
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'bot', content: "Ocorreu um erro ao conectar com o serviço de IA." }]);
+      console.error("AI Assistant Error:", error);
+      setMessages(prev => [...prev, { role: 'bot', content: "Desculpe, não consegui conectar ao servidor de inteligência no momento." }]);
     } finally {
       setIsLoading(false);
     }
