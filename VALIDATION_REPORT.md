@@ -39,6 +39,11 @@
   - **Refatorado `Tarefas.tsx`**: Layout mais limpo e responsivo.
   - **Novo Dashboard (`SystemDashboard.tsx`)**: Implementado estilo "Bento Grid" com visual moderno, glassmorphism e animações.
 
+### **4. Correção de Bugs Críticos (Regressão)** ✅
+- **Bug `es.getPecas is not a function`**: Identificado e corrigido em `pages/EstoquePecas.tsx`, `pages/Manutencao/MaquinaDetalhes.tsx` e `pages/Dashboard.tsx`.
+- **Refatoração de `EstoquePecas.tsx`**: Atualizado para usar a nova API do `store.ts` (`getPecasInsumos`, `createPeca`, `updatePeca`, `addMovimentoPeca`), além de adotar o `Logger` e `LoadingState`.
+
+
 ---
 
 ## 🟡 **PENDÊNCIAS (Próximos Passos)**

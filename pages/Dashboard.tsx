@@ -1,5 +1,6 @@
 import React from 'react';
 import { store } from '../services/store';
+import { logger } from '../utils/logger';
 import { Package, Box, AlertCircle, Wrench, Download, ShoppingCart, Printer, Clock } from 'lucide-react';
 import { Alerta, MecanicaInsumo } from '../types';
 import { jsPDF } from 'jspdf';
@@ -37,7 +38,7 @@ const Dashboard: React.FC = () => {
       const [mps, pas, pecasInsumos] = await Promise.all([
         store.getMateriasPrimas(),
         store.getProdutosAcabados(),
-        store.getPecas()
+        store.getPecasInsumos()
       ]);
 
       const totalMP = mps.reduce((acc, curr) => acc + Number(curr.quantidade_atual), 0);
@@ -107,7 +108,7 @@ const Dashboard: React.FC = () => {
       setAlertas(alerts);
       setShoppingList(shopList);
     } catch (error) {
-      console.error(error);
+      logger.error('Erro ao carregar dados do dashboard', error);
     } finally {
       setLoading(false);
     }

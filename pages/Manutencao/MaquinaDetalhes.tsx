@@ -12,6 +12,7 @@ import { Badge, Skeleton } from '../../components/ui/Utility';
 import { Dialog } from '../../components/ui/Dialog';
 import { manutencaoService } from '../../services/manutencaoService';
 import { store } from '../../services/store';
+import { logger } from '../../utils/logger';
 import { Maquina, MaquinaItem, Aprendizado } from '../../types_manutencao';
 import { MecanicaInsumo } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
@@ -39,7 +40,7 @@ const MaquinaDetalhes: React.FC = () => {
 
     useEffect(() => {
         if (isItemOpen) {
-            store.getPecas().then(setPecasEstoque).catch(console.error);
+            store.getPecasInsumos().then(setPecasEstoque).catch(logger.error);
         }
     }, [isItemOpen]);
 
