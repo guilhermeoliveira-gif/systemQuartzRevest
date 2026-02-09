@@ -27,16 +27,16 @@ const DashboardGlobal: React.FC = () => {
         loadStats();
     }, []);
 
-    const loadStats = async () => {
+    const loadStats = async (retryCount = 0) => {
         try {
             setLoading(true);
 
             // Using Promise.allSettled to prevent one failure from breaking everything
             const [ncsResult, projetosResult, tarefasResult, estoqueResult] = await Promise.allSettled([
-                supabase.from('nao_conformidade').select('status, severidade'),
-                supabase.from('projeto').select('status, data_fim_prevista'),
-                supabase.from('tarefas_unificadas').select('status, prazo'),
-                supabase.from('alerta_estoque').select('nivel_alerta').is('resolved_at', null)
+                supabase.from('nao_conformidade').select('status, severidade').abortSignal(AbortSignal.timeout(15000)),
+                supabase.from('projeto').select('status, data_fim_prevista').abortSignal(AbortSignal.timeout(15000)),
+                supabase.from('tarefas_unificadas').select('status, prazo').abortSignal(AbortSignal.timeout(20000)),
+                supabase.from('alerta_estoque').select('nivel_alerta').is('resolved_at', null).abortSignal(AbortSignal.timeout(15000))
             ]);
 
             // NCs
@@ -74,6 +74,8 @@ const DashboardGlobal: React.FC = () => {
                         t.status !== 'CONCLUIDA' && new Date(t.prazo) < new Date()
                     ).length
                 };
+            } else if (tarefasResult.status === 'rejected') {
+                console.warn('Erro ao carregar tarefas:', tarefasResult.reason);
             }
 
             // Estoque
@@ -88,6 +90,13 @@ const DashboardGlobal: React.FC = () => {
 
             setStats({ ncs: ncsStats, projetos: projetosStats, tarefas: tarefasStats, estoque: estoqueStats });
         } catch (error: any) {
+            // Retry em caso de AbortError (máximo 2 tentativas)
+            if (error.name === 'AbortError' && retryCount < 2) {
+                console.warn(`Timeout detectado, tentando novamente... (${retryCount + 1}/2)`);
+                setTimeout(() => loadStats(retryCount + 1), 1000);
+                return;
+            }
+
             if (error.name !== 'AbortError') {
                 console.error('Erro ao carregar estatísticas:', error);
             }
