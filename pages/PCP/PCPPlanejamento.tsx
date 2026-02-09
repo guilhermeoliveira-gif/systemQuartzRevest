@@ -45,7 +45,12 @@ const PCPPlanejamento: React.FC = () => {
                 store.getProdutosAcabados()
             ]);
 
-            setProdutosAcabados(produtos);
+            console.log('PCPPlanejamento - Produtos carregados:', produtos);
+            if (!produtos || produtos.length === 0) {
+                toast.error('Aviso', 'Nenhum Produto Acabado encontrado no estoque. Cadastre produtos no módulo de Estoque primeiro.');
+            }
+
+            setProdutosAcabados(produtos || []);
 
             // Para simplificar, pegamos todos os itens de todos os planos ativos
             const allItens: ItemPlanoProducao[] = [];
@@ -55,7 +60,7 @@ const PCPPlanejamento: React.FC = () => {
             setItens(allItens);
         } catch (error) {
             console.error(error);
-            toast.error('Erro', 'Falha ao carregar ordens de produção.');
+            toast.error('Erro', 'Falha ao carregar dados do PCP.');
         } finally {
             setLoading(false);
         }
@@ -64,7 +69,7 @@ const PCPPlanejamento: React.FC = () => {
     const handleAddProduction = async () => {
         try {
             if (!formData.nome_produto_acabado) {
-                toast.error('Campo Obrigatório', 'Selecione ou digite o nome do produto.');
+                toast.error('Campo Obrigatório', 'Selecione um produto da lista.');
                 return;
             }
 
@@ -239,10 +244,19 @@ const PCPPlanejamento: React.FC = () => {
                             }}
                         >
                             <option value="">Selecione o produto...</option>
-                            {produtosAcabados.map(p => (
-                                <option key={p.id} value={p.id}>{p.nome}</option>
-                            ))}
+                            {produtosAcabados.length > 0 ? (
+                                produtosAcabados.map(p => (
+                                    <option key={p.id} value={p.id}>{p.nome}</option>
+                                ))
+                            ) : (
+                                <option value="" disabled>Nenhum produto cadastrado no estoque</option>
+                            )}
                         </select>
+                        {produtosAcabados.length === 0 && (
+                            <p className="text-[10px] text-red-500 mt-1 font-bold">
+                                * Cadastre produtos acabados no módulo de Estoque para planejar.
+                            </p>
+                        )}
                     </div>
                     <div>
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Quantidade de Misturas</label>
