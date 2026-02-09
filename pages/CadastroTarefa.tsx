@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { projetosService } from '../services/projetosService';
 import { segurancaService } from '../services/segurancaService';
 import { TarefaProjeto, StatusTarefa, Prioridade, Projeto } from '../types_projetos';
-import { Usuario } from '../types_seguranca';
+import { UserSelect } from '../components/UserSelect';
 
 const CadastroTarefa: React.FC = () => {
     const navigate = useNavigate();
@@ -12,7 +12,6 @@ const CadastroTarefa: React.FC = () => {
     const projetoIdParam = searchParams.get('projeto_id');
 
     const [projetos, setProjetos] = useState<Projeto[]>([]);
-    const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [formData, setFormData] = useState<Partial<TarefaProjeto>>({
         projeto_id: projetoIdParam || '',
         titulo: '',
@@ -32,10 +31,9 @@ const CadastroTarefa: React.FC = () => {
         try {
             const [projetosData, usuariosData] = await Promise.all([
                 projetosService.getProjetos(),
-                segurancaService.getUsuarios()
+                projetosService.getProjetos()
             ]);
             setProjetos(projetosData.filter(p => p.status !== 'CONCLUIDO' && p.status !== 'CANCELADO'));
-            setUsuarios(usuariosData.filter(u => u.ativo));
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
         }
@@ -106,16 +104,10 @@ const CadastroTarefa: React.FC = () => {
 
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">Responsável</label>
-                        <select
-                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                        <UserSelect
                             value={formData.responsavel_id}
-                            onChange={(e) => setFormData({ ...formData, responsavel_id: e.target.value })}
-                        >
-                            <option value="">Selecione...</option>
-                            {usuarios.map(u => (
-                                <option key={u.id} value={u.id}>{u.nome}</option>
-                            ))}
-                        </select>
+                            onChange={(value) => setFormData({ ...formData, responsavel_id: value })}
+                        />
                     </div>
 
                     <div>

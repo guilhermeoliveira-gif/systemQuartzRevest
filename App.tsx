@@ -50,6 +50,7 @@ import GestaoFrotas from './pages/Frotas/GestaoFrotas';
 import VeiculoDetalhes from './pages/Frotas/VeiculoDetalhes';
 import FrotaAbastecimentos from './pages/Frotas/FrotaAbastecimentos';
 import FrotaManutencoes from './pages/Frotas/FrotaManutencoes';
+import TestConnection from './pages/TestConnection';
 
 const App: React.FC = () => {
   return (
@@ -118,6 +119,7 @@ const App: React.FC = () => {
                 <Route path="/frotas/abastecimentos" element={<FrotaAbastecimentos />} />
                 <Route path="/frotas/manutencoes" element={<FrotaManutencoes />} />
                 <Route path="/frotas/:id" element={<VeiculoDetalhes />} />
+                <Route path="/test-connection" element={<TestConnection />} />
               </Route>
             </Route>
 

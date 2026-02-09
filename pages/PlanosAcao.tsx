@@ -6,10 +6,13 @@ import {
     MapPin, HelpCircle, DollarSign, Wrench, Activity,
     CheckCircle, XCircle, Save, ArrowLeft, Filter, Trash2, CheckSquare, ListCheck, CheckCircle2
 } from 'lucide-react';
+import { UserSelect } from '../components/UserSelect';
 import { PlanoAcao, Tarefa } from '../types_plano_acao';
 import { qualidadeService } from '../services/qualidadeService';
 import { manutencaoService } from '../services/manutencaoService';
+import { segurancaService } from '../services/segurancaService'; // Added
 import { Maquina } from '../types_manutencao';
+import { Usuario } from '../types_seguranca'; // Added
 import OSModal from '../components/Manutencao/OSModal';
 import { Settings as MachineIcon } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
@@ -29,6 +32,7 @@ const PlanosAcao: React.FC = () => {
     const [currentTasks, setCurrentTasks] = useState<Tarefa[]>([]);
     const [selectedPlanoId, setSelectedPlanoId] = useState<string | null>(null);
     const [maquinas, setMaquinas] = useState<Maquina[]>([]);
+    const [usuarios, setUsuarios] = useState<Usuario[]>([]); // Added for resolving names
     const [isOSModalOpen, setIsOSModalOpen] = useState(false);
     const [taskParaOS, setTaskParaOS] = useState<Tarefa | null>(null);
 
@@ -43,8 +47,6 @@ const PlanosAcao: React.FC = () => {
         maquina_id: ''
     });
 
-    const mockUsers = ['João Silva', 'Maria Oliveira', 'Carlos Supervisor', 'Ana RH', 'Pedro Engenheiro'];
-
     // Form State
     const [formData, setFormData] = useState<Partial<PlanoAcao>>({
         status_acao: 'PENDENTE',
@@ -54,11 +56,14 @@ const PlanosAcao: React.FC = () => {
     const loadPlanosAcao = async () => {
         try {
             setLoading(true);
-            const [data, maquinasData] = await Promise.all([
+            setLoading(true);
+            const [data, maquinasData, usuariosData] = await Promise.all([
                 qualidadeService.getPlanosAcao(),
-                manutencaoService.getMaquinas()
+                manutencaoService.getMaquinas(),
+                segurancaService.getUsuarios()
             ]);
             setMaquinas(maquinasData);
+            setUsuarios(usuariosData);
 
             // Load tasks for each plano
             const planosWithTasks = await Promise.all(
@@ -245,6 +250,12 @@ const PlanosAcao: React.FC = () => {
         }
     };
 
+    const getUserName = (idOrName: string) => {
+        if (!idOrName) return '...';
+        const user = usuarios.find(u => u.id === idOrName);
+        return user ? user.nome : idOrName;
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -342,7 +353,7 @@ const PlanosAcao: React.FC = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-slate-100">
                                     <div className="flex items-center gap-2 text-slate-600">
                                         <User size={16} className="text-slate-400" />
-                                        <span><strong className="text-slate-800">Quem:</strong> {plano.who}</span>
+                                        <span><strong className="text-slate-800">Quem:</strong> {getUserName(plano.who)}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-slate-600">
                                         <Calendar size={16} className="text-slate-400" />
@@ -387,14 +398,13 @@ const PlanosAcao: React.FC = () => {
                                 </div>
                                 <div className="md:col-span-6 lg:col-span-3">
                                     <label className="block text-xs font-bold text-slate-500 mb-1">Responsável</label>
-                                    <select
-                                        className="w-full px-3 py-2 border rounded text-sm"
+                                    <UserSelect
                                         value={newTask.responsavel}
-                                        onChange={e => setNewTask({ ...newTask, responsavel: e.target.value })}
-                                    >
-                                        <option value="">Selecione...</option>
-                                        {mockUsers.map(user => <option key={user} value={user}>{user}</option>)}
-                                    </select>
+                                        onChange={(value) => setNewTask({ ...newTask, responsavel: value })}
+                                        placeholder="Selecione..."
+                                        className="w-full"
+                                        label=""
+                                    />
                                 </div>
                                 <div className="md:col-span-6 lg:col-span-2">
                                     <label className="block text-xs font-bold text-slate-500 mb-1">Prazo</label>
@@ -441,7 +451,7 @@ const PlanosAcao: React.FC = () => {
                                                 {task.descricao}
                                             </h4>
                                             <div className="flex gap-4 text-xs text-slate-500 mt-1">
-                                                <span className="flex items-center gap-1"><User size={12} /> {task.responsavel}</span>
+                                                <span className="flex items-center gap-1"><User size={12} /> {getUserName(task.responsavel)}</span>
                                                 <span className="flex items-center gap-1"><Calendar size={12} /> Prazo: {new Date(task.prazo).toLocaleDateString()}</span>
                                                 {task.maquina_id && <span className="flex items-center gap-1 text-orange-600"><MachineIcon size={12} /> {maquinas.find(m => m.id === task.maquina_id)?.nome}</span>}
                                             </div>
@@ -551,12 +561,11 @@ const PlanosAcao: React.FC = () => {
                                     <User size={16} className="text-slate-400" />
                                     5. WHO (Quem?)
                                 </label>
-                                <input
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Responsável pela execução"
-                                    required
+                                <UserSelect
                                     value={formData.who}
-                                    onChange={e => setFormData({ ...formData, who: e.target.value })}
+                                    onChange={(value) => setFormData({ ...formData, who: value })}
+                                    className="w-full"
+                                    label=""
                                 />
                             </div>
 
@@ -607,14 +616,13 @@ const PlanosAcao: React.FC = () => {
                                     </div>
                                     <div className="md:col-span-3">
                                         <label className="block text-xs font-bold text-slate-500 mb-1">Responsável</label>
-                                        <select
-                                            className="w-full px-3 py-2 border rounded text-sm"
+                                        <UserSelect
                                             value={newTask.responsavel}
-                                            onChange={e => setNewTask({ ...newTask, responsavel: e.target.value })}
-                                        >
-                                            <option value="">Selecione...</option>
-                                            {mockUsers.map(user => <option key={user} value={user}>{user}</option>)}
-                                        </select>
+                                            onChange={(value) => setNewTask({ ...newTask, responsavel: value })}
+                                            placeholder="Selecione..."
+                                            className="w-full"
+                                            label=""
+                                        />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-xs font-bold text-slate-500 mb-1">Ativo</label>
@@ -656,7 +664,7 @@ const PlanosAcao: React.FC = () => {
                                                 </p>
                                                 <div className="flex gap-4 mt-1">
                                                     <span className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1">
-                                                        <User size={12} /> {task.responsavel}
+                                                        <User size={12} /> {getUserName(task.responsavel)}
                                                     </span>
                                                     <span className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1">
                                                         <Calendar size={12} /> Prazo: {new Date(task.prazo).toLocaleDateString()}

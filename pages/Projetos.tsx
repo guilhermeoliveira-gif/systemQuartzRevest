@@ -9,7 +9,8 @@ import {
 import { projetosService } from '../services/projetosService';
 import { segurancaService } from '../services/segurancaService';
 import { Projeto, StatusProjeto, Prioridade } from '../types_projetos';
-import { Usuario } from '../types_seguranca';
+// import { Usuario } from '../types_seguranca'; // Removed
+import { UserSelect } from '../components/UserSelect';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -19,7 +20,6 @@ const Projetos: React.FC = () => {
 
     // State
     const [projetos, setProjetos] = useState<Projeto[]>([]);
-    const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'FORM'>('LIST');
     const [searchTerm, setSearchTerm] = useState('');
@@ -49,12 +49,9 @@ const Projetos: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [projetosData, usuariosData] = await Promise.all([
-                projetosService.getProjetos(),
-                segurancaService.getUsuarios()
-            ]);
+            setLoading(true);
+            const projetosData = await projetosService.getProjetos();
             setProjetos(projetosData);
-            setUsuarios(usuariosData.filter(u => u.ativo));
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
             toast.error('Erro de Conexão', 'Não foi possível carregar os projetos.');
@@ -364,16 +361,11 @@ const Projetos: React.FC = () => {
 
                             <div>
                                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Responsável Inicial</label>
-                                <select
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 text-lg transition-all outline-none font-medium appearance-none"
+                                <UserSelect
                                     value={formData.responsavel_id}
-                                    onChange={e => setFormData({ ...formData, responsavel_id: e.target.value })}
-                                >
-                                    <option value="">Selecione...</option>
-                                    {usuarios.map(u => (
-                                        <option key={u.id} value={u.id}>{u.nome}</option>
-                                    ))}
-                                </select>
+                                    onChange={(value) => setFormData({ ...formData, responsavel_id: value })}
+                                    label=""
+                                />
                             </div>
 
                             <div>

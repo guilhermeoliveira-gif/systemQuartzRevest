@@ -39,30 +39,77 @@ const CadastroUsuarios: React.FC = () => {
         }
     };
 
+    const [editingId, setEditingId] = useState<string | null>(null);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            if (!formData.email || !formData.password || !formData.nome) {
-                alert('Preencha os campos obrigatórios');
+            if (!formData.nome) {
+                alert('O nome é obrigatório');
                 return;
             }
 
-            await segurancaService.createUsuario(formData as UsuarioCreate);
+            if (editingId) {
+                // Update
+                const updates: Partial<Usuario> = {
+                    nome: formData.nome,
+                    telefone: formData.telefone,
+                    perfil_id: formData.perfil_id,
+                    cargo: formData.cargo,
+                    setor: formData.setor
+                };
+
+                // Only update password if provided (for security/simplicity in this context)
+                // Note: Updating password via Supabase Auth usually requires a separate call or admin API. 
+                // For now, we focus on profile data or assume service handles it if possible.
+                // The service `segurancaService.updateUsuario` updates the `usuarios` table.
+
+                await segurancaService.updateUsuario(editingId, updates);
+                alert('Usuário atualizado com sucesso!');
+            } else {
+                // Create
+                if (!formData.email || !formData.password) {
+                    alert('E-mail e senha são obrigatórios para novos usuários');
+                    return;
+                }
+                await segurancaService.createUsuario(formData as UsuarioCreate);
+                alert('Usuário criado com sucesso!');
+            }
+
             await loadData();
             setShowForm(false);
-            setFormData({
-                email: '',
-                password: '',
-                nome: '',
-                telefone: '',
-                perfil_id: '',
-                cargo: '',
-                setor: ''
-            });
+            resetForm();
         } catch (error: any) {
-            console.error('Erro ao criar usuário:', error);
-            alert(`Erro ao criar usuário: ${error.message}`);
+            console.error('Erro ao salvar usuário:', error);
+            alert(`Erro ao salvar usuário: ${error.message}`);
         }
+    };
+
+    const resetForm = () => {
+        setEditingId(null);
+        setFormData({
+            email: '',
+            password: '',
+            nome: '',
+            telefone: '',
+            perfil_id: '',
+            cargo: '',
+            setor: ''
+        });
+    };
+
+    const handleEdit = (usuario: Usuario) => {
+        setEditingId(usuario.id);
+        setFormData({
+            email: usuario.email,
+            password: '', // Password is not retrieving for security
+            nome: usuario.nome,
+            telefone: usuario.telefone || '',
+            perfil_id: usuario.perfil_id || '',
+            cargo: usuario.cargo || '',
+            setor: usuario.setor || ''
+        });
+        setShowForm(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -116,7 +163,7 @@ const CadastroUsuarios: React.FC = () => {
                     />
                 </div>
                 <button
-                    onClick={() => setShowForm(true)}
+                    onClick={() => { resetForm(); setShowForm(true); }}
                     className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition shadow-sm font-medium"
                 >
                     <Plus size={20} />
@@ -131,12 +178,12 @@ const CadastroUsuarios: React.FC = () => {
                         <div className="bg-purple-50 px-8 py-6 border-b border-purple-100 flex justify-between items-center sticky top-0">
                             <div>
                                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                    <Plus className="text-purple-600" />
-                                    Novo Usuário
+                                    {editingId ? <Edit2 className="text-purple-600" /> : <Plus className="text-purple-600" />}
+                                    {editingId ? 'Editar Usuário' : 'Novo Usuário'}
                                 </h2>
-                                <p className="text-slate-500 text-sm mt-1">Preencha os dados do novo usuário</p>
+                                <p className="text-slate-500 text-sm mt-1">{editingId ? 'Atualize os dados do usuário' : 'Preencha os dados do novo usuário'}</p>
                             </div>
-                            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 transition">
+                            <button onClick={() => { setShowForm(false); resetForm(); }} className="text-slate-400 hover:text-slate-600 transition">
                                 <X size={28} />
                             </button>
                         </div>
@@ -157,13 +204,14 @@ const CadastroUsuarios: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
                                         <Mail size={16} className="text-slate-400" />
-                                        E-mail *
+                                        E-mail {editingId ? '(Não editável)' : '*'}
                                     </label>
                                     <input
                                         type="email"
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 ${editingId ? 'bg-slate-100 text-slate-500' : ''}`}
                                         placeholder="usuario@empresa.com"
-                                        required
+                                        required={!editingId}
+                                        disabled={!!editingId}
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     />
@@ -297,6 +345,13 @@ const CadastroUsuarios: React.FC = () => {
                             </div>
 
                             <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleEdit(usuario)}
+                                    className="text-slate-400 hover:text-blue-500 p-2 rounded hover:bg-blue-50 transition"
+                                    title="Editar usuário"
+                                >
+                                    <Edit2 size={18} />
+                                </button>
                                 <button
                                     onClick={() => handleDelete(usuario.id)}
                                     className="text-slate-400 hover:text-red-500 p-2 rounded hover:bg-red-50 transition"

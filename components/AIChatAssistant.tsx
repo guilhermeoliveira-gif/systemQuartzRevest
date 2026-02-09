@@ -1,6 +1,5 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { MessageSquare, Send, X, Bot, Loader2 } from 'lucide-react';
 
 const AIChatAssistant: React.FC = () => {
@@ -22,26 +21,48 @@ const AIChatAssistant: React.FC = () => {
     if (!input.trim() || isLoading) return;
 
     const userMsg = input.trim();
-    setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setInput('');
     setIsLoading(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: userMsg,
-        config: {
-          systemInstruction: `Você é o Assistente QuartzRevest, uma IA especializada no módulo de estoque do sistema QuartzRevest 4.0.
-          Seu objetivo é ajudar gestores a manter a acuracidade do estoque, prever necessidades de compra de matéria-prima e reduzir desperdícios na produção de revestimentos.
-          Responda de forma técnica, amigável e focada em resultados industriais.`,
-          temperature: 0.7,
+      // Changed to HTTPS to avoid Mixed Content errors
+      const response = await fetch('https://n8n-jocwk48g8gokoo8s08kc80oo.76.13.237.176.sslip.io/webhook-test/57aff57d-e43c-41cf-87c4-7053c6924c84', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ chatInput: userMsg }),
+        signal: controller.signal
       });
 
-      setMessages(prev => [...prev, { role: 'bot', content: response.text || "Erro de conexão com o cérebro da QuartzRevest." }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { role: 'bot', content: "Ocorreu um erro ao conectar com o serviço de IA." }]);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Try to extract the response text from various potential fields
+      // n8n webhooks usually return the output of the last node or a specific JSON response
+      const botContent = data.output || data.text || data.response || data.message || (typeof data === 'string' ? data : JSON.stringify(data));
+
+      setMessages(prev => [...prev, { role: 'bot', content: botContent }]);
+    } catch (error: any) {
+      console.error('Error calling AI webhook:', error);
+
+      let errorMessage = "Erro ao comunicar com o assistente inteligente.";
+      if (error.name === 'AbortError') {
+        errorMessage = "O assistente demorou muito para responder. Tente novamente.";
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = "Erro de conexão. Verifique se o servidor n8n está acessível e com HTTPS.";
+      }
+
+      setMessages(prev => [...prev, { role: 'bot', content: errorMessage }]);
     } finally {
       setIsLoading(false);
     }
@@ -77,11 +98,10 @@ const AIChatAssistant: React.FC = () => {
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm shadow-sm ${
-                  msg.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-tr-none' 
-                    : 'bg-white border border-neutral-200 text-neutral-800 rounded-tl-none'
-                }`}>
+                <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm shadow-sm ${msg.role === 'user'
+                  ? 'bg-blue-600 text-white rounded-tr-none'
+                  : 'bg-white border border-neutral-200 text-neutral-800 rounded-tl-none'
+                  }`}>
                   {msg.content}
                 </div>
               </div>

@@ -4,11 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { projetosService } from '../services/projetosService';
 import { segurancaService } from '../services/segurancaService';
 import { Projeto, StatusProjeto, Prioridade } from '../types_projetos';
-import { Usuario } from '../types_seguranca';
+import { UserSelect } from '../components/UserSelect';
 
 const CadastroProjeto: React.FC = () => {
     const navigate = useNavigate();
-    const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [formData, setFormData] = useState<Partial<Projeto>>({
         nome: '',
         descricao: '',
@@ -21,17 +20,9 @@ const CadastroProjeto: React.FC = () => {
     });
 
     useEffect(() => {
-        loadUsuarios();
     }, []);
 
-    const loadUsuarios = async () => {
-        try {
-            const data = await segurancaService.getUsuarios();
-            setUsuarios(data.filter(u => u.ativo));
-        } catch (error) {
-            console.error('Erro ao carregar usuários:', error);
-        }
-    };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,16 +79,11 @@ const CadastroProjeto: React.FC = () => {
                             <User size={16} className="text-slate-400" />
                             Responsável
                         </label>
-                        <select
-                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                        <UserSelect
                             value={formData.responsavel_id}
-                            onChange={(e) => setFormData({ ...formData, responsavel_id: e.target.value })}
-                        >
-                            <option value="">Selecione...</option>
-                            {usuarios.map(u => (
-                                <option key={u.id} value={u.id}>{u.nome}</option>
-                            ))}
-                        </select>
+                            onChange={(value) => setFormData({ ...formData, responsavel_id: value })}
+                            className="bg-slate-50 border-slate-200"
+                        />
                     </div>
 
                     <div>

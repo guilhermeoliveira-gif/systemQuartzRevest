@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Plus, Search, Filter, CheckCircle, Clock, XCircle, FileText, ChevronRight, Save, ShieldAlert, Upload, Image as ImageIcon, Trash2, FolderPlus } from 'lucide-react';
+import { UserSelect } from '../components/UserSelect';
 import { NaoConformidade } from '../types_nc';
 import { qualidadeService } from '../services/qualidadeService';
 import { useToast } from '../contexts/ToastContext';
@@ -33,7 +34,7 @@ const NaoConformidades: React.FC = () => {
         evidencias: []
     });
 
-    const MOCK_RESPONSAVEIS = ['João Silva', 'Maria Souza', 'Carlos Oliveira', 'Ana Beatriz', 'Pedro Santos'];
+    // const MOCK_RESPONSAVEIS = ['João Silva', 'Maria Souza', 'Carlos Oliveira', 'Ana Beatriz', 'Pedro Santos']; // Removed
 
     // Five Whys State
     const [fiveWhys, setFiveWhys] = useState({
@@ -457,16 +458,12 @@ const NaoConformidades: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-bold text-indigo-900 mb-2">Responsável pela Contenção</label>
-                                        <select
-                                            className="w-full px-5 py-4 bg-white border border-indigo-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 text-lg transition-all outline-none font-medium appearance-none"
-                                            value={formData.responsavel_contencao || ''}
-                                            onChange={e => setFormData({ ...formData, responsavel_contencao: e.target.value })}
-                                        >
-                                            <option value="">Selecione o responsável...</option>
-                                            {MOCK_RESPONSAVEIS.map(resp => (
-                                                <option key={resp} value={resp}>{resp}</option>
-                                            ))}
-                                        </select>
+                                        <UserSelect
+                                            value={formData.responsavel_contencao}
+                                            onChange={(value) => setFormData({ ...formData, responsavel_contencao: value })}
+                                            className="w-full"
+                                            label=""
+                                        />
                                     </div>
                                 </div>
                             </div>

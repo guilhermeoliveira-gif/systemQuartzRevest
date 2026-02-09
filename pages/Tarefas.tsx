@@ -9,7 +9,8 @@ import {
 import { projetosService } from '../services/projetosService';
 import { segurancaService } from '../services/segurancaService';
 import { TarefaProjeto, StatusTarefa, Prioridade, Projeto } from '../types_projetos';
-import { Usuario } from '../types_seguranca';
+// import { Usuario } from '../types_seguranca'; // Removed
+import { UserSelect } from '../components/UserSelect';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { manutencaoService } from '../services/manutencaoService';
@@ -24,7 +25,6 @@ const Tarefas: React.FC = () => {
     // State
     const [tarefas, setTarefas] = useState<TarefaProjeto[]>([]);
     const [projetos, setProjetos] = useState<Projeto[]>([]);
-    const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [maquinas, setMaquinas] = useState<Maquina[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'FORM'>('LIST');
@@ -58,15 +58,14 @@ const Tarefas: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [tarefasData, projetosData, usuariosData, maquinasData] = await Promise.all([
+            const [tarefasData, projetosData, maquinasData] = await Promise.all([
                 projetosService.getTodasTarefas(),
                 projetosService.getProjetos(),
-                segurancaService.getUsuarios(),
                 manutencaoService.getMaquinas()
             ]);
             setTarefas(tarefasData);
             setProjetos(projetosData.filter(p => p.status !== 'CONCLUIDO' && p.status !== 'CANCELADO'));
-            setUsuarios(usuariosData.filter(u => u.ativo));
+
             setMaquinas(maquinasData);
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
@@ -395,16 +394,11 @@ const Tarefas: React.FC = () => {
 
                             <div>
                                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Responsável</label>
-                                <select
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 text-lg transition-all outline-none font-medium appearance-none"
+                                <UserSelect
                                     value={formData.responsavel_id}
-                                    onChange={e => setFormData({ ...formData, responsavel_id: e.target.value })}
-                                >
-                                    <option value="">Selecione...</option>
-                                    {usuarios.map(u => (
-                                        <option key={u.id} value={u.id}>{u.nome}</option>
-                                    ))}
-                                </select>
+                                    onChange={(value) => setFormData({ ...formData, responsavel_id: value })}
+                                    label=""
+                                />
                             </div>
 
                             <div>
