@@ -29,7 +29,8 @@ const ControleProducao: React.FC = () => {
       await store.addProducao({
         produto_acabado_id: selectedPA,
         quantidade_produzida: qty,
-        usuario_id: 'CURRENT_USER'
+        usuario_id: 'CURRENT_USER',
+        desvio_status: 'OK'
       });
 
       setToast(`✅ Produção de ${qty} itens registrada com sucesso! Estoque atualizado.`);

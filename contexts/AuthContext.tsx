@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(session?.user ?? null);
 
                 if (session?.user) {
-                    await fetchUserProfile(session.user.id);
+                    await fetchUserProfile(session.user.id, session.user);
                 } else {
                     setLoading(false);
                 }
@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(session?.user ?? null);
 
             if (session?.user) {
-                await fetchUserProfile(session.user.id);
+                await fetchUserProfile(session.user.id, session.user);
             } else {
                 setProfile(null);
                 setLoading(false);
@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
     }, []);
 
-    const fetchUserProfile = async (userId: string) => {
+    const fetchUserProfile = async (userId: string, currentUser?: User) => {
         try {
             const { data, error } = await supabase
                 .from('usuarios')
@@ -109,10 +109,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
 
                 // Fallback if profile doesn't exist yet
+                // Use currentUser passed as arg OR fallback to state user
+                const userObj = currentUser || user;
+
                 setProfile({
                     id: userId,
-                    email: user?.email || '',
-                    nome: user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário',
+                    email: userObj?.email || '',
+                    nome: userObj?.user_metadata?.nome || userObj?.email?.split('@')[0] || 'Usuário',
                 });
             } else {
                 setProfile(data);

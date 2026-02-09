@@ -125,6 +125,26 @@ class StoreService {
         return true;
     }
 
+    public async getHistoricoEntradas(): Promise<EntradaMateriaPrima[]> {
+        const { data, error } = await supabase
+            .from('entrada_materia_prima')
+            .select(`
+                *,
+                materia_prima (
+                    nome,
+                    unidade_medida
+                )
+            `)
+            .order('data_entrada', { ascending: false });
+
+        if (error) {
+            logger.error('Erro ao buscar histórico de entradas', error);
+            throw error;
+        }
+        // Mapear para incluir nome da MP se necessário ou retornar direto
+        return data || [];
+    }
+
     // --- Produto Acabado ---
     public async getProdutosAcabados(): Promise<ProdutoAcabado[]> {
         const { data, error } = await supabase
