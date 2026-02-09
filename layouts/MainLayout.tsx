@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
-import AIChatAssistant from '../components/AIChatAssistant';
+// import AIChatAssistant from '../components/AIChatAssistant'; // REMOVIDO
 import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -88,9 +88,7 @@ const MainLayout: React.FC = () => {
             <BottomNav />
 
             {/* AI Chat Assistant - Hidden on small screens */}
-            <div className="hidden lg:block">
-                <AIChatAssistant />
-            </div>
+// AIChatAssistant removed upon user request
 
             {/* Global Search (Ctrl+K) */}
             <GlobalSearch />
