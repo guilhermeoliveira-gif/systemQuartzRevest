@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
   const pcpNavItems = [
     { name: 'Dashboard PCP', path: '/pcp', icon: LayoutDashboard },
     { name: 'Planejamento', path: '/pcp/planejamento', icon: ClipboardCheck },
-    { name: 'Produção em Tempo Real', path: '/pcp/producao', icon: Factory },
+    { name: 'Executar Produção', path: '/pcp/producao', icon: Factory },
     { name: 'Histórico', path: '/pcp/historico', icon: BarChart },
   ];
 

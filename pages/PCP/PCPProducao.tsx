@@ -69,21 +69,10 @@ const PCPProducao: React.FC = () => {
                 if (reg) {
                     setContadores({ c1: Number(reg.contador1_inicio), c2: Number(reg.contador2_inicio) });
                 }
-            } else if (proximasPool.length > 0) {
-                setItemAtivo(proximasPool[0]);
-                setProximas(proximasPool.slice(1));
-
-                // Preenche com o final da última produção realizada (se houver)
-                const ultimoReg = historico.find(r => r.data_hora_fim);
-                if (ultimoReg) {
-                    setContadores({
-                        c1: Number(ultimoReg.contador1_fim) || 0,
-                        c2: Number(ultimoReg.contador2_fim) || 0
-                    });
-                }
             } else {
+                // DO NOT auto-select. Let the user choose from the pool.
                 setItemAtivo(null);
-                setProximas([]);
+                setProximas(proximasPool);
             }
 
             // Filtra histórico para mostrar apenas o que foi finalizado hoje
@@ -95,6 +84,25 @@ const PCPProducao: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSelectOrder = (item: ItemPlanoProducao) => {
+        setItemAtivo(item);
+        // Preenche com o final da última produção realizada (se houver) como sugestão inicial
+        // Isso pode ser melhorado pegando o contador da máquina, mas por enquanto pegamos do último histórico geral
+        if (proximasPoolHistory.length > 0) {
+            const ultimo = proximasPoolHistory[0]; // Assumindo ordenação por data desc no backend ou array
+            setContadores({
+                c1: Number(ultimo.contador1_fim) || 0,
+                c2: Number(ultimo.contador2_fim) || 0
+            });
+        }
+    };
+
+    const handleCancelSelection = () => {
+        setItemAtivo(null);
+        setIsProduzindo(false);
+        setContadores({ c1: 0, c2: 0 });
     };
 
     const handleIniciar = async () => {
@@ -149,7 +157,7 @@ const PCPProducao: React.FC = () => {
             // Simulação de envio de notificação (WhatsApp/SMS)
             console.log("NOTIFICAÇÃO ENVIADA: Produção de " + itemAtivo.nome_produto_acabado + " finalizada!");
 
-            loadData();
+            loadData(); // Will return to list view since 'Produzindo' is gone
         } catch (error) {
             toast.error('Erro', 'Falha ao finalizar operação.');
         }
@@ -162,7 +170,7 @@ const PCPProducao: React.FC = () => {
             {/* Seção Produção Atual */}
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
                 <div className={`p-1 text-center text-[10px] font-black uppercase tracking-[0.3em] ${isProduzindo ? 'bg-green-500 text-white animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
-                    {isProduzindo ? 'Produção em Curso' : 'Aguardando Início'}
+                    {isProduzindo ? 'Produção em Curso' : itemAtivo ? 'Preparando Produção' : 'Aguardando Seleção'}
                 </div>
 
                 <div className="p-10 space-y-8">
@@ -197,18 +205,26 @@ const PCPProducao: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="pt-4">
+                            <div className="pt-4 flex gap-4">
+                                {!isProduzindo && (
+                                    <Button
+                                        onClick={handleCancelSelection}
+                                        className="py-8 px-6 text-xl font-black bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-2xl transition-all"
+                                    >
+                                        VOLTAR
+                                    </Button>
+                                )}
                                 {isProduzindo ? (
                                     <Button
                                         onClick={handleFinalizar}
-                                        className="w-full py-8 text-xl font-black bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-lg border-b-4 border-blue-900 active:border-b-0 translate-y-0 active:translate-y-1 transition-all"
+                                        className="flex-1 py-8 text-xl font-black bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-lg border-b-4 border-blue-900 active:border-b-0 translate-y-0 active:translate-y-1 transition-all"
                                     >
                                         <Square size={24} className="mr-3" /> FINALIZAR PRODUÇÃO
                                     </Button>
                                 ) : (
                                     <Button
                                         onClick={handleIniciar}
-                                        className="w-full py-8 text-xl font-black bg-green-600 hover:bg-green-700 rounded-2xl shadow-lg border-b-4 border-green-900 active:border-b-0 translate-y-0 active:translate-y-1 transition-all"
+                                        className="flex-1 py-8 text-xl font-black bg-green-600 hover:bg-green-700 rounded-2xl shadow-lg border-b-4 border-green-900 active:border-b-0 translate-y-0 active:translate-y-1 transition-all"
                                     >
                                         <Play size={24} className="mr-3" /> INICIAR PRODUÇÃO
                                     </Button>
@@ -216,10 +232,38 @@ const PCPProducao: React.FC = () => {
                             </div>
                         </>
                     ) : (
-                        <div className="text-center py-10 space-y-4">
-                            <CheckCircle2 size={64} className="mx-auto text-green-500" />
-                            <h3 className="text-2xl font-black text-slate-800">Tudo em dia!</h3>
-                            <p className="text-slate-400 font-medium italic">Nenhuma produção pendente no momento.</p>
+                        <div className="text-center py-4 space-y-6">
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-black text-slate-800">Selecione uma Ordem de Produção</h3>
+                                <p className="text-slate-400 font-medium">Escolha abaixo qual produto será fabricado agora.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                                {proximas.length > 0 ? proximas.map((p, i) => (
+                                    <div
+                                        key={p.id}
+                                        onClick={() => handleSelectOrder(p)}
+                                        className="bg-slate-50 hover:bg-blue-50 border-2 border-slate-100 hover:border-blue-200 p-6 rounded-2xl cursor-pointer transition-all group group-hover:shadow-md"
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="bg-slate-200 group-hover:bg-blue-200 text-slate-600 group-hover:text-blue-700 text-[10px] font-black px-2 py-1 rounded uppercase tracking-wider">
+                                                #{i + 1}
+                                            </span>
+                                            <ArrowDownCircle className="text-slate-300 group-hover:text-blue-400" size={20} />
+                                        </div>
+                                        <h4 className="text-lg font-black text-slate-700 group-hover:text-blue-800 uppercase mb-1">{p.nome_produto_acabado}</h4>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                                            <Package size={14} /> {p.qtd_misturas_planejadas} Misturas
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="col-span-2 py-10 text-center border-2 border-dashed border-slate-200 rounded-2xl">
+                                        <CheckCircle2 size={48} className="mx-auto text-slate-300 mb-2" />
+                                        <p className="text-slate-400 font-bold">Nenhuma ordem de produção pendente.</p>
+                                        <p className="text-xs text-slate-400">Crie uma nova ordem no Planejamento.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

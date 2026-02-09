@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../services/supabaseClient';
+import { segurancaService } from '../services/segurancaService';
 
 interface UserSelectProps {
     value?: string;
@@ -18,27 +18,31 @@ export const UserSelect: React.FC<UserSelectProps> = ({
     className = "",
     placeholder = "Selecione..."
 }) => {
-    const [users, setUsers] = useState<{ id: string, nome: string }[]>([]);
+    const [users, setUsers] = useState<{ id: string, nome: string, ativo: boolean }[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
         const fetchUsers = async () => {
             try {
-                const { data, error } = await supabase
-                    .from('usuarios')
-                    .select('id, nome')
-                    .eq('ativo', true)
-                    .order('nome');
+                // Use cached service to avoid redundant network calls
+                const allUsers = await segurancaService.getUsuarios();
 
-                if (error) throw error;
-                if (data) setUsers(data);
+                // Filter only active users for selection
+                if (isMounted) {
+                    setUsers(allUsers.filter(u => u.ativo));
+                }
             } catch (error) {
-                console.error("Erro ao buscar usuários:", error);
+                console.error("Erro ao carregar lista de usuários:", error);
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
         fetchUsers();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     return (

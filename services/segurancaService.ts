@@ -129,7 +129,17 @@ export const segurancaService = {
 
     // ==================== USUÁRIOS ====================
 
-    async getUsuarios(): Promise<Usuario[]> {
+    // Cache simples para usuários
+    _usuariosCache: null as Usuario[] | null,
+    _usuariosCacheTime: 0,
+    CACHE_DURATION: 5 * 60 * 1000, // 5 minutos
+
+    async getUsuarios(forceRefresh = false): Promise<Usuario[]> {
+        const now = Date.now();
+        if (!forceRefresh && this._usuariosCache && (now - this._usuariosCacheTime < this.CACHE_DURATION)) {
+            return this._usuariosCache;
+        }
+
         const { data, error } = await supabase
             .from('usuarios')
             .select(`
@@ -143,7 +153,9 @@ export const segurancaService = {
             throw error;
         }
 
-        return data as any || [];
+        this._usuariosCache = data as any || [];
+        this._usuariosCacheTime = now;
+        return this._usuariosCache!;
     },
 
     async createUsuario(usuario: UsuarioCreate): Promise<Usuario> {
