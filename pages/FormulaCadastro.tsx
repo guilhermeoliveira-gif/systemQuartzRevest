@@ -2,12 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Info, Trash2 } from 'lucide-react';
 import { Formula, FormulaItem, MateriaPrima, ProdutoAcabado } from '../types';
+import { store } from '../services/store';
+import { supabase } from '../services/supabaseClient';
+import { useToast } from '../contexts/ToastContext';
 
 const FormulaCadastro: React.FC = () => {
+  const toast = useToast();
   const [formulas, setFormulas] = useState<any[]>([]);
   const [produtos, setProdutos] = useState<ProdutoAcabado[]>([]);
   const [materias, setMaterias] = useState<MateriaPrima[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Form State
   const [selectedPA, setSelectedPA] = useState('');
@@ -16,24 +21,47 @@ const FormulaCadastro: React.FC = () => {
   const [currentQty, setCurrentQty] = useState(0);
 
   useEffect(() => {
-    // Mock data load
-    setProdutos([
-      { id: 'pa1', nome: 'Eixo Turbina XT-1', unidade_medida: 'un', quantidade_atual: 50, custo_producao_estimado: 450.00, organization_id: 'org1' },
-      { id: 'pa2', nome: 'Placa Controle Rev3', unidade_medida: 'un', quantidade_atual: 120, custo_producao_estimado: 85.00, organization_id: 'org1' }
-    ]);
-    setMaterias([
-      { id: 'mp1', nome: 'Aço Carbono', unidade_medida: 'kg', quantidade_atual: 1000, custo_unitario: 5, organization_id: 'org1' },
-      { id: 'mp2', nome: 'Resina Epóxi', unidade_medida: 'kg', quantidade_atual: 200, custo_unitario: 45, organization_id: 'org1' }
-    ]);
-    setFormulas([
-      { 
-        id: 'f1', 
-        produto_acabado_nome: 'Eixo Turbina XT-1', 
-        created_at: '2023-10-20', 
-        items_resumo: 'Aço Carbono (5kg), Rolamento (2un)' 
-      }
-    ]);
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [produtosData, materiasData, formulasData] = await Promise.all([
+        store.getProdutosAcabados(),
+        store.getMateriasPrimas(),
+        supabase.from('formula').select(`
+          *,
+          produto_acabado:produto_acabado(nome),
+          formula_item(
+            quantidade,
+            materia_prima:materia_prima(nome, unidade_medida)
+          )
+        `).order('created_at', { ascending: false })
+      ]);
+
+      setProdutos(produtosData);
+      setMaterias(materiasData);
+
+      // Formatar fórmulas para exibição
+      if (formulasData.data) {
+        const formulasFormatadas = formulasData.data.map((f: any) => ({
+          id: f.id,
+          produto_acabado_nome: f.produto_acabado?.nome || 'N/A',
+          created_at: new Date(f.created_at).toLocaleDateString('pt-BR'),
+          items_resumo: f.formula_item?.map((item: any) =>
+            `${item.materia_prima?.nome} (${item.quantidade}${item.materia_prima?.unidade_medida})`
+          ).join(', ') || 'Sem itens'
+        }));
+        setFormulas(formulasFormatadas);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro', 'Falha ao carregar fórmulas.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const addItem = () => {
     if (currentMP && currentQty > 0) {
@@ -47,28 +75,48 @@ const FormulaCadastro: React.FC = () => {
     setItems(items.filter((_, i) => i !== idx));
   };
 
-  const handleSaveFormula = (e: React.FormEvent) => {
+  const handleSaveFormula = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPA || items.length === 0) return;
-    
-    const pa = produtos.find(p => p.id === selectedPA);
-    const summary = items.map(it => {
-      const mp = materias.find(m => m.id === it.mpId);
-      return `${mp?.nome} (${it.qty}${mp?.unidade_medida})`;
-    }).join(', ');
+    if (!selectedPA || items.length === 0) {
+      toast.error('Erro', 'Selecione um produto e adicione pelo menos uma matéria-prima.');
+      return;
+    }
 
-    setFormulas([
-      ...formulas, 
-      { 
-        id: Math.random().toString(), 
-        produto_acabado_nome: pa?.nome, 
-        created_at: new Date().toISOString().split('T')[0], 
-        items_resumo: summary 
-      }
-    ]);
-    setIsDialogOpen(false);
-    setSelectedPA('');
-    setItems([]);
+    try {
+      // 1. Criar fórmula
+      const { data: formula, error: formulaError } = await supabase
+        .from('formula')
+        .insert({
+          produto_acabado_id: selectedPA,
+          organization_id: '1'
+        })
+        .select()
+        .single();
+
+      if (formulaError) throw formulaError;
+
+      // 2. Criar itens da fórmula
+      const formulaItems = items.map(item => ({
+        formula_id: formula.id,
+        materia_prima_id: item.mpId,
+        quantidade: item.qty
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('formula_item')
+        .insert(formulaItems);
+
+      if (itemsError) throw itemsError;
+
+      toast.success('Sucesso', '✅ Fórmula cadastrada com sucesso!');
+      setIsDialogOpen(false);
+      setSelectedPA('');
+      setItems([]);
+      loadData(); // Recarregar lista
+    } catch (error) {
+      console.error('Erro ao salvar fórmula:', error);
+      toast.error('Erro', 'Falha ao cadastrar fórmula.');
+    }
   };
 
   return (
@@ -168,26 +216,26 @@ const FormulaCadastro: React.FC = () => {
                 </div>
 
                 <div className="mt-4 bg-white border border-neutral-200 rounded-lg max-h-40 overflow-y-auto">
-                   <table className="w-full text-sm">
-                      <thead className="bg-gray-100 sticky top-0">
-                        <tr>
-                          <th className="p-2 text-left">MP</th>
-                          <th className="p-2 text-left">Qtd</th>
-                          <th className="p-2 text-right"></th>
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100 sticky top-0">
+                      <tr>
+                        <th className="p-2 text-left">MP</th>
+                        <th className="p-2 text-left">Qtd</th>
+                        <th className="p-2 text-right"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((it, idx) => (
+                        <tr key={idx} className="border-t border-neutral-100">
+                          <td className="p-2">{materias.find(m => m.id === it.mpId)?.nome}</td>
+                          <td className="p-2">{it.qty} {materias.find(m => m.id === it.mpId)?.unidade_medida}</td>
+                          <td className="p-2 text-right">
+                            <button type="button" onClick={() => removeListItem(idx)} className="text-red-500 hover:underline">Remover</button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {items.map((it, idx) => (
-                          <tr key={idx} className="border-t border-neutral-100">
-                            <td className="p-2">{materias.find(m => m.id === it.mpId)?.nome}</td>
-                            <td className="p-2">{it.qty} {materias.find(m => m.id === it.mpId)?.unidade_medida}</td>
-                            <td className="p-2 text-right">
-                              <button type="button" onClick={() => removeListItem(idx)} className="text-red-500 hover:underline">Remover</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                   </table>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 

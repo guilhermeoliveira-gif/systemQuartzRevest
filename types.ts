@@ -4,9 +4,12 @@ export interface MateriaPrima {
   id: string;
   nome: string;
   unidade_medida: string;
-  quantidade_atual: number;
-  custo_unitario: number; // Agora será Custo Médio Ponderado
-  minimo_seguranca?: number;
+  quantidade_atual: number; // DEPRECATED - Use estoque_atual
+  custo_unitario: number; // Custo Médio Ponderado
+  minimo_seguranca?: number; // DEPRECATED - Use estoque_minimo
+  estoque_minimo?: number; // NOVO - Quantidade mínima antes de gerar alerta
+  estoque_atual?: number; // NOVO - Quantidade atual (atualizado via movimentações)
+  alerta_ativo?: boolean; // NOVO - Se TRUE, gera alertas quando estoque < mínimo
   organization_id: string;
   created_at?: string;
 }
@@ -15,8 +18,11 @@ export interface ProdutoAcabado {
   id: string;
   nome: string;
   unidade_medida: string;
-  quantidade_atual: number;
+  quantidade_atual: number; // DEPRECATED - Use estoque_atual
   custo_producao_estimado: number;
+  estoque_minimo?: number; // NOVO
+  estoque_atual?: number; // NOVO
+  alerta_ativo?: boolean; // NOVO
   organization_id: string;
   created_at?: string;
 }

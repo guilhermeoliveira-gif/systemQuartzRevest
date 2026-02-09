@@ -1,9 +1,14 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Box } from 'lucide-react';
 import { ProdutoAcabado } from '../types';
+import { store } from '../services/store';
+import { supabase } from '../services/supabaseClient';
+import { useToast } from '../contexts/ToastContext';
 
 const PACadastro: React.FC = () => {
+  const toast = useToast();
   const [produtos, setProdutos] = useState<ProdutoAcabado[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -14,28 +19,49 @@ const PACadastro: React.FC = () => {
   });
 
   useEffect(() => {
-    setTimeout(() => {
-      setProdutos([
-        { id: '1', nome: 'Eixo Turbina XT-1', unidade_medida: 'un', quantidade_atual: 45, custo_producao_estimado: 1250.00, organization_id: 'org1' },
-        { id: '2', nome: 'Hélice Alumínio 12"', unidade_medida: 'un', quantidade_atual: 12, custo_producao_estimado: 380.00, organization_id: 'org1' },
-      ]);
-      setIsLoading(false);
-    }, 1000);
+    loadProdutos();
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const loadProdutos = async () => {
+    try {
+      setIsLoading(true);
+      const data = await store.getProdutosAcabados();
+      setProdutos(data);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      toast.error('Erro', 'Falha ao carregar produtos acabados.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newPA: ProdutoAcabado = {
-      id: Math.random().toString(36).substr(2, 9),
-      nome: formData.nome || '',
-      unidade_medida: formData.unidade_medida || '',
-      quantidade_atual: 0,
-      custo_producao_estimado: Number(formData.custo_producao_estimado) || 0,
-      organization_id: 'org1'
-    };
-    setProdutos([...produtos, newPA]);
-    setIsDialogOpen(false);
-    setFormData({ nome: '', unidade_medida: '', custo_producao_estimado: 0 });
+    try {
+      const { data, error } = await supabase
+        .from('produto_acabado')
+        .insert({
+          nome: formData.nome,
+          unidade_medida: formData.unidade_medida,
+          custo_producao_estimado: Number(formData.custo_producao_estimado) || 0,
+          quantidade_atual: 0,
+          estoque_atual: 0,
+          estoque_minimo: 0,
+          organization_id: '1'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Sucesso', '✅ Produto cadastrado com sucesso!');
+      setIsDialogOpen(false);
+      setFormData({ nome: '', unidade_medida: '', custo_producao_estimado: 0 });
+      loadProdutos(); // Recarregar lista
+    } catch (error) {
+      console.error('Erro ao salvar produto:', error);
+      toast.error('Erro', 'Falha ao cadastrar produto.');
+    }
   };
 
   return (

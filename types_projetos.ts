@@ -18,6 +18,8 @@ export interface Projeto {
     orcamento?: number;
     custo_real?: number;
     observacoes?: string;
+    nc_origem_id?: string; // NOVO - ID da NC que originou este projeto
+    maquina_id?: string; // NOVO - ID da máquina relacionada
     created_at: string;
     updated_at?: string;
 

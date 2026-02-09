@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardCheck, RefreshCcw, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { MateriaPrima, ProdutoAcabado } from '../types';
+import { store } from '../services/store';
+import { supabase } from '../services/supabaseClient';
+import { useToast } from '../contexts/ToastContext';
 
 interface ItemConferencia {
   id: string;
@@ -12,6 +15,7 @@ interface ItemConferencia {
 }
 
 const ConferenciaEstoque: React.FC = () => {
+  const toast = useToast();
   const [categoria, setCategoria] = useState<'MP' | 'PA'>('MP');
   const [itens, setItens] = useState<ItemConferencia[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,42 +26,90 @@ const ConferenciaEstoque: React.FC = () => {
     loadData();
   }, [categoria]);
 
-  const loadData = () => {
-    setIsLoading(true);
-    // Simulação de carregamento de dados do Supabase
-    setTimeout(() => {
-      const mockData: ItemConferencia[] = categoria === 'MP' ? [
-        { id: '1', nome: 'Aço Carbono 1020', unidade: 'kg', saldoSistema: 1200, contagemFisica: 1200 },
-        { id: '2', nome: 'Polímero Termoplástico', unidade: 'kg', saldoSistema: 450, contagemFisica: 450 },
-        { id: '3', nome: 'Resina Epóxi', unidade: 'kg', saldoSistema: 200, contagemFisica: 200 },
-        { id: '4', nome: 'Parafuso M8x40', unidade: 'un', saldoSistema: 5000, contagemFisica: 5000 },
-      ] : [
-        { id: 'pa1', nome: 'Eixo Turbina XT-1', unidade: 'un', saldoSistema: 45, contagemFisica: 45 },
-        { id: 'pa2', nome: 'Hélice Alumínio 12"', unidade: 'un', saldoSistema: 12, contagemFisica: 12 },
-      ];
-      setItens(mockData);
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+
+      if (categoria === 'MP') {
+        const materias = await store.getMateriasPrimas();
+        const itensConferencia: ItemConferencia[] = materias.map(m => ({
+          id: m.id,
+          nome: m.nome,
+          unidade: m.unidade_medida,
+          saldoSistema: m.estoque_atual || m.quantidade_atual,
+          contagemFisica: m.estoque_atual || m.quantidade_atual
+        }));
+        setItens(itensConferencia);
+      } else {
+        const produtos = await store.getProdutosAcabados();
+        const itensConferencia: ItemConferencia[] = produtos.map(p => ({
+          id: p.id,
+          nome: p.nome,
+          unidade: p.unidade_medida,
+          saldoSistema: p.estoque_atual || p.quantidade_atual,
+          contagemFisica: p.estoque_atual || p.quantidade_atual
+        }));
+        setItens(itensConferencia);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro', 'Falha ao carregar itens para conferência.');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const handleContagemChange = (id: string, value: string) => {
     const numValue = value === '' ? 0 : parseFloat(value);
-    setItens(prev => prev.map(item => 
+    setItens(prev => prev.map(item =>
       item.id === id ? { ...item, contagemFisica: numValue } : item
     ));
   };
 
-  const handleConfirmarBalanco = () => {
-    setIsLoading(true);
-    // Simulação de salvamento no Supabase
-    setTimeout(() => {
-      setIsLoading(false);
+  const handleConfirmarBalanco = async () => {
+    try {
+      setIsLoading(true);
+
+      // Atualizar estoques no banco
+      for (const item of itens) {
+        const divergencia = item.contagemFisica - item.saldoSistema;
+
+        if (divergencia !== 0) {
+          if (categoria === 'MP') {
+            await supabase
+              .from('materia_prima')
+              .update({
+                estoque_atual: item.contagemFisica,
+                quantidade_atual: item.contagemFisica
+              })
+              .eq('id', item.id);
+          } else {
+            await supabase
+              .from('produto_acabado')
+              .update({
+                estoque_atual: item.contagemFisica,
+                quantidade_atual: item.contagemFisica
+              })
+              .eq('id', item.id);
+          }
+        }
+      }
+
+      toast.success('Sucesso', '✅ Balanço confirmado! Estoques atualizados.');
       setIsSuccess(true);
-      setTimeout(() => setIsSuccess(false), 3000);
-    }, 1500);
+      setTimeout(() => {
+        setIsSuccess(false);
+        loadData(); // Recarregar dados
+      }, 3000);
+    } catch (error) {
+      console.error('Erro ao confirmar balanço:', error);
+      toast.error('Erro', 'Falha ao processar balanço.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const filteredItens = itens.filter(item => 
+  const filteredItens = itens.filter(item =>
     item.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -72,13 +124,13 @@ const ConferenciaEstoque: React.FC = () => {
           <p className="text-neutral-500">Realize o inventário físico e identifique divergências no sistema.</p>
         </div>
         <div className="flex bg-slate-100 p-1 rounded-xl border border-neutral-200">
-          <button 
+          <button
             onClick={() => setCategoria('MP')}
             className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${categoria === 'MP' ? 'bg-white shadow-sm text-blue-600' : 'text-neutral-500 hover:text-neutral-700'}`}
           >
             Matéria-Prima
           </button>
-          <button 
+          <button
             onClick={() => setCategoria('PA')}
             className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${categoria === 'PA' ? 'bg-white shadow-sm text-blue-600' : 'text-neutral-500 hover:text-neutral-700'}`}
           >
@@ -91,15 +143,15 @@ const ConferenciaEstoque: React.FC = () => {
         <div className="p-4 border-b border-neutral-100 bg-neutral-50 flex flex-col md:flex-row justify-between gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Buscar item para conferência..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 transition-all"
             />
           </div>
-          <button 
+          <button
             onClick={loadData}
             className="flex items-center justify-center gap-2 text-neutral-600 hover:text-blue-600 font-bold text-sm px-4 py-2 transition-colors"
           >
@@ -148,8 +200,8 @@ const ConferenciaEstoque: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             className="w-24 px-3 py-1.5 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none font-bold"
                             value={item.contagemFisica}
                             onChange={(e) => handleContagemChange(item.id, e.target.value)}
@@ -188,20 +240,20 @@ const ConferenciaEstoque: React.FC = () => {
             * Ao confirmar, o sistema registrará um log de inventário e os saldos serão ajustados conforme a contagem física.
           </div>
           <div className="flex gap-3">
-             <button 
+            <button
               onClick={loadData}
               className="px-6 py-2.5 bg-white border border-neutral-300 rounded-xl font-bold text-neutral-700 hover:bg-neutral-50 transition-all"
-             >
-               Descartar
-             </button>
-             <button 
+            >
+              Descartar
+            </button>
+            <button
               onClick={handleConfirmarBalanco}
               disabled={isLoading || itens.length === 0}
               className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center gap-2"
-             >
-               {isLoading ? <RefreshCcw className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
-               Confirmar Balanço 4.0
-             </button>
+            >
+              {isLoading ? <RefreshCcw className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+              Confirmar Balanço 4.0
+            </button>
           </div>
         </div>
       </div>

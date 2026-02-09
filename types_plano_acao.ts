@@ -2,9 +2,13 @@
 export interface Tarefa {
     id: string;
     plano_acao_id: string;
+    titulo?: string; // Novo campo adicionado
     descricao: string;
-    responsavel: string;
+    responsavel: string; // DEPRECATED - Use responsavel_id
+    responsavel_id?: string; // NOVO - FK para usuarios.id
     prazo: string;
+    prioridade?: 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE'; // Novo campo
+    data_fim_prevista?: string; // Novo campo
     status: 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDA';
     observacoes?: string;
     maquina_id?: string;
