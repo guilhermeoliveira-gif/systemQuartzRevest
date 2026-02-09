@@ -26,11 +26,14 @@ const AIChatAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      console.log("Enviando mensagem para n8n:", userMsg);
+      console.log("=== INÍCIO DA REQUISIÇÃO ===");
+      console.log("1. Mensagem do usuário:", userMsg);
+      console.log("2. URL do webhook:", "https://n8n.gestaoquartzrevest.com.br/webhook/57aff57d-e43c-41cf-87c4-7053c6924c84");
+      console.log("3. Payload enviado:", { chatInput: userMsg });
 
       const response = await fetch("https://n8n.gestaoquartzrevest.com.br/webhook/57aff57d-e43c-41cf-87c4-7053c6924c84", {
         method: "POST",
-        mode: "cors", // Explicitly set CORS mode
+        mode: "cors",
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json, text/plain, */*"
@@ -38,52 +41,63 @@ const AIChatAssistant: React.FC = () => {
         body: JSON.stringify({ chatInput: userMsg })
       });
 
-      console.log("Resposta recebida:", response.status, response.statusText);
+      console.log("4. Status da resposta:", response.status, response.statusText);
+      console.log("5. Headers da resposta:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Check if response is JSON or text
       const contentType = response.headers.get("content-type");
+      console.log("6. Content-Type:", contentType);
       let botResponse = "Recebi sua mensagem, mas não consegui processar a resposta.";
 
-      // First, get the raw text to see what we're dealing with
       const rawText = await response.text();
-      console.log("Resposta bruta:", rawText);
+      console.log("7. Resposta bruta (length:", rawText.length, "):", rawText);
+      console.log("8. Primeiros 500 chars:", rawText.substring(0, 500));
 
       if (!rawText || rawText.trim() === '') {
+        console.log("9. ERRO: Resposta vazia!");
         botResponse = "O servidor respondeu, mas não enviou nenhum conteúdo.";
       } else if (contentType && contentType.indexOf("application/json") !== -1) {
+        console.log("9. Tentando fazer parse como JSON...");
         try {
           const data = JSON.parse(rawText);
-          console.log("Dados JSON recebidos:", data);
-          // Adjust this based on actual n8n response structure. 
-          // Assuming it might return { output: "..." } or similar, or just the text
+          console.log("10. JSON parseado com sucesso:", data);
+          console.log("11. Campos disponíveis no JSON:", Object.keys(data));
+          console.log("12. Valores: output=", data.output, "message=", data.message, "text=", data.text, "response=", data.response);
+
           botResponse = data.output || data.message || data.text || data.response || JSON.stringify(data);
+          console.log("13. Resposta final extraída:", botResponse);
         } catch (jsonError) {
-          console.error("Erro ao fazer parse do JSON:", jsonError);
-          // If JSON parsing fails, use the raw text
+          console.error("10. ERRO ao fazer parse do JSON:", jsonError);
+          console.log("11. Usando texto bruto como fallback");
           botResponse = rawText;
         }
       } else {
-        console.log("Texto recebido (não-JSON):", rawText);
+        console.log("9. Resposta não é JSON, usando texto bruto");
         botResponse = rawText || "Resposta vazia do servidor.";
       }
 
+      console.log("=== FIM DA REQUISIÇÃO (SUCESSO) ===");
       setMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
 
     } catch (error) {
-      console.error("AI Assistant Error:", error);
+      console.error("=== ERRO NA REQUISIÇÃO ===");
+      console.error("Tipo do erro:", error instanceof TypeError ? "TypeError" : error instanceof Error ? "Error" : typeof error);
+      console.error("Mensagem do erro:", error instanceof Error ? error.message : String(error));
+      console.error("Stack trace:", error instanceof Error ? error.stack : "N/A");
 
-      // More detailed error message
       let errorMessage = "Desculpe, não consegui conectar ao servidor de inteligência no momento.";
 
       if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
-        errorMessage = "Erro de conexão: Verifique se o servidor n8n está acessível e configurado para aceitar requisições CORS.";
+        errorMessage = "❌ Erro de CORS ou conexão bloqueada.\n\nVerifique:\n1. Se o webhook n8n está ativo\n2. Se o CORS está configurado no n8n\n3. Se a URL está correta";
       } else if (error instanceof Error) {
-        errorMessage = `Erro: ${error.message}`;
+        errorMessage = `❌ Erro: ${error.message}`;
       }
+
+      console.log("Mensagem de erro para o usuário:", errorMessage);
+      console.log("=== FIM DA REQUISIÇÃO (ERRO) ===");
 
       setMessages(prev => [...prev, { role: 'bot', content: errorMessage }]);
     } finally {
