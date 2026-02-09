@@ -48,16 +48,27 @@ const AIChatAssistant: React.FC = () => {
       const contentType = response.headers.get("content-type");
       let botResponse = "Recebi sua mensagem, mas não consegui processar a resposta.";
 
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await response.json();
-        console.log("Dados JSON recebidos:", data);
-        // Adjust this based on actual n8n response structure. 
-        // Assuming it might return { output: "..." } or similar, or just the text
-        botResponse = data.output || data.message || data.text || data.response || JSON.stringify(data);
+      // First, get the raw text to see what we're dealing with
+      const rawText = await response.text();
+      console.log("Resposta bruta:", rawText);
+
+      if (!rawText || rawText.trim() === '') {
+        botResponse = "O servidor respondeu, mas não enviou nenhum conteúdo.";
+      } else if (contentType && contentType.indexOf("application/json") !== -1) {
+        try {
+          const data = JSON.parse(rawText);
+          console.log("Dados JSON recebidos:", data);
+          // Adjust this based on actual n8n response structure. 
+          // Assuming it might return { output: "..." } or similar, or just the text
+          botResponse = data.output || data.message || data.text || data.response || JSON.stringify(data);
+        } catch (jsonError) {
+          console.error("Erro ao fazer parse do JSON:", jsonError);
+          // If JSON parsing fails, use the raw text
+          botResponse = rawText;
+        }
       } else {
-        const textData = await response.text();
-        console.log("Texto recebido:", textData);
-        botResponse = textData || "Resposta vazia do servidor.";
+        console.log("Texto recebido (não-JSON):", rawText);
+        botResponse = rawText || "Resposta vazia do servidor.";
       }
 
       setMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
