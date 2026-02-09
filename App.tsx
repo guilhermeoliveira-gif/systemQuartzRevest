@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import AuthLayout from './layouts/AuthLayout';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/auth/Login';
@@ -54,81 +55,83 @@ import TestConnection from './pages/TestConnection';
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <ToastProvider>
-          <Routes>
-            {/* Public Routes - Auth */}
-            <Route path="/auth" element={<AuthLayout />}>
-              <Route path="login" element={<Login />} />
-            </Route>
-
-            {/* Protected Routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<ModuleSelector />} />
-                <Route path="/dashboard" element={<DashboardGlobal />} />
-                <Route path="/minhas-tarefas" element={<MinhasTarefas />} />
-                <Route path="/perfil" element={<Perfil />} />
-                <Route path="/configuracoes" element={<Configuracoes />} />
-
-                {/* Stock Module */}
-                <Route path="/estoque/dashboard" element={<Dashboard />} />
-                <Route path="/estoque/cadastro/mp" element={<MPCadastro />} />
-                <Route path="/estoque/cadastro/pa" element={<PACadastro />} />
-                <Route path="/estoque/pecas" element={<EstoquePecas />} />
-                <Route path="/estoque/cadastro/formula" element={<FormulaCadastro />} />
-                <Route path="/estoque/entrada-material" element={<EntradaMaterial />} />
-                <Route path="/estoque/controle-producao" element={<ControleProducao />} />
-                <Route path="/estoque/conferencia" element={<ConferenciaEstoque />} />
-                <Route path="/estoque/relatorios" element={<Relatorios />} />
-                <Route path="/estoque/configuracoes" element={<Configuracoes />} />
-                <Route path="/estoque/tarefas" element={<MinhasTarefas />} />
-
-                {/* Quality Module */}
-                <Route path="/qualidade/nao-conformidades" element={<NaoConformidades />} />
-                <Route path="/qualidade/planos-acao" element={<PlanosAcao />} />
-                <Route path="/qualidade/configuracoes" element={<Configuracoes />} />
-                <Route path="/qualidade/tarefas" element={<MinhasTarefas />} />
-
-                {/* Security Module */}
-                <Route path="/seguranca/usuarios" element={<CadastroUsuarios />} />
-                <Route path="/seguranca/perfis" element={<CadastroPerfis />} />
-                <Route path="/seguranca/permissoes" element={<PerfilPermissoes />} />
-
-                {/* Projects Module */}
-                <Route path="/projetos/dashboard" element={<ProjetosDashboard />} />
-                <Route path="/projetos/consulta" element={<Projetos />} />
-                <Route path="/projetos/detalhes/:id" element={<ProjetoDetalhes />} />
-                <Route path="/projetos/tarefas-consulta" element={<Tarefas />} />
-
-                {/* PCP Module */}
-                <Route path="/pcp" element={<PCPDashboard />} />
-                <Route path="/pcp/planejamento" element={<PCPPlanejamento />} />
-                <Route path="/pcp/producao" element={<PCPProducao />} />
-                <Route path="/pcp/historico" element={<PCPHistorico />} />
-
-                {/* Manutenção Module */}
-                <Route path="/manutencao" element={<ManutencaoDashboard />} />
-                <Route path="/manutencao/maquinas" element={<Maquinas />} />
-                <Route path="/manutencao/maquinas/:id" element={<MaquinaDetalhes />} />
-                <Route path="/manutencao/os" element={<OrdensServico />} />
-                {/* Frotas Module */}
-                <Route path="/frotas" element={<FrotaDashboard />} />
-                <Route path="/frotas/veiculos" element={<GestaoFrotas />} />
-                <Route path="/frotas/abastecimentos" element={<FrotaAbastecimentos />} />
-                <Route path="/frotas/manutencoes" element={<FrotaManutencoes />} />
-                <Route path="/frotas/:id" element={<VeiculoDetalhes />} />
-                <Route path="/test-connection" element={<TestConnection />} />
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <ToastProvider>
+            <Routes>
+              {/* Public Routes - Auth */}
+              <Route path="/auth" element={<AuthLayout />}>
+                <Route path="login" element={<Login />} />
               </Route>
-            </Route>
 
-            {/* Catch all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </ToastProvider>
-      </AuthProvider>
-    </Router>
+              {/* Protected Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<ModuleSelector />} />
+                  <Route path="/dashboard" element={<DashboardGlobal />} />
+                  <Route path="/minhas-tarefas" element={<MinhasTarefas />} />
+                  <Route path="/perfil" element={<Perfil />} />
+                  <Route path="/configuracoes" element={<Configuracoes />} />
+
+                  {/* Stock Module */}
+                  <Route path="/estoque/dashboard" element={<Dashboard />} />
+                  <Route path="/estoque/cadastro/mp" element={<MPCadastro />} />
+                  <Route path="/estoque/cadastro/pa" element={<PACadastro />} />
+                  <Route path="/estoque/pecas" element={<EstoquePecas />} />
+                  <Route path="/estoque/cadastro/formula" element={<FormulaCadastro />} />
+                  <Route path="/estoque/entrada-material" element={<EntradaMaterial />} />
+                  <Route path="/estoque/controle-producao" element={<ControleProducao />} />
+                  <Route path="/estoque/conferencia" element={<ConferenciaEstoque />} />
+                  <Route path="/estoque/relatorios" element={<Relatorios />} />
+                  <Route path="/estoque/configuracoes" element={<Configuracoes />} />
+                  <Route path="/estoque/tarefas" element={<MinhasTarefas />} />
+
+                  {/* Quality Module */}
+                  <Route path="/qualidade/nao-conformidades" element={<NaoConformidades />} />
+                  <Route path="/qualidade/planos-acao" element={<PlanosAcao />} />
+                  <Route path="/qualidade/configuracoes" element={<Configuracoes />} />
+                  <Route path="/qualidade/tarefas" element={<MinhasTarefas />} />
+
+                  {/* Security Module */}
+                  <Route path="/seguranca/usuarios" element={<CadastroUsuarios />} />
+                  <Route path="/seguranca/perfis" element={<CadastroPerfis />} />
+                  <Route path="/seguranca/permissoes" element={<PerfilPermissoes />} />
+
+                  {/* Projects Module */}
+                  <Route path="/projetos/dashboard" element={<ProjetosDashboard />} />
+                  <Route path="/projetos/consulta" element={<Projetos />} />
+                  <Route path="/projetos/detalhes/:id" element={<ProjetoDetalhes />} />
+                  <Route path="/projetos/tarefas-consulta" element={<Tarefas />} />
+
+                  {/* PCP Module */}
+                  <Route path="/pcp" element={<PCPDashboard />} />
+                  <Route path="/pcp/planejamento" element={<PCPPlanejamento />} />
+                  <Route path="/pcp/producao" element={<PCPProducao />} />
+                  <Route path="/pcp/historico" element={<PCPHistorico />} />
+
+                  {/* Manutenção Module */}
+                  <Route path="/manutencao" element={<ManutencaoDashboard />} />
+                  <Route path="/manutencao/maquinas" element={<Maquinas />} />
+                  <Route path="/manutencao/maquinas/:id" element={<MaquinaDetalhes />} />
+                  <Route path="/manutencao/os" element={<OrdensServico />} />
+                  {/* Frotas Module */}
+                  <Route path="/frotas" element={<FrotaDashboard />} />
+                  <Route path="/frotas/veiculos" element={<GestaoFrotas />} />
+                  <Route path="/frotas/abastecimentos" element={<FrotaAbastecimentos />} />
+                  <Route path="/frotas/manutencoes" element={<FrotaManutencoes />} />
+                  <Route path="/frotas/:id" element={<VeiculoDetalhes />} />
+                  <Route path="/test-connection" element={<TestConnection />} />
+                </Route>
+              </Route>
+
+              {/* Catch all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </ToastProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 };
 

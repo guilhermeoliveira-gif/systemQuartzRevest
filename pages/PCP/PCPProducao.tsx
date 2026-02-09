@@ -1,37 +1,30 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Play, Square, CheckCircle2, AlertCircle,
+    Play, Square, CheckCircle2,
     ArrowDownCircle, Package, User, Clock
 } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
 import { pcpService } from '../../services/pcpService';
 import { ItemPlanoProducao, RegistroProducao } from '../../types_pcp';
 import { useToast } from '../../contexts/ToastContext';
 import { store } from '../../services/store';
+import { LoadingState } from '../../components/LoadingState';
+import { logger } from '../../utils/logger';
+
+// Interface auxiliar para os registros do histórico
+interface HistoricoRegistro extends RegistroProducao {
+    item?: {
+        nome_produto_acabado?: string;
+    };
+    nome_produto_acabado?: string; // Fallback
+}
 
 const PCPProducao: React.FC = () => {
     const toast = useToast();
     const [proximas, setProximas] = useState<ItemPlanoProducao[]>([]);
-    const [proximasPoolHistory, setProximasPoolHistory] = useState<any[]>([]);
+    const [proximasPoolHistory, setProximasPoolHistory] = useState<HistoricoRegistro[]>([]);
     const [loading, setLoading] = useState(true);
     const [itemAtivo, setItemAtivo] = useState<ItemPlanoProducao | null>(null);
     const [registroAtivo, setRegistroAtivo] = useState<RegistroProducao | null>(null);
-    const [produtosAcabados, setProdutosAcabados] = useState<any[]>([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [proximasPool, setProximasPool] = useState<ItemPlanoProducao[]>([]);
-    const [historicoFull, setHistoricoFull] = useState<any[]>([]);
-    const [itemAtivoHistory, setItemAtivoHistory] = useState<any | null>(null);
-    const [loadingHistory, setLoadingHistory] = useState(false);
-    const [availableCategories, setAvailableCategories] = useState<string[]>(['PECA', 'INSUMO']);
-    const [customCategoryMode, setCustomCategoryMode] = useState(false);
-    const [newItem, setNewItem] = useState<any>({ nome: '', categoria: 'PECA' });
-    const [selectedMaquinaId, setSelectedMaquinaId] = useState('');
-    const [maquinas, setMaquinas] = useState<any[]>([]);
-    const [filter, setFilter] = useState('');
-    const [moveModal, setMoveModal] = useState<{ open: boolean; type: 'ENTRADA' | 'SAIDA'; item: any | null }>({ open: false, type: 'ENTRADA', item: null });
-    const [moveQty, setMoveQty] = useState('');
-    const [moveReason, setMoveReason] = useState('');
 
     // Form control
     const [isProduzindo, setIsProduzindo] = useState(false);
@@ -78,9 +71,17 @@ const PCPProducao: React.FC = () => {
             // Filtra histórico para mostrar apenas o que foi finalizado hoje
             const hoje = new Date().toISOString().split('T')[0];
             const finalizadosHoje = historico.filter(r => r.data_hora_fim && r.data_hora_fim.startsWith(hoje));
-            setProximasPoolHistory(finalizadosHoje);
+            setProximasPoolHistory(finalizadosHoje as any);
+
+            logger.debug('PCP Produção carregado', {
+                ativo: !!ativo,
+                poolSize: proximasPool.length,
+                historySize: finalizadosHoje.length
+            });
+
         } catch (error) {
-            console.error(error);
+            logger.error('Erro ao carregar dados PCP', error);
+            toast.error('Erro', 'Falha ao carregar dados de produção.');
         } finally {
             setLoading(false);
         }
@@ -89,7 +90,6 @@ const PCPProducao: React.FC = () => {
     const handleSelectOrder = (item: ItemPlanoProducao) => {
         setItemAtivo(item);
         // Preenche com o final da última produção realizada (se houver) como sugestão inicial
-        // Isso pode ser melhorado pegando o contador da máquina, mas por enquanto pegamos do último histórico geral
         if (proximasPoolHistory.length > 0) {
             const ultimo = proximasPoolHistory[0]; // Assumindo ordenação por data desc no backend ou array
             setContadores({
@@ -117,10 +117,14 @@ const PCPProducao: React.FC = () => {
 
             setRegistroAtivo(novoRegistro);
             setIsProduzindo(true);
-            toast.success('Sucesso', '✅ Operação de produção registrada!', { style: { backgroundColor: '#22c55e', color: 'white' } });
+            toast.success('Sucesso', 'Produção iniciada com sucesso!', {
+                // style: { backgroundColor: '#22c55e', color: 'white' } 
+            });
+            logger.info('Produção iniciada', { item: itemAtivo.nome_produto_acabado });
             loadData();
         } catch (error) {
-            toast.error('Erro', '❌ Erro ao iniciar produção.');
+            logger.error('Erro ao iniciar produção', error);
+            toast.error('Erro', 'Não foi possível iniciar a produção.');
         }
     };
 
@@ -129,7 +133,7 @@ const PCPProducao: React.FC = () => {
 
         // Simples validação de contadores
         if (contadores.c1 <= Number(registroAtivo.contador1_inicio)) {
-            toast.error('Erro', '❌ Erro: Verifique os valores do contador (deve ser maior que o inicial).', { style: { backgroundColor: '#ef4444', color: 'white' } });
+            toast.error('Validação', 'O contador final deve ser maior que o inicial.');
             return;
         }
 
@@ -141,7 +145,6 @@ const PCPProducao: React.FC = () => {
             });
 
             // INTEGRACAO ESTOQUE: Registrar a entrada física do Produto Acabado
-            // Assumimos que cada mistura gera uma quantidade baseada na unidade de medida (ex: 1)
             await store.addProducao({
                 produto_acabado_id: itemAtivo.id_produto_acabado,
                 quantidade_produzida: itemAtivo.qtd_misturas_planejadas,
@@ -151,19 +154,20 @@ const PCPProducao: React.FC = () => {
 
             setIsProduzindo(false);
             setRegistroAtivo(null);
-            // Removido o reset dos contadores para manter o valor final como inicial da próxima
-            toast.success('Sucesso', '✅ Produção finalizada com sucesso!', { style: { backgroundColor: '#22c55e', color: 'white' } });
+
+            toast.success('Sucesso', 'Produção finalizada e estoque atualizado!');
 
             // Simulação de envio de notificação (WhatsApp/SMS)
-            console.log("NOTIFICAÇÃO ENVIADA: Produção de " + itemAtivo.nome_produto_acabado + " finalizada!");
+            logger.info("Notificação enviada: Produção finalizada", { produto: itemAtivo.nome_produto_acabado });
 
             loadData(); // Will return to list view since 'Produzindo' is gone
         } catch (error) {
+            logger.error('Erro ao finalizar produção', error);
             toast.error('Erro', 'Falha ao finalizar operação.');
         }
     };
 
-    if (loading) return <div className="p-10 text-center font-mono">Carregando painel do operador...</div>;
+    if (loading) return <LoadingState message="Carregando Painel do Operador..." fullScreen />;
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-20">
@@ -207,27 +211,27 @@ const PCPProducao: React.FC = () => {
 
                             <div className="pt-4 flex gap-4">
                                 {!isProduzindo && (
-                                    <Button
+                                    <button
                                         onClick={handleCancelSelection}
                                         className="py-8 px-6 text-xl font-black bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-2xl transition-all"
                                     >
                                         VOLTAR
-                                    </Button>
+                                    </button>
                                 )}
                                 {isProduzindo ? (
-                                    <Button
+                                    <button
                                         onClick={handleFinalizar}
-                                        className="flex-1 py-8 text-xl font-black bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-lg border-b-4 border-blue-900 active:border-b-0 translate-y-0 active:translate-y-1 transition-all"
+                                        className="flex-1 py-8 text-xl font-black bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-lg border-b-4 border-blue-900 active:border-b-0 translate-y-0 active:translate-y-1 transition-all flex items-center justify-center"
                                     >
                                         <Square size={24} className="mr-3" /> FINALIZAR PRODUÇÃO
-                                    </Button>
+                                    </button>
                                 ) : (
-                                    <Button
+                                    <button
                                         onClick={handleIniciar}
-                                        className="flex-1 py-8 text-xl font-black bg-green-600 hover:bg-green-700 rounded-2xl shadow-lg border-b-4 border-green-900 active:border-b-0 translate-y-0 active:translate-y-1 transition-all"
+                                        className="flex-1 py-8 text-xl font-black bg-green-600 hover:bg-green-700 text-white rounded-2xl shadow-lg border-b-4 border-green-900 active:border-b-0 translate-y-0 active:translate-y-1 transition-all flex items-center justify-center"
                                     >
                                         <Play size={24} className="mr-3" /> INICIAR PRODUÇÃO
-                                    </Button>
+                                    </button>
                                 )}
                             </div>
                         </>
@@ -303,9 +307,9 @@ const PCPProducao: React.FC = () => {
                         proximasPoolHistory.map((reg) => (
                             <div key={reg.id} className="p-4 hover:bg-slate-50 transition-colors flex justify-between items-center">
                                 <div>
-                                    <div className="font-black text-slate-800 uppercase">{reg.item?.nome_produto_acabado}</div>
+                                    <div className="font-black text-slate-800 uppercase">{reg.item?.nome_produto_acabado || reg.nome_produto_acabado || 'Produto sem nome'}</div>
                                     <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                        Fim: {new Date(reg.data_hora_fim).toLocaleTimeString()} • {reg.nome_operador}
+                                        Fim: {reg.data_hora_fim ? new Date(reg.data_hora_fim).toLocaleTimeString() : '-'} • {reg.nome_operador}
                                     </div>
                                 </div>
                                 <div className="text-right">

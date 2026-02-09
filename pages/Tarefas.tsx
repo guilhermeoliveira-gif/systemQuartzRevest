@@ -1,22 +1,21 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    ListTodo, Plus, Search, Filter, CheckCircle2, Clock,
-    XCircle, FileText, ChevronRight, Save, User, Calendar,
-    TrendingUp, AlertCircle, Edit2, Trash2, FolderKanban, CheckSquare
+    ListTodo, Plus, Search, CheckCircle2,
+    XCircle, Save, User, Calendar,
+    Trash2, FolderKanban, CheckSquare,
+    Settings as MachineIcon
 } from 'lucide-react';
 import { projetosService } from '../services/projetosService';
-import { segurancaService } from '../services/segurancaService';
-import { TarefaProjeto, StatusTarefa, Prioridade, Projeto } from '../types_projetos';
-// import { Usuario } from '../types_seguranca'; // Removed
+import { manutencaoService } from '../services/manutencaoService';
+import { TarefaProjeto, Projeto } from '../types_projetos';
+import { Maquina } from '../types_manutencao';
 import { UserSelect } from '../components/UserSelect';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { manutencaoService } from '../services/manutencaoService';
-import { Maquina } from '../types_manutencao';
-import { Settings as MachineIcon } from 'lucide-react';
 import OSModal from '../components/Manutencao/OSModal';
+import { LoadingState } from '../components/LoadingState';
+import { logger } from '../utils/logger';
 
 const Tarefas: React.FC = () => {
     const navigate = useNavigate();
@@ -65,10 +64,10 @@ const Tarefas: React.FC = () => {
             ]);
             setTarefas(tarefasData);
             setProjetos(projetosData.filter(p => p.status !== 'CONCLUIDO' && p.status !== 'CANCELADO'));
-
             setMaquinas(maquinasData);
+            logger.debug('Dados carregados em Tarefas', { total: tarefasData.length });
         } catch (error) {
-            console.error('Erro ao carregar dados:', error);
+            logger.error('Erro ao carregar dados em Tarefas', error);
             toast.error('Erro de Conexão', 'Não foi possível carregar as tarefas.');
         } finally {
             setLoading(false);
@@ -89,6 +88,7 @@ const Tarefas: React.FC = () => {
             setViewMode('LIST');
             resetForm();
         } catch (error: any) {
+            logger.error('Erro ao salvar tarefa', error);
             toast.error('Erro ao Salvar', error.message);
         }
     };
@@ -101,41 +101,52 @@ const Tarefas: React.FC = () => {
             setIsDeleteDialogOpen(false);
             setTarefaToDelete(null);
         } catch (error: any) {
+            logger.error('Erro ao excluir tarefa', error);
             toast.error('Erro ao Excluir', error.message);
         }
     };
 
     const toggleStatus = async (tarefa: TarefaProjeto) => {
-        if (tarefa.status === 'CONCLUIDA') {
-            await projetosService.updateTarefa(tarefa.id, { status: 'PENDENTE' });
-            toast.success('Status Atualizado', 'Tarefa retornada para Pendente.');
-            await loadData();
-            return;
-        }
+        try {
+            if (tarefa.status === 'CONCLUIDA') {
+                await projetosService.updateTarefa(tarefa.id, { status: 'PENDENTE' });
+                toast.success('Status Atualizado', 'Tarefa retornada para Pendente.');
+                await loadData();
+                return;
+            }
 
-        if (tarefa.maquina_id) {
-            setTarefaParaOS(tarefa);
-            setIsOSModalOpen(true);
-        } else {
-            await projetosService.updateTarefa(tarefa.id, { status: 'CONCLUIDA' });
-            toast.success('Tarefa Concluída', 'O status foi atualizado com sucesso.');
-            await loadData();
+            if (tarefa.maquina_id) {
+                setTarefaParaOS(tarefa);
+                setIsOSModalOpen(true);
+            } else {
+                await projetosService.updateTarefa(tarefa.id, { status: 'CONCLUIDA' });
+                toast.success('Tarefa Concluída', 'O status foi atualizado com sucesso.');
+                await loadData();
+            }
+        } catch (error: any) {
+            logger.error('Erro ao atualizar status', error);
+            toast.error('Erro', 'Não foi possível atualizar o status.');
         }
     };
 
     const handleOSSuccess = async (osId: string) => {
         if (tarefaParaOS) {
-            await projetosService.updateTarefa(tarefaParaOS.id, {
-                status: 'CONCLUIDA',
-                os_id: osId
-            });
-            await loadData();
-            setIsOSModalOpen(false);
-            setTarefaParaOS(null);
+            try {
+                await projetosService.updateTarefa(tarefaParaOS.id, {
+                    status: 'CONCLUIDA',
+                    os_id: osId
+                });
+                await loadData();
+                setIsOSModalOpen(false);
+                setTarefaParaOS(null);
+            } catch (error: any) {
+                logger.error('Erro ao vincular OS', error);
+                toast.error('Erro', 'Falha ao vincular OS à tarefa.');
+            }
         }
     };
 
-    const resetForm = () => {
+    const resetForm = useCallback(() => {
         setFormData({
             projeto_id: '',
             titulo: '',
@@ -147,25 +158,21 @@ const Tarefas: React.FC = () => {
             horas_estimadas: 0,
             maquina_id: ''
         });
-    };
+    }, []);
 
-    const filteredTarefas = tarefas.filter(t => {
-        const matchesSearch = t.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            t.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            t.projeto?.nome.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = selectedStatus === 'ALL' || t.status === selectedStatus;
-        return matchesSearch && matchesStatus;
-    });
+    // Memoized filtered tasks
+    const filteredTarefas = useMemo(() => {
+        return tarefas.filter(t => {
+            const matchesSearch = t.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                t.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                t.projeto?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesStatus = selectedStatus === 'ALL' || t.status === selectedStatus;
+            return matchesSearch && matchesStatus;
+        });
+    }, [tarefas, searchTerm, selectedStatus]);
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600 font-medium font-mono">Carregando Tarefas...</p>
-                </div>
-            </div>
-        );
+        return <LoadingState message="Carregando Tarefas..." size="lg" />;
     }
 
     return (

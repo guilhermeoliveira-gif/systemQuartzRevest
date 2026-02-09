@@ -1,10 +1,10 @@
 
 import { supabase } from './supabaseClient';
+import { logger } from '../utils/logger';
 import {
     PlanoProducao,
     ItemPlanoProducao,
     RegistroProducao,
-    StatusPlanoProducao,
     StatusItemProducao
 } from '../types_pcp';
 
@@ -19,7 +19,10 @@ export const pcpService = {
             `)
             .order('data_planejamento', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            logger.error('Erro ao buscar planos de produção', error);
+            throw error;
+        }
         return data || [];
     },
 
@@ -30,7 +33,10 @@ export const pcpService = {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            logger.error('Erro ao criar plano de produção', error);
+            throw error;
+        }
         return data;
     },
 
@@ -42,7 +48,10 @@ export const pcpService = {
             .eq('id_plano_producao', planoId)
             .order('ordem', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+            logger.error(`Erro ao buscar itens do plano ${planoId}`, error);
+            throw error;
+        }
         return data || [];
     },
 
@@ -53,17 +62,23 @@ export const pcpService = {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            logger.error('Erro ao criar item do plano', error);
+            throw error;
+        }
         return data;
     },
 
     async updateItemStatus(id: string, status: StatusItemProducao): Promise<void> {
         const { error } = await supabase
             .from('item_plano_producao')
-            .update({ status, updated_at: new Date().toISOString() })
+            .update({ status: status as any, updated_at: new Date().toISOString() })
             .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+            logger.error(`Erro ao atualizar status do item ${id} para ${status}`, error);
+            throw error;
+        }
     },
 
     async deleteItemPlano(id: string): Promise<void> {
@@ -72,7 +87,10 @@ export const pcpService = {
             .delete()
             .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+            logger.error(`Erro ao excluir item do plano ${id}`, error);
+            throw error;
+        }
     },
 
     // ==================== REGISTROS DE PRODUÇÃO ====================
@@ -83,23 +101,39 @@ export const pcpService = {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            logger.error('Erro ao iniciar registro de produção', error);
+            throw error;
+        }
 
         // Atualiza status do item para 'Produzindo'
-        await this.updateItemStatus(registro.id_item_plano_producao!, 'Produzindo');
+        // Nota: Idealmente seria transactional, mas supabase-js não suporta transaction cross-table simples assim
+        try {
+            if (registro.id_item_plano_producao) {
+                await this.updateItemStatus(registro.id_item_plano_producao, 'Produzindo');
+            }
+        } catch (updateError) {
+            logger.error('Produção iniciada, mas falha ao atualizar status do item', updateError);
+            // Não throw aqui para não bloquear o operador, mas é um estado inconsistente
+        }
 
         return data;
     },
 
     async finalizarProducao(id: string, dadosFim: Partial<RegistroProducao>): Promise<void> {
+        // 1. Busca registro atual para saber qual item atualizar
         const { data: registroAtivo, error: errorFetch } = await supabase
             .from('registro_producao')
             .select('*')
             .eq('id', id)
             .single();
 
-        if (errorFetch) throw errorFetch;
+        if (errorFetch) {
+            logger.error(`Erro ao buscar registro de produção ${id} para finalizar`, errorFetch);
+            throw errorFetch;
+        }
 
+        // 2. Atualiza registro com dados finais
         const { error } = await supabase
             .from('registro_producao')
             .update({
@@ -108,13 +142,22 @@ export const pcpService = {
             })
             .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+            logger.error(`Erro ao finalizar registro de produção ${id}`, error);
+            throw error;
+        }
 
-        // Atualiza status do item para 'Finalizado'
-        await this.updateItemStatus(registroAtivo.id_item_plano_producao, 'Finalizado');
+        // 3. Atualiza status do item para 'Finalizado'
+        if (registroAtivo && registroAtivo.id_item_plano_producao) {
+            try {
+                await this.updateItemStatus(registroAtivo.id_item_plano_producao, 'Finalizado');
+            } catch (updateError) {
+                logger.error('Produção finalizada, mas falha ao atualizar status do item', updateError);
+            }
+        }
     },
 
-    async getHistorico(): Promise<any[]> {
+    async getHistorico(): Promise<RegistroProducao[]> {
         const { data, error } = await supabase
             .from('registro_producao')
             .select(`
@@ -123,7 +166,10 @@ export const pcpService = {
             `)
             .order('data_hora_inicio', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            logger.error('Erro ao buscar histórico de produção', error);
+            throw error;
+        }
         return data || [];
     }
 };
