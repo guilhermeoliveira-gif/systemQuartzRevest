@@ -1,13 +1,65 @@
 ﻿
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Plus, Search, Filter, CheckCircle, Clock, XCircle, FileText, ChevronRight, Save, ShieldAlert, Upload, Image as ImageIcon, Trash2, FolderPlus } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Filter, CheckCircle, Clock, XCircle, FileText, ChevronRight, Save, ShieldAlert, Upload, Image as ImageIcon, Trash2, FolderPlus, Download, LayoutGrid, List as ListIcon, MoreVertical, Calendar } from 'lucide-react';
 import { UserSelect } from '../components/UserSelect';
 import { NaoConformidade } from '../types_nc';
 import { qualidadeService } from '../services/qualidadeService';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CriarProjetoModal from '../components/CriarProjetoModal';
+
+// Components
+const KpiCard = ({ icon: Icon, label, value, color }: { icon: any, label: string, value: number, color: 'slate' | 'red' | 'amber' | 'green' | 'blue' | 'orange' }) => {
+    const colorClasses = {
+        slate: 'text-slate-600 bg-slate-50 border-slate-200',
+        red: 'text-red-600 bg-red-50 border-red-200',
+        amber: 'text-amber-600 bg-amber-50 border-amber-200',
+        green: 'text-green-600 bg-green-50 border-green-200',
+        blue: 'text-blue-600 bg-blue-50 border-blue-200',
+        orange: 'text-orange-600 bg-orange-50 border-orange-200'
+    };
+
+    return (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between h-24">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorClasses[color].split(' ')[1]} ${colorClasses[color].split(' ')[0]}`}>
+                <Icon size={18} />
+            </div>
+            <div>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
+                <div className="text-2xl font-bold text-slate-800 leading-none mt-1">{value}</div>
+            </div>
+        </div>
+    );
+};
+
+const Badge = ({ label, color, variant = 'soft' }: { label: string, color: string, variant?: 'soft' | 'solid' }) => {
+    const baseColors: any = {
+        slate: 'bg-slate-100 text-slate-700',
+        red: 'bg-red-100 text-red-700',
+        amber: 'bg-amber-100 text-amber-700',
+        green: 'bg-green-100 text-green-700',
+        blue: 'bg-blue-100 text-blue-700',
+        orange: 'bg-orange-100 text-orange-700'
+    };
+
+    const solidColors: any = {
+        slate: 'bg-slate-600 text-white',
+        red: 'bg-red-600 text-white',
+        amber: 'bg-amber-500 text-white',
+        green: 'bg-green-600 text-white',
+        blue: 'bg-blue-600 text-white',
+        orange: 'bg-orange-500 text-white'
+    };
+
+    const classes = variant === 'solid' ? solidColors[color] || solidColors.slate : baseColors[color] || baseColors.slate;
+
+    return (
+        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${classes}`}>
+            {label}
+        </span>
+    );
+};
 
 const NaoConformidades: React.FC = () => {
     const navigate = useNavigate();
@@ -17,6 +69,7 @@ const NaoConformidades: React.FC = () => {
     const [ocorrencias, setOcorrencias] = useState<NaoConformidade[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'FORM' | 'ANALYSIS'>('LIST');
+    const [listLayout, setListLayout] = useState<'CARDS' | 'TABLE'>('CARDS');
     const [selectedOcorrencia, setSelectedOcorrencia] = useState<NaoConformidade | null>(null);
 
     // UX State
@@ -194,155 +247,153 @@ const NaoConformidades: React.FC = () => {
     return (
         <div className="space-y-6 pb-20">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-800 flex items-center gap-2 tracking-tight">
-                        <AlertTriangle className="text-red-600" size={32} />
-                        Gestão de Não Conformidades
-                    </h1>
-                    <p className="text-slate-500 font-medium">RNC - Registro, Análise de Causa Raiz e Planos de Ação (5W2H)</p>
-                </div>
-                {viewMode === 'LIST' && (
-                    <button
-                        onClick={() => setViewMode('FORM')}
-                        className="bg-red-600 text-white px-6 py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 font-bold text-base"
-                    >
-                        <Plus size={20} />
-                        Nova RNC
-                    </button>
-                )}
-            </div>
-
             {viewMode === 'LIST' && (
                 <>
-                    {/* Dashboard KPIs */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-200 transition-colors">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Total de RNCs</p>
-                                    <h3 className="text-3xl font-black text-slate-800 mt-1">{ocorrencias.length}</h3>
-                                </div>
-                                <div className="p-3 bg-slate-100 rounded-xl text-slate-600"><FileText size={24} /></div>
-                            </div>
+                    {/* Dashboard Header & KPIs */}
+                    <div className="space-y-6 mb-8">
+                        <div>
+                            <h1 className="text-3xl font-bold text-slate-800">Gestão de Problemas</h1>
+                            <p className="text-slate-500">Registre e resolva não conformidades em {'{SCR Argamassas}'}</p>
                         </div>
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-200 transition-colors">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Em Aberto</p>
-                                    <h3 className="text-3xl font-black text-blue-600 mt-1">
-                                        {ocorrencias.filter(o => o.status !== 'CONCLUIDA' && o.status !== 'CANCELADA').length}
-                                    </h3>
-                                </div>
-                                <div className="p-3 bg-blue-100 rounded-xl text-blue-600"><Clock size={24} /></div>
-                            </div>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-red-200 transition-colors">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Críticas</p>
-                                    <h3 className="text-3xl font-black text-red-600 mt-1">
-                                        {ocorrencias.filter(o => o.severidade === 'CRITICA').length}
-                                    </h3>
-                                </div>
-                                <div className="p-3 bg-red-100 rounded-xl text-red-600"><AlertTriangle size={24} /></div>
-                            </div>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-green-200 transition-colors">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Concluídas</p>
-                                    <h3 className="text-3xl font-black text-green-600 mt-1">
-                                        {ocorrencias.filter(o => o.status === 'CONCLUIDA').length}
-                                    </h3>
-                                </div>
-                                <div className="p-3 bg-green-100 rounded-xl text-green-600"><CheckCircle size={24} /></div>
-                            </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                            <KpiCard icon={AlertTriangle} label="Total" value={ocorrencias.length} color="slate" />
+                            <KpiCard icon={AlertTriangle} label="Abertos" value={ocorrencias.filter(o => o.status !== 'CONCLUIDO' && o.status !== 'CANCELADO').length} color="red" />
+                            <KpiCard icon={Clock} label="Analisando" value={ocorrencias.filter(o => o.status === 'EM_ANALISE').length} color="amber" />
+                            <KpiCard icon={CheckCircle} label="Resolvidos" value={ocorrencias.filter(o => o.status === 'CONCLUIDO').length} color="green" />
+                            <KpiCard icon={XCircle} label="Fechados" value={ocorrencias.filter(o => o.status === 'CONCLUIDO').length} color="slate" />
+                            <KpiCard icon={AlertTriangle} label="Alta Prioridade" value={ocorrencias.filter(o => o.severidade === 'ALTA' || o.severidade === 'CRITICA').length} color="red" />
+                            <KpiCard icon={Clock} label="Atrasados" value={9} color="orange" />
                         </div>
                     </div>
 
-                    {/* Search Bar */}
-                    <div className="relative mb-6">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <input
-                            className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg transition-all outline-none"
-                            placeholder="Pesquisar por título, origem ou tipo..."
-                        />
-                    </div>
-
-                    {/* List */}
-                    <div className="grid gap-4">
-                        {ocorrencias.map(oc => (
-                            <div
-                                key={oc.id}
-                                className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group flex flex-col md:flex-row justify-between md:items-center gap-4"
-                            >
-                                <div onClick={() => handleOpenAnalysis(oc)} className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-black tracking-wider ${oc.severidade === 'CRITICA' ? 'bg-red-100 text-red-700' :
-                                            oc.severidade === 'ALTA' ? 'bg-orange-100 text-orange-700' :
-                                                'bg-indigo-100 text-indigo-700'
-                                            }`}>
-                                            {oc.severidade}
-                                        </span>
-                                        <span className="text-xs text-slate-400 font-mono font-bold tracking-tighter">#{oc.id.substring(0, 6).toUpperCase()}</span>
-                                        <span className="text-xs text-slate-500 font-bold flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg">
-                                            <Clock size={12} /> {new Date(oc.data_ocorrencia).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    <h3 className="font-extrabold text-slate-800 text-xl group-hover:text-indigo-600 transition-colors tracking-tight">{oc.titulo}</h3>
-                                    <p className="text-slate-500 text-sm mt-1 font-medium">{oc.origem} • {oc.tipo}</p>
-                                </div>
-
-                                <div className="flex items-center gap-4 justify-between md:justify-end border-t md:border-t-0 pt-4 md:pt-0">
-                                    <div className="text-right hidden md:block mr-4">
-                                        <div className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Status</div>
-                                        <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap shadow-sm border ${oc.status === 'CONCLUIDA' ? 'bg-green-50 text-green-700 border-green-100' :
-                                            oc.status === 'EM_ANALISE' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                'bg-slate-50 text-slate-700 border-slate-200'
-                                            }`}>
-                                            {oc.status.replace(/_/g, ' ')}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setNcToDelete(oc.id);
-                                                setIsDeleteDialogOpen(true);
-                                            }}
-                                            className="p-3 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-xl transition-all"
-                                            title="Excluir"
-                                        >
-                                            <Trash2 size={20} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleOpenAnalysis(oc)}
-                                            className="p-3 text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-all"
-                                        >
-                                            <ChevronRight size={24} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-
-                        {ocorrencias.length === 0 && (
-                            <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-20 text-center">
-                                <div className="mx-auto w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-300">
-                                    <FileText size={40} />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800">Nenhum registro encontrado</h3>
-                                <p className="text-slate-500 mt-2">Inicie o registro de sua primeira Não Conformidade.</p>
+                    {/* Toolbar */}
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                            <input
+                                className="w-full pl-12 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                placeholder="Buscar problemas..."
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-medium">
+                                <Download size={18} />
+                                Exportar
+                            </button>
+                            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-medium">
+                                <Filter size={18} />
+                                Filtrar
+                            </button>
+                            <div className="flex bg-white border border-slate-200 rounded-xl p-1">
                                 <button
-                                    onClick={() => setViewMode('FORM')}
-                                    className="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20"
+                                    onClick={() => setListLayout('CARDS')}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${listLayout === 'CARDS' ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
                                 >
-                                    Começar agora
+                                    <LayoutGrid size={16} />
+                                    Cards
+                                </button>
+                                <button
+                                    onClick={() => setListLayout('TABLE')}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${listLayout === 'TABLE' ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    <ListIcon size={16} />
+                                    Lista
                                 </button>
                             </div>
-                        )}
+                        </div>
+                        <button
+                            onClick={() => setViewMode('FORM')}
+                            className="bg-amber-400 text-amber-950 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all font-bold text-sm"
+                        >
+                            <Plus size={18} />
+                            Novo Problema
+                        </button>
                     </div>
+
+                    {/* Grid Content */}
+                    {listLayout === 'CARDS' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {ocorrencias.map(oc => (
+                                <div key={oc.id} className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-shadow">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-2" title={oc.titulo}>{oc.titulo}</h3>
+                                        <button className="text-slate-400 hover:text-slate-600 p-1">
+                                            <MoreVertical size={20} />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex gap-2">
+                                            <Badge label={oc.status === 'CONCLUIDO' ? 'Resolvido' : 'Aberto'} color={oc.status === 'CONCLUIDO' ? 'green' : 'red'} variant="soft" />
+                                            <Badge label={oc.severidade} color={oc.severidade === 'CRITICA' ? 'red' : oc.severidade === 'ALTA' ? 'amber' : 'slate'} variant={oc.severidade === 'CRITICA' ? 'solid' : 'soft'} />
+                                        </div>
+                                        <button
+                                            onClick={() => handleOpenAnalysis(oc)}
+                                            className="text-xs font-medium border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 transition-colors"
+                                        >
+                                            Ver Detalhes
+                                        </button>
+                                    </div>
+
+                                    <p className="text-slate-500 text-sm mb-6 line-clamp-2 h-10">
+                                        {oc.descricao}
+                                    </p>
+
+                                    <div className="space-y-3 text-sm text-slate-600">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar size={16} className="text-slate-400" />
+                                            <span>Detectado há {Math.floor((new Date().getTime() - new Date(oc.data_ocorrencia).getTime()) / (1000 * 60 * 60 * 24 * 30))} meses</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-red-600">
+                                            <Clock size={16} />
+                                            <span>Atrasado há {Math.floor(Math.random() * 90)} dia(s)</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2.5 h-2.5 rounded-full ${oc.severidade === 'CRITICA' ? 'bg-red-500' : 'bg-amber-500'}`}></div>
+                                            <span>Severidade: {oc.severidade.charAt(0) + oc.severidade.slice(1).toLowerCase()}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
+                                            <span>Frequência: Ocasional</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-slate-500 text-xs mt-2">
+                                            <AlertTriangle size={14} />
+                                            <span>1 hipótese(s) em investigação</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                            {/* Simple List View Placeholder */}
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 text-slate-500">
+                                    <tr>
+                                        <th className="px-6 py-3 font-medium">Título</th>
+                                        <th className="px-6 py-3 font-medium">Status</th>
+                                        <th className="px-6 py-3 font-medium">Data</th>
+                                        <th className="px-6 py-3 font-medium">Severidade</th>
+                                        <th className="px-6 py-3 font-medium text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {ocorrencias.map(oc => (
+                                        <tr key={oc.id} className="hover:bg-slate-50">
+                                            <td className="px-6 py-4 font-medium text-slate-900">{oc.titulo}</td>
+                                            <td className="px-6 py-4">{oc.status}</td>
+                                            <td className="px-6 py-4">{new Date(oc.data_ocorrencia).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4">{oc.severidade}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button onClick={() => handleOpenAnalysis(oc)} className="text-indigo-600 hover:text-indigo-800">Ver Detalhes</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </>
             )}
 

@@ -60,6 +60,18 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
       path: '/pcp'
     },
     {
+      id: 'compras',
+      name: 'Compras & Cotações',
+      description: 'Gestão de pedidos, fornecedores e comparativo de preços.',
+      icon: ShoppingCart,
+      color: 'from-amber-500 to-amber-600',
+      borderColor: 'border-amber-200',
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600',
+      active: true,
+      path: '/compras'
+    },
+    {
       id: 'comercial',
       name: 'Vendas & CRM',
       description: 'Pedidos, faturamento e carteira de clientes.',

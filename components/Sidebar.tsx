@@ -5,7 +5,7 @@ import Logo from './Logo';
 import { APP_VERSION } from '../src/version';
 import {
   LayoutDashboard, Package, Box, FlaskConical, AlertTriangle,
-  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo, Shield, Users, Key, FolderKanban, Truck, Fuel
+  Warehouse, Factory, BarChart, Settings, LogOut, ClipboardCheck, ArrowLeft, Wrench, ListTodo, Shield, Users, Key, FolderKanban, Truck, Fuel, ShoppingCart, FileText
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -71,6 +71,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     { name: 'Manutenções', path: '/frotas/manutencoes', icon: Wrench },
   ];
 
+  const comprasNavItems = [
+    { name: 'Dashboard', path: '/compras', icon: LayoutDashboard },
+    { name: 'Novo Pedido', path: '/compras/novo', icon: ShoppingCart },
+    { name: 'Cotações (RFQ)', path: '/compras/cotacoes', icon: FileText },
+  ];
+
   const generalNavItems = [
     { name: 'Configurações', path: '/configuracoes', icon: Settings },
   ];
@@ -106,7 +112,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
   } else if (currentModule === 'frotas') {
     navItems = fleetNavItems;
     moduleName = 'Frotas';
+    moduleName = 'Frotas';
     moduleColor = 'bg-cyan-600';
+  } else if (currentModule === 'compras') {
+    navItems = comprasNavItems;
+    moduleName = 'Compras';
+    moduleColor = 'bg-amber-600';
   }
 
   return (

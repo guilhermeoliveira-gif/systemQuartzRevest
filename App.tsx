@@ -45,6 +45,14 @@ import Maquinas from './pages/Manutencao/Maquinas';
 import MaquinaDetalhes from './pages/Manutencao/MaquinaDetalhes';
 import OrdensServico from './pages/Manutencao/OrdensServico';
 
+// Compras Module
+import ComprasDashboard from './pages/compras/ComprasDashboard';
+import NovoPedidoCompra from './pages/compras/NovoPedidoCompra';
+import DetalhePedido from './pages/compras/DetalhePedido';
+import GestaoCotacoes from './pages/compras/GestaoCotacoes';
+import NovaCotacao from './pages/compras/NovaCotacao';
+import DetalheCotacao from './pages/compras/DetalheCotacao';
+
 // Frotas Module
 import FrotaDashboard from './pages/Frotas/FrotaDashboard';
 import GestaoFrotas from './pages/Frotas/GestaoFrotas';
@@ -115,6 +123,15 @@ const App: React.FC = () => {
                   <Route path="/manutencao/maquinas" element={<Maquinas />} />
                   <Route path="/manutencao/maquinas/:id" element={<MaquinaDetalhes />} />
                   <Route path="/manutencao/os" element={<OrdensServico />} />
+
+                  {/* Compras Module */}
+                  <Route path="/compras" element={<ComprasDashboard />} />
+                  <Route path="/compras/novo" element={<NovoPedidoCompra />} />
+                  <Route path="/compras/pedidos/:id" element={<DetalhePedido />} />
+                  <Route path="/compras/cotacoes" element={<GestaoCotacoes />} />
+                  <Route path="/compras/cotacoes/nova" element={<NovaCotacao />} />
+                  <Route path="/compras/cotacoes/:id" element={<DetalheCotacao />} />
+
                   {/* Frotas Module */}
                   <Route path="/frotas" element={<FrotaDashboard />} />
                   <Route path="/frotas/veiculos" element={<GestaoFrotas />} />
