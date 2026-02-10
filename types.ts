@@ -8,6 +8,7 @@ export interface MateriaPrima {
   custo_unitario: number; // Custo Médio Ponderado
   minimo_seguranca?: number; // DEPRECATED - Use estoque_minimo
   estoque_minimo?: number; // NOVO - Quantidade mínima antes de gerar alerta
+  categoria: 'Aditivo' | 'Cimento' | 'Embalagem' | 'Pigmentos' | 'Insumos'; // NOVO - Categoria obrigatória
   estoque_atual?: number; // NOVO - Quantidade atual (atualizado via movimentações)
   alerta_ativo?: boolean; // NOVO - Se TRUE, gera alertas quando estoque < mínimo
   organization_id: string;

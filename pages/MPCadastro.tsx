@@ -4,6 +4,8 @@ import { supabase } from '../services/supabaseClient';
 import { Plus, Edit2, Trash2, Package } from 'lucide-react';
 import { MateriaPrima } from '../types';
 
+const CATEGORIAS = ['Aditivo', 'Cimento', 'Embalagem', 'Pigmentos', 'Insumos'] as const;
+
 const MPCadastro: React.FC = () => {
   const [materias, setMaterias] = useState<MateriaPrima[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +16,8 @@ const MPCadastro: React.FC = () => {
     unidade_medida: '',
     custo_unitario: 0,
     minimo_seguranca: 0,
-    quantidade_atual: 0
+    quantidade_atual: 0,
+    categoria: 'Insumos'
   });
 
   useEffect(() => {
@@ -37,7 +40,8 @@ const MPCadastro: React.FC = () => {
       unidade_medida: mp.unidade_medida,
       custo_unitario: mp.custo_unitario,
       minimo_seguranca: mp.minimo_seguranca,
-      quantidade_atual: mp.quantidade_atual
+      quantidade_atual: mp.quantidade_atual,
+      categoria: mp.categoria
     });
     setIsDialogOpen(true);
   };
@@ -56,7 +60,8 @@ const MPCadastro: React.FC = () => {
             unidade_medida: formData.unidade_medida || 'un',
             custo_unitario: Number(formData.custo_unitario) || 0,
             minimo_seguranca: Number(formData.minimo_seguranca) || 0,
-            quantidade_atual: Number(formData.quantidade_atual) || 0
+            quantidade_atual: Number(formData.quantidade_atual) || 0,
+            categoria: formData.categoria
           })
           .eq('id', editingId);
 
@@ -69,6 +74,7 @@ const MPCadastro: React.FC = () => {
           quantidade_atual: Number(formData.quantidade_atual) || 0,
           custo_unitario: Number(formData.custo_unitario) || 0,
           minimo_seguranca: Number(formData.minimo_seguranca) || 0,
+          categoria: formData.categoria || 'Insumos',
           organization_id: '1'
         });
 
@@ -77,7 +83,8 @@ const MPCadastro: React.FC = () => {
 
       setIsDialogOpen(false);
       setEditingId(null);
-      setFormData({ nome: '', unidade_medida: '', custo_unitario: 0, minimo_seguranca: 0, quantidade_atual: 0 });
+      setEditingId(null);
+      setFormData({ nome: '', unidade_medida: '', custo_unitario: 0, minimo_seguranca: 0, quantidade_atual: 0, categoria: 'Insumos' });
       loadData();
     } catch (error) {
       console.error('Error saving materia prima:', error);
@@ -131,6 +138,7 @@ const MPCadastro: React.FC = () => {
                     <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Unidade</th>
                     <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Custo Unitário</th>
                     <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Min. Segurança</th>
+                    <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Categoria</th>
                     <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase">Qtd. Atual</th>
                     <th className="px-6 py-3 text-xs font-bold text-neutral-500 uppercase text-right">Ações</th>
                   </tr>
@@ -142,6 +150,7 @@ const MPCadastro: React.FC = () => {
                       <td className="px-6 py-4 text-sm text-neutral-600">{mp.unidade_medida}</td>
                       <td className="px-6 py-4 text-sm text-neutral-600">R$ {mp.custo_unitario?.toFixed(2)}</td>
                       <td className="px-6 py-4 text-sm text-neutral-600">{mp.minimo_seguranca || 0}</td>
+                      <td className="px-6 py-4 text-sm text-neutral-600 bg-blue-50/50 font-medium">{mp.categoria}</td>
                       <td className="px-6 py-4 text-sm font-bold text-neutral-900">{mp.quantidade_atual}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="flex justify-end gap-2">
@@ -226,6 +235,20 @@ const MPCadastro: React.FC = () => {
                   onChange={e => setFormData({ ...formData, nome: e.target.value })}
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Categoria <span className="text-red-500">*</span></label>
+                <select
+                  className="w-full px-4 py-2 border border-neutral-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-600 bg-white"
+                  value={formData.categoria}
+                  onChange={e => setFormData({ ...formData, categoria: e.target.value as any })}
+                  required
+                >
+                  {CATEGORIAS.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

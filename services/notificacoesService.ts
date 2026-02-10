@@ -12,6 +12,10 @@ export const notificacoesService = {
             .limit(limit);
 
         if (error) {
+            // Ignorar AbortError (navegação interrompida)
+            if (error.message && error.message.includes('AbortError')) {
+                return [];
+            }
             console.error('Erro ao buscar notificações:', error);
             throw error;
         }
@@ -27,6 +31,9 @@ export const notificacoesService = {
             .order('created_at', { ascending: false });
 
         if (error) {
+            if (error.message && error.message.includes('AbortError')) {
+                return [];
+            }
             console.error('Erro ao buscar notificações não lidas:', error);
             throw error;
         }
@@ -41,6 +48,9 @@ export const notificacoesService = {
             .eq('lida', false);
 
         if (error) {
+            if (error.message && error.message.includes('AbortError')) {
+                return 0;
+            }
             console.error('Erro ao contar notificações:', error);
             return 0;
         }

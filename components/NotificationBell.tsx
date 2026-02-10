@@ -46,9 +46,11 @@ const NotificationBell: React.FC = () => {
     const loadNotificacoes = async () => {
         try {
             const data = await notificacoesService.getNotificacoes(20);
-            setNotificacoes(data);
-        } catch (error) {
-            console.error('Erro ao carregar notificações:', error);
+            if (data) setNotificacoes(data);
+        } catch (error: any) {
+            if (error.name !== 'AbortError' && !error.message?.includes('AbortError')) {
+                console.error('Erro ao carregar notificações:', error);
+            }
         }
     };
 
@@ -56,8 +58,10 @@ const NotificationBell: React.FC = () => {
         try {
             const count = await notificacoesService.contarNaoLidas();
             setNaoLidas(count);
-        } catch (error) {
-            console.error('Erro ao carregar contador:', error);
+        } catch (error: any) {
+            if (error.name !== 'AbortError' && !error.message?.includes('AbortError')) {
+                console.error('Erro ao carregar contador:', error);
+            }
         }
     };
 

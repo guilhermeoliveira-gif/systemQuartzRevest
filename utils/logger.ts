@@ -35,25 +35,33 @@ class Logger {
             this.logs.shift();
         }
 
-        // Log no console apenas em desenvolvimento
-        if (this.isDevelopment) {
-            const emoji = {
+        // Log no console
+        // - Em desenvolvimento: Tudo
+        // - Em produção: Apenas Erros, ou se localStorage.debug = 'true'
+        const shouldLog = this.isDevelopment || level === 'error' || (typeof window !== 'undefined' && window.localStorage.getItem('debug') === 'true');
+
+        if (shouldLog) {
+            const emoji: Record<LogLevel, string> = {
                 debug: '🔍',
                 info: 'ℹ️',
                 warn: '⚠️',
                 error: '❌'
-            }[level];
+            };
 
-            const style = {
+            const style: Record<LogLevel, string> = {
                 debug: 'color: #6B7280',
                 info: 'color: #3B82F6',
                 warn: 'color: #F59E0B',
                 error: 'color: #EF4444; font-weight: bold'
-            }[level];
+            };
+
+            // Safe access for emoji and style
+            const icon = emoji[level] || '';
+            const css = style[level] || '';
 
             console.log(
-                `%c${emoji} [${level.toUpperCase()}] ${message}`,
-                style,
+                `%c${icon} [${level.toUpperCase()}] ${message}`,
+                css,
                 data !== undefined ? data : ''
             );
         }
