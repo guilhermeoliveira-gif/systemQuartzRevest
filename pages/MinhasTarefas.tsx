@@ -21,8 +21,10 @@ const MinhasTarefas: React.FC = () => {
             setLoading(true);
             const data = await notificacoesService.getMinhasTarefas();
             setTarefas(data);
-        } catch (error) {
-            console.error('Erro ao buscar tarefas:', error);
+        } catch (error: any) {
+            if (error.name !== 'AbortError' && !error.message?.includes('AbortError')) {
+                console.error('Erro ao buscar tarefas:', error);
+            }
         } finally {
             setLoading(false);
         }

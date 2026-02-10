@@ -5,57 +5,65 @@ export const notificacoesService = {
     // ==================== NOTIFICAÇÕES ====================
 
     async getNotificacoes(limit: number = 50): Promise<Notificacao[]> {
-        const { data, error } = await supabase
-            .from('notificacao')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(limit);
+        try {
+            const { data, error } = await supabase
+                .from('notificacao')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(limit);
 
-        if (error) {
-            // Ignorar AbortError (navegação interrompida)
-            if (error.message && error.message.includes('AbortError')) {
-                return [];
+            if (error) {
+                if (error.message && error.message.includes('AbortError')) return [];
+                console.error('Erro ao buscar notificações:', error);
+                throw error;
             }
-            console.error('Erro ao buscar notificações:', error);
+
+            return data || [];
+        } catch (error: any) {
+            if (error.name === 'AbortError' || error.message?.includes('AbortError')) return [];
             throw error;
         }
-
-        return data || [];
     },
 
     async getNotificacoesNaoLidas(): Promise<Notificacao[]> {
-        const { data, error } = await supabase
-            .from('notificacao')
-            .select('*')
-            .eq('lida', false)
-            .order('created_at', { ascending: false });
+        try {
+            const { data, error } = await supabase
+                .from('notificacao')
+                .select('*')
+                .eq('lida', false)
+                .order('created_at', { ascending: false });
 
-        if (error) {
-            if (error.message && error.message.includes('AbortError')) {
-                return [];
+            if (error) {
+                if (error.message && error.message.includes('AbortError')) return [];
+                console.error('Erro ao buscar notificações não lidas:', error);
+                throw error;
             }
-            console.error('Erro ao buscar notificações não lidas:', error);
+
+            return data || [];
+        } catch (error: any) {
+            if (error.name === 'AbortError' || error.message?.includes('AbortError')) return [];
             throw error;
         }
-
-        return data || [];
     },
 
     async contarNaoLidas(): Promise<number> {
-        const { count, error } = await supabase
-            .from('notificacao')
-            .select('*', { count: 'exact', head: true })
-            .eq('lida', false);
+        try {
+            const { count, error } = await supabase
+                .from('notificacao')
+                .select('*', { count: 'exact', head: true })
+                .eq('lida', false);
 
-        if (error) {
-            if (error.message && error.message.includes('AbortError')) {
+            if (error) {
+                if (error.message && error.message.includes('AbortError')) return 0;
+                console.error('Erro ao contar notificações:', error);
                 return 0;
             }
-            console.error('Erro ao contar notificações:', error);
+
+            return count || 0;
+        } catch (error: any) {
+            if (error.name === 'AbortError' || error.message?.includes('AbortError')) return 0;
             return 0;
         }
-
-        return count || 0;
     },
 
     async marcarComoLida(id: string): Promise<void> {
