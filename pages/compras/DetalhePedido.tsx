@@ -100,7 +100,7 @@ export const DetalhePedido: React.FC = () => {
 
                 {/* Tabs Navigation */}
                 {showTabs && (
-                    <div className="flex border-b border-slate-200">
+                    <div className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar">
                         <button
                             onClick={() => setActiveTab('DETALHES')}
                             className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'DETALHES' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}

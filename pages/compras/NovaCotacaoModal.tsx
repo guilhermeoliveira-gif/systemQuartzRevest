@@ -154,7 +154,7 @@ export const NovaCotacaoModal: React.FC<NovaCotacaoModalProps> = ({ isOpen, onCl
                     <div>
                         <div className="flex justify-between items-end mb-4">
                             <label className="block text-sm font-bold text-slate-700">Itens da Cotação</label>
-                            <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-colors">
+                            <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-colors active:scale-95 active:bg-slate-300">
                                 <Plus size={16} />
                                 Adicionar Item
                             </button>
@@ -192,6 +192,7 @@ export const NovaCotacaoModal: React.FC<NovaCotacaoModalProps> = ({ isOpen, onCl
                                                 <input
                                                     value={item.quantidade}
                                                     readOnly
+                                                    inputMode="numeric"
                                                     className="w-full mt-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600"
                                                 />
                                             </div>
@@ -213,7 +214,7 @@ export const NovaCotacaoModal: React.FC<NovaCotacaoModalProps> = ({ isOpen, onCl
                     {/* Suppliers */}
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">Fornecedores</label>
-                        <div className="flex gap-2 mb-4">
+                        <div className="flex flex-col md:flex-row gap-2 mb-4">
                             <select
                                 className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none"
                                 onChange={(e) => {
@@ -228,7 +229,7 @@ export const NovaCotacaoModal: React.FC<NovaCotacaoModalProps> = ({ isOpen, onCl
                                     <option key={f.id} value={f.id}>{f.nome}</option>
                                 ))}
                             </select>
-                            <button className="px-4 py-3 border border-slate-200 hover:bg-slate-50 rounded-xl text-slate-600 font-medium">
+                            <button className="px-4 py-3 border border-slate-200 hover:bg-slate-50 rounded-xl text-slate-600 font-medium active:bg-slate-100">
                                 Digitar Email
                             </button>
                         </div>
@@ -254,17 +255,17 @@ export const NovaCotacaoModal: React.FC<NovaCotacaoModalProps> = ({ isOpen, onCl
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-2xl">
+                <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-col-reverse md:flex-row justify-end gap-3 rounded-b-2xl">
                     <button
                         onClick={onClose}
-                        className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors"
+                        className="w-full md:w-auto px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors active:bg-slate-100"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={handleCreate}
                         disabled={loading}
-                        className="px-6 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                        className="w-full md:w-auto px-6 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 disabled:opacity-50 active:scale-95"
                     >
                         {loading ? 'Processando...' : 'Criar Cotação'}
                     </button>

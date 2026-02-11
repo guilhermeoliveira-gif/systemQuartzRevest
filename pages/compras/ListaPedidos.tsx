@@ -15,6 +15,17 @@ export const ListaPedidos: React.FC = () => {
 
     useEffect(() => {
         fetchPedidos();
+
+        // Force card view on mobile
+        const handleResize = () => {
+            if (window.innerWidth < 768) {
+                setViewMode('cards');
+            }
+        };
+
+        handleResize(); // Check on mount
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     const fetchPedidos = async () => {
@@ -105,7 +116,7 @@ export const ListaPedidos: React.FC = () => {
 
                     <div className="h-6 w-px bg-slate-200 mx-2 hidden md:block"></div>
 
-                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                    <div className="hidden md:flex bg-slate-100 p-1 rounded-lg">
                         <button
                             onClick={() => setViewMode('cards')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'cards' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
