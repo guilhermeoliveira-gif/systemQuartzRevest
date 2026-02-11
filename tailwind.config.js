@@ -4,8 +4,7 @@ export default {
         "./index.html",
         "./src/**/*.{js,ts,jsx,tsx}",
         "./pages/**/*.{js,ts,jsx,tsx}",
-        "./components/**/*.{js,ts,jsx,tsx}",
-        "./**/*.{js,ts,jsx,tsx}" // Catch all for this project structure relative to root
+        "./components/**/*.{js,ts,jsx,tsx}"
     ],
     theme: {
         extend: {},
