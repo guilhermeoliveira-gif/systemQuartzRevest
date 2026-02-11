@@ -73,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
 
   const comprasNavItems = [
     { name: 'Dashboard', path: '/compras', icon: LayoutDashboard },
-    { name: 'Novo Pedido', path: '/compras/novo', icon: ShoppingCart },
+    { name: 'Pedidos', path: '/compras/pedidos', icon: ShoppingCart },
     { name: 'Cotações (RFQ)', path: '/compras/cotacoes', icon: FileText },
   ];
 

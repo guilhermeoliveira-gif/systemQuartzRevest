@@ -47,6 +47,7 @@ import OrdensServico from './pages/Manutencao/OrdensServico';
 
 // Compras Module
 import ComprasDashboard from './pages/compras/ComprasDashboard';
+import ListaPedidos from './pages/compras/ListaPedidos';
 import NovoPedidoCompra from './pages/compras/NovoPedidoCompra';
 import DetalhePedido from './pages/compras/DetalhePedido';
 import GestaoCotacoes from './pages/compras/GestaoCotacoes';
@@ -126,6 +127,7 @@ const App: React.FC = () => {
 
                   {/* Compras Module */}
                   <Route path="/compras" element={<ComprasDashboard />} />
+                  <Route path="/compras/pedidos" element={<ListaPedidos />} />
                   <Route path="/compras/novo" element={<NovoPedidoCompra />} />
                   <Route path="/compras/pedidos/:id" element={<DetalhePedido />} />
                   <Route path="/compras/cotacoes" element={<GestaoCotacoes />} />

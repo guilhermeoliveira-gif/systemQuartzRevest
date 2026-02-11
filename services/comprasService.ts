@@ -114,6 +114,20 @@ export const comprasService = {
         return data;
     },
 
+    async getCotacoesByPedidoId(pedidoId: string) {
+        const { data, error } = await supabase
+            .from('cotacoes')
+            .select(`
+                *,
+                fornecedores:cotacao_fornecedores(count),
+                propostas(count)
+            `)
+            .eq('pedido_id', pedidoId)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data as (Cotacao & { fornecedores: { count: number }[], propostas: { count: number }[] })[];
+    },
+
     async getCotacaoById(id: string) {
         const { data, error } = await supabase
             .from('cotacoes')
