@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { store } from '../services/store';
+import { estoqueService } from '../services/estoqueService';
 import { MecanicaInsumo } from '../types';
 import { Plus, Search, Wrench, Package, ArrowUp, ArrowDown, Trash2, MapPin, AlertCircle, X, Settings as MachineIcon, Settings as SettingsIcon, CheckCircle2 } from 'lucide-react';
 import { manutencaoService } from '../services/manutencaoService';
@@ -69,7 +69,7 @@ const EstoquePecas: React.FC = () => {
         setItemsLoading(true);
         try {
             const [data, maquinasData] = await Promise.all([
-                store.getPecasInsumos(),
+                estoqueService.getPecasInsumos(),
                 manutencaoService.getMaquinas()
             ]);
             setPecas(data);
@@ -94,11 +94,11 @@ const EstoquePecas: React.FC = () => {
             try {
                 if (newItem.id) {
                     // Update existing
-                    await store.updatePeca(newItem.id, newItem, newItem.maquina_ids);
+                    await estoqueService.updatePeca(newItem.id, newItem, newItem.maquina_ids);
                     showFeedback('success', 'Item atualizado com sucesso!');
                 } else {
                     // Create new
-                    await store.createPeca(newItem, newItem.maquina_ids || []);
+                    await estoqueService.createPeca(newItem, newItem.maquina_ids || []);
                     showFeedback('success', 'Item cadastrado com sucesso!');
                 }
 
@@ -146,7 +146,7 @@ const EstoquePecas: React.FC = () => {
             setSubmitting(true);
             try {
                 // Adaptação para o novo método addMovimentoPeca
-                await store.addMovimentoPeca({
+                await estoqueService.addMovimentoPeca({
                     peca_id: moveModal.item.id,
                     tipo: moveModal.type,
                     quantidade: Number(moveQty),
@@ -172,7 +172,7 @@ const EstoquePecas: React.FC = () => {
     const handleDelete = async (id: string) => {
         if (confirm('Tem certeza que deseja remover este item?')) {
             try {
-                await store.deletePeca(id);
+                await estoqueService.deletePeca(id);
                 loadData();
                 showFeedback('success', 'Item removido.');
             } catch (e) {

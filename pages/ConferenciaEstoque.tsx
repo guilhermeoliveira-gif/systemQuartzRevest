@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardCheck, RefreshCcw, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { MateriaPrima, ProdutoAcabado } from '../types';
-import { store } from '../services/store';
+import { estoqueService } from '../services/estoqueService';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from '../contexts/ToastContext';
 
@@ -31,7 +31,7 @@ const ConferenciaEstoque: React.FC = () => {
       setIsLoading(true);
 
       if (categoria === 'MP') {
-        const materias = await store.getMateriasPrimas();
+        const materias = await estoqueService.getMateriasPrimas();
         const itensConferencia: ItemConferencia[] = materias.map(m => ({
           id: m.id,
           nome: m.nome,
@@ -41,7 +41,7 @@ const ConferenciaEstoque: React.FC = () => {
         }));
         setItens(itensConferencia);
       } else {
-        const produtos = await store.getProdutosAcabados();
+        const produtos = await estoqueService.getProdutosAcabados();
         const itensConferencia: ItemConferencia[] = produtos.map(p => ({
           id: p.id,
           nome: p.nome,

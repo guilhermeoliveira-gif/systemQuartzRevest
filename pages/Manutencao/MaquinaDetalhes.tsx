@@ -11,7 +11,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Badge, Skeleton } from '../../components/ui/Utility';
 import { Dialog } from '../../components/ui/Dialog';
 import { manutencaoService } from '../../services/manutencaoService';
-import { store } from '../../services/store';
+import { estoqueService } from '../../services/estoqueService';
 import { logger } from '../../utils/logger';
 import { Maquina, MaquinaItem, Aprendizado } from '../../types_manutencao';
 import { MecanicaInsumo } from '../../types';
@@ -40,7 +40,7 @@ const MaquinaDetalhes: React.FC = () => {
 
     useEffect(() => {
         if (isItemOpen) {
-            store.getPecasInsumos().then(setPecasEstoque).catch(logger.error);
+            estoqueService.getPecasInsumos().then(setPecasEstoque).catch(logger.error);
         }
     }, [isItemOpen]);
 

@@ -3,16 +3,16 @@ import { supabase } from './supabaseClient';
 import { MateriaPrima, MecanicaInsumo, EntradaMateriaPrima, ProdutoAcabado, ProducaoRegistro, MovimentoPeca } from '../types';
 import { logger } from '../utils/logger';
 
-class StoreService {
-    private static instance: StoreService;
+class EstoqueService {
+    private static instance: EstoqueService;
 
     private constructor() { }
 
-    public static getInstance(): StoreService {
-        if (!StoreService.instance) {
-            StoreService.instance = new StoreService();
+    public static getInstance(): EstoqueService {
+        if (!EstoqueService.instance) {
+            EstoqueService.instance = new EstoqueService();
         }
-        return StoreService.instance;
+        return EstoqueService.instance;
     }
 
     // --- Materia Prima ---
@@ -356,4 +356,4 @@ class StoreService {
     }
 }
 
-export const store = StoreService.getInstance();
+export const estoqueService = EstoqueService.getInstance();

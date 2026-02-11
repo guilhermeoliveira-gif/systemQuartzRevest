@@ -6,7 +6,7 @@ import {
 import { pcpService } from '../../services/pcpService';
 import { ItemPlanoProducao, RegistroProducao } from '../../types_pcp';
 import { useToast } from '../../contexts/ToastContext';
-import { store } from '../../services/store';
+import { estoqueService } from '../../services/estoqueService';
 import { LoadingState } from '../../components/LoadingState';
 import { logger } from '../../utils/logger';
 
@@ -145,7 +145,7 @@ const PCPProducao: React.FC = () => {
             });
 
             // INTEGRACAO ESTOQUE: Registrar a entrada física do Produto Acabado
-            await store.addProducao({
+            await estoqueService.addProducao({
                 produto_acabado_id: itemAtivo.id_produto_acabado,
                 quantidade_produzida: itemAtivo.qtd_misturas_planejadas,
                 usuario_id: 'Operador Padrão',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { store } from '../services/store';
+import { estoqueService } from '../services/estoqueService';
 import { logger } from '../utils/logger';
 import { Package, Box, AlertCircle, Wrench, Download, ShoppingCart, Printer, Clock } from 'lucide-react';
 import { Alerta, MecanicaInsumo } from '../types';
@@ -36,9 +36,9 @@ const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const [mps, pas, pecasInsumos] = await Promise.all([
-        store.getMateriasPrimas(),
-        store.getProdutosAcabados(),
-        store.getPecasInsumos()
+        estoqueService.getMateriasPrimas(),
+        estoqueService.getProdutosAcabados(),
+        estoqueService.getPecasInsumos()
       ]);
 
       const totalMP = mps.reduce((acc, curr) => acc + Number(curr.quantidade_atual), 0);

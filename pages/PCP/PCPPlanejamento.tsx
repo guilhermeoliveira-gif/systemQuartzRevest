@@ -11,7 +11,7 @@ import { Dialog, AlertDialog } from '../../components/ui/Dialog';
 import { pcpService } from '../../services/pcpService';
 import { ItemPlanoProducao, StatusItemProducao } from '../../types_pcp';
 import { useToast } from '../../contexts/ToastContext';
-import { store } from '../../services/store';
+import { estoqueService } from '../../services/estoqueService';
 import { ProdutoAcabado } from '../../types';
 
 const PCPPlanejamento: React.FC = () => {
@@ -42,7 +42,7 @@ const PCPPlanejamento: React.FC = () => {
             setLoading(true);
             const [planos, produtos] = await Promise.all([
                 pcpService.getPlanos(),
-                store.getProdutosAcabados()
+                estoqueService.getProdutosAcabados()
             ]);
 
             console.log('PCPPlanejamento - Produtos carregados:', produtos);

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Box } from 'lucide-react';
 import { ProdutoAcabado } from '../types';
-import { store } from '../services/store';
+import { estoqueService } from '../services/estoqueService';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from '../contexts/ToastContext';
 
@@ -25,7 +25,7 @@ const PACadastro: React.FC = () => {
   const loadProdutos = async () => {
     try {
       setIsLoading(true);
-      const data = await store.getProdutosAcabados();
+      const data = await estoqueService.getProdutosAcabados();
       setProdutos(data);
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);

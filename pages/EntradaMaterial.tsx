@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { store } from '../services/store';
+import { estoqueService } from '../services/estoqueService';
 import { MateriaPrima, EntradaMateriaPrima } from '../types';
 import { Warehouse, Save, History, FileText, User, RefreshCcw, DollarSign } from 'lucide-react';
 
@@ -25,8 +25,8 @@ const EntradaMaterial: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const mps = await store.getMateriasPrimas();
-      const hist = await store.getHistoricoEntradas();
+      const mps = await estoqueService.getMateriasPrimas();
+      const hist = await estoqueService.getHistoricoEntradas();
       setMateriasPrimas(mps);
       setHistorico(hist);
     } catch (e) { console.error('Error loading data', e); }
@@ -47,7 +47,7 @@ const EntradaMaterial: React.FC = () => {
     }
 
     try {
-      await store.addEntrada({
+      await estoqueService.addEntrada({
         materia_prima_id: form.materia_prima_id,
         quantidade: Number(form.quantidade),
         custo_total_nota: Number(form.valor_total) || 0,
@@ -77,7 +77,7 @@ const EntradaMaterial: React.FC = () => {
   const handleEstorno = async (id: string) => {
     if (confirm('ATENÇÃO: Deseja realmente ESTORNAR este lançamento? O estoque será revertido.')) {
       try {
-        const success = await store.estornarEntrada(id);
+        const success = await estoqueService.estornarEntrada(id);
         if (success) {
           setMessage({ type: 'success', text: 'Lançamento estornado com sucesso.' });
           await loadData();

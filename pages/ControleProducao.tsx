@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { store } from '../services/store';
+import { estoqueService } from '../services/estoqueService';
 import { ProdutoAcabado } from '../types';
 import { Factory, CheckCircle, PackageCheck } from 'lucide-react';
 
@@ -16,7 +16,7 @@ const ControleProducao: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const data = await store.getProdutosAcabados();
+      const data = await estoqueService.getProdutosAcabados();
       setProdutos(data);
     } catch (e) { console.error(e); }
   };
@@ -26,7 +26,7 @@ const ControleProducao: React.FC = () => {
     if (!selectedPA || qty <= 0) return;
 
     try {
-      await store.addProducao({
+      await estoqueService.addProducao({
         produto_acabado_id: selectedPA,
         quantidade_produzida: qty,
         usuario_id: 'CURRENT_USER',

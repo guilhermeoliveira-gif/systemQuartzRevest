@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Info, Trash2 } from 'lucide-react';
 import { Formula, FormulaItem, MateriaPrima, ProdutoAcabado } from '../types';
-import { store } from '../services/store';
+import { estoqueService } from '../services/estoqueService';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from '../contexts/ToastContext';
 
@@ -28,8 +28,8 @@ const FormulaCadastro: React.FC = () => {
     try {
       setIsLoading(true);
       const [produtosData, materiasData, formulasData] = await Promise.all([
-        store.getProdutosAcabados(),
-        store.getMateriasPrimas(),
+        estoqueService.getProdutosAcabados(),
+        estoqueService.getMateriasPrimas(),
         supabase.from('formula').select(`
           *,
           produto_acabado:produto_acabado(nome),
