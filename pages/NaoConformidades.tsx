@@ -187,36 +187,7 @@ const NaoConformidades: React.FC = () => {
             const createdNC = await qualidadeService.createNaoConformidade(newEntry);
             toast.success('NC Registrada', 'Não conformidade registrada com sucesso.');
 
-            // Se houver Ação de Contenção, criar Plano e Tarefa Imediata
-            if (formData.acao_contencao && formData.responsavel_contencao) {
-                try {
-                    // 1. Criar Plano de Ação Container (Automático)
-                    const plano = await qualidadeService.createPlanoAcao({
-                        nao_conformidade_id: createdNC.id,
-                        titulo: 'Contenção Imediata (Automático)',
-                        what: formData.acao_contencao,
-                        why: 'Ação imediata para contenção de danos/riscos',
-                        where_loc: formData.origem || 'Local da Ocorrência',
-                        when_date: new Date().toISOString(),
-                        who: formData.responsavel_contencao,
-                        how: 'Execução Imediata',
-                        status_acao: 'EM_ANDAMENTO'
-                    });
 
-                    // 2. Criar Tarefa 
-                    if (plano) {
-                        await qualidadeService.createTarefa({
-                            plano_acao_id: plano.id,
-                            descricao: formData.acao_contencao,
-                            responsavel: formData.responsavel_contencao,
-                            prazo: new Date().toISOString(),
-                            status: 'EM_ANDAMENTO'
-                        });
-                    }
-                } catch (taskError) {
-                    console.error('Erro ao criar tarefa de contenção:', taskError);
-                }
-            }
 
             await loadNaoConformidades();
             setViewMode('LIST');
@@ -497,34 +468,7 @@ const NaoConformidades: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="col-span-1 md:col-span-2 bg-indigo-50/50 p-8 rounded-3xl border border-indigo-100/50">
-                                <div className="flex items-center gap-2 mb-6 text-indigo-900">
-                                    <ShieldAlert size={28} />
-                                    <h3 className="text-xl font-black tracking-tight">Contenção Imediata</h3>
-                                </div>
 
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-bold text-indigo-900 mb-2">Ação de Bloqueio Efetuada</label>
-                                        <textarea
-                                            className="w-full px-5 py-4 bg-white border border-indigo-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 text-lg transition-all outline-none font-medium h-24"
-                                            placeholder="Ex: Lote segregado no setor de qualidade, máquina parada para manutenção..."
-                                            value={formData.acao_contencao}
-                                            onChange={e => setFormData({ ...formData, acao_contencao: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-bold text-indigo-900 mb-2">Responsável pela Contenção</label>
-                                        <UserSelect
-                                            value={formData.responsavel_contencao}
-                                            onChange={(value) => setFormData({ ...formData, responsavel_contencao: value })}
-                                            className="w-full"
-                                            label=""
-                                        />
-                                    </div>
-                                </div>
-                            </div>
 
                             <div className="col-span-1 md:col-span-2">
                                 <label className="block text-sm font-black text-slate-700 mb-4 uppercase tracking-widest">Evidências Visuais</label>
