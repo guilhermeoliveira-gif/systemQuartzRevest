@@ -1,89 +1,49 @@
 import { supabase } from './supabaseClient';
+import { prisma } from '../lib/prisma';
 import { Notificacao, TarefaUnificada, TipoNotificacao, PrioridadeNotificacao } from '../types_notificacoes';
+import { logger } from '../utils/logger';
 
 export const notificacoesService = {
     // ==================== NOTIFICAÇÕES ====================
 
     async getNotificacoes(limit: number = 50): Promise<Notificacao[]> {
-        try {
-            const { data, error } = await supabase
-                .from('notificacao')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(limit);
-
-            if (error) {
-                if (error.message && error.message.includes('AbortError')) return [];
-                console.error('Erro ao buscar notificações:', error);
-                throw error;
-            }
-
-            return data || [];
-        } catch (error: any) {
-            if (error.name === 'AbortError' || error.message?.includes('AbortError')) return [];
-            throw error;
-        }
+        const data = await prisma.notificacao.findMany({
+            orderBy: { created_at: 'desc' },
+            take: limit
+        });
+        return data as unknown as Notificacao[];
     },
 
     async getNotificacoesNaoLidas(): Promise<Notificacao[]> {
-        try {
-            const { data, error } = await supabase
-                .from('notificacao')
-                .select('*')
-                .eq('lida', false)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                if (error.message && error.message.includes('AbortError')) return [];
-                console.error('Erro ao buscar notificações não lidas:', error);
-                throw error;
-            }
-
-            return data || [];
-        } catch (error: any) {
-            if (error.name === 'AbortError' || error.message?.includes('AbortError')) return [];
-            throw error;
-        }
+        const data = await prisma.notificacao.findMany({
+            where: { lida: false },
+            orderBy: { created_at: 'desc' }
+        });
+        return data as unknown as Notificacao[];
     },
 
     async contarNaoLidas(): Promise<number> {
-        try {
-            const { count, error } = await supabase
-                .from('notificacao')
-                .select('*', { count: 'exact', head: true })
-                .eq('lida', false);
-
-            if (error) {
-                if (error.message && error.message.includes('AbortError')) return 0;
-                console.error('Erro ao contar notificações:', error);
-                return 0;
-            }
-
-            return count || 0;
-        } catch (error: any) {
-            if (error.name === 'AbortError' || error.message?.includes('AbortError')) return 0;
-            return 0;
-        }
+        return await prisma.notificacao.count({
+            where: { lida: false }
+        });
     },
 
     async marcarComoLida(id: string): Promise<void> {
-        const { error } = await supabase.rpc('marcar_notificacao_lida', {
-            p_notificacao_id: id
+        await prisma.notificacao.update({
+            where: { id },
+            data: { lida: true, data_leitura: new Date() }
         });
-
-        if (error) {
-            console.error('Erro ao marcar notificação como lida:', error);
-            throw error;
-        }
     },
 
     async marcarTodasComoLidas(): Promise<void> {
-        const { error } = await supabase.rpc('marcar_todas_lidas');
+        // Obter usuário atual do Supabase Auth
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        if (error) {
-            console.error('Erro ao marcar todas como lidas:', error);
-            throw error;
-        }
+        await prisma.notificacao.updateMany({
+            where: { usuario_id: user.id, lida: false },
+            data: { lida: true, data_leitura: new Date() }
+        });
     },
 
     async criarNotificacao(
@@ -95,25 +55,24 @@ export const notificacoesService = {
         prioridade: PrioridadeNotificacao = 'NORMAL',
         metadata?: Record<string, any>
     ): Promise<string> {
-        const { data, error } = await supabase.rpc('criar_notificacao', {
-            p_usuario_id: usuarioId,
-            p_tipo: tipo,
-            p_titulo: titulo,
-            p_mensagem: mensagem,
-            p_link: link,
-            p_prioridade: prioridade,
-            p_metadata: metadata || {}
+        const data = await prisma.notificacao.create({
+            data: {
+                usuario_id: usuarioId,
+                tipo,
+                titulo,
+                mensagem,
+                link,
+                prioridade,
+                metadata: metadata || {},
+                lida: false
+            }
         });
-
-        if (error) {
-            console.error('Erro ao criar notificação:', error);
-            throw error;
-        }
-
-        return data;
+        return data.id;
     },
 
     // ==================== TAREFAS UNIFICADAS ====================
+    // Nota: Como 'tarefas_unificadas' é uma VIEW no Supabase e pode não estar mapeada no Prisma,
+    // manteremos o uso do Supabase client para as tarefas unificadas por enquanto para evitar erros de schema.
 
     async getTarefasUnificadas(): Promise<TarefaUnificada[]> {
         const { data, error } = await supabase
@@ -125,7 +84,7 @@ export const notificacoesService = {
             .order('prazo', { ascending: true });
 
         if (error) {
-            console.error('Erro ao buscar tarefas unificadas:', error);
+            logger.error('Erro ao buscar tarefas unificadas:', error);
             throw error;
         }
 
@@ -149,7 +108,7 @@ export const notificacoesService = {
             .order('prazo', { ascending: true });
 
         if (error) {
-            console.error('Erro ao buscar minhas tarefas:', error);
+            logger.error('Erro ao buscar minhas tarefas:', error);
             throw error;
         }
 
@@ -174,7 +133,7 @@ export const notificacoesService = {
             .order('prazo', { ascending: true });
 
         if (error) {
-            console.error('Erro ao buscar tarefas por status:', error);
+            logger.error('Erro ao buscar tarefas por status:', error);
             throw error;
         }
 
@@ -202,7 +161,7 @@ export const notificacoesService = {
             .order('prazo', { ascending: true });
 
         if (error) {
-            console.error('Erro ao buscar tarefas atrasadas:', error);
+            logger.error('Erro ao buscar tarefas atrasadas:', error);
             throw error;
         }
 

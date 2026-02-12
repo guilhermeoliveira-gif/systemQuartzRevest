@@ -1,197 +1,154 @@
-import { supabase } from './supabaseClient';
+import { prisma } from '../lib/prisma';
 import { Veiculo, Abastecimento, Manutencao, Servico, TipoVeiculo, StatusVeiculo } from '../types_frota';
 
 export const frotaService = {
     // --- Veículos ---
 
     async getVeiculos(): Promise<Veiculo[]> {
-        const { data, error } = await supabase
-            .from('frota_veiculos')
-            .select('*')
-            .order('status', { ascending: true }) // Ativos primeiro
-            .order('placa', { ascending: true });
-
-        if (error) throw error;
-        return data || [];
+        return await prisma.frota_veiculos.findMany({
+            orderBy: [
+                { status: 'asc' },
+                { placa: 'asc' }
+            ]
+        }) as unknown as Veiculo[];
     },
 
     async getVeiculoById(id: string): Promise<Veiculo | null> {
-        const { data, error } = await supabase
-            .from('frota_veiculos')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (error) throw error;
-        return data;
+        return await prisma.frota_veiculos.findUnique({
+            where: { id }
+        }) as unknown as Veiculo;
     },
 
     async createVeiculo(veiculo: Omit<Veiculo, 'id' | 'created_at'>): Promise<Veiculo> {
-        const { data, error } = await supabase
-            .from('frota_veiculos')
-            .insert([veiculo])
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        return await prisma.frota_veiculos.create({
+            data: veiculo as any
+        }) as unknown as Veiculo;
     },
 
     async updateVeiculo(id: string, updates: Partial<Veiculo>): Promise<void> {
-        const { error } = await supabase
-            .from('frota_veiculos')
-            .update(updates)
-            .eq('id', id);
-
-        if (error) throw error;
+        await prisma.frota_veiculos.update({
+            where: { id },
+            data: updates as any
+        });
     },
 
     async deleteVeiculo(id: string): Promise<void> {
-        const { error } = await supabase
-            .from('frota_veiculos')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
+        await prisma.frota_veiculos.delete({
+            where: { id }
+        });
     },
 
     // --- Abastecimentos ---
 
     async getAbastecimentos(veiculoId: string): Promise<Abastecimento[]> {
-        const { data, error } = await supabase
-            .from('frota_abastecimentos')
-            .select('*')
-            .eq('veiculo_id', veiculoId)
-            .order('data', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        return await prisma.frota_abastecimentos.findMany({
+            where: { veiculo_id: veiculoId },
+            orderBy: { data: 'desc' }
+        }) as unknown as Abastecimento[];
     },
 
     async getAllAbastecimentos(): Promise<(Abastecimento & { veiculo?: Veiculo })[]> {
-        const { data, error } = await supabase
-            .from('frota_abastecimentos')
-            .select('*, veiculo:frota_veiculos(*)')
-            .order('data', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        const data = await prisma.frota_abastecimentos.findMany({
+            include: {
+                veiculo: true
+            },
+            orderBy: { data: 'desc' }
+        });
+        return data as unknown as (Abastecimento & { veiculo?: Veiculo })[];
     },
 
     async registrarAbastecimento(abastecimento: Omit<Abastecimento, 'id' | 'created_at' | 'media_km_l'>): Promise<Abastecimento> {
         // 1. Buscar último abastecimento para cálculo de média
-        const { data: lastSupply } = await supabase
-            .from('frota_abastecimentos')
-            .select('km, data')
-            .eq('veiculo_id', abastecimento.veiculo_id)
-            .lt('km', abastecimento.km) // Garante que é anterior ao atual
-            .order('km', { ascending: false })
-            .limit(1)
-            .single();
+        const lastSupply = await prisma.frota_abastecimentos.findFirst({
+            where: {
+                veiculo_id: abastecimento.veiculo_id,
+                km: { lt: abastecimento.km }
+            },
+            select: { km: true, data: true },
+            orderBy: { km: 'desc' }
+        });
 
         let media_km_l = 0;
 
         if (lastSupply) {
-            const kmRodados = abastecimento.km - lastSupply.km;
+            const kmRodados = abastecimento.km - Number(lastSupply.km);
             if (kmRodados > 0 && abastecimento.litros > 0) {
                 media_km_l = parseFloat((kmRodados / abastecimento.litros).toFixed(2));
             }
         }
 
         // 2. Inserir abastecimento
-        const { data, error } = await supabase
-            .from('frota_abastecimentos')
-            .insert([{ ...abastecimento, media_km_l }])
-            .select()
-            .single();
-
-        if (error) throw error;
+        const data = await prisma.frota_abastecimentos.create({
+            data: { ...abastecimento as any, media_km_l }
+        });
 
         // 3. Atualizar KM do veículo se for maior
         await this.atualizarKmVeiculo(abastecimento.veiculo_id, abastecimento.km);
 
-        return data;
+        return data as unknown as Abastecimento;
     },
 
     // --- Manutenções ---
 
     async getManutencoes(veiculoId: string): Promise<Manutencao[]> {
-        const { data, error } = await supabase
-            .from('frota_manutencoes')
-            .select('*')
-            .eq('veiculo_id', veiculoId)
-            .order('data', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        return await prisma.frota_manutencoes.findMany({
+            where: { veiculo_id: veiculoId },
+            orderBy: { data: 'desc' }
+        }) as unknown as Manutencao[];
     },
 
     async getAllManutencoes(): Promise<(Manutencao & { veiculo?: Veiculo })[]> {
-        const { data, error } = await supabase
-            .from('frota_manutencoes')
-            .select('*, veiculo:frota_veiculos(*)')
-            .order('data', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        const data = await prisma.frota_manutencoes.findMany({
+            include: {
+                veiculo: true
+            },
+            orderBy: { data: 'desc' }
+        });
+        return data as unknown as (Manutencao & { veiculo?: Veiculo })[];
     },
 
     async registrarManutencao(manutencao: Omit<Manutencao, 'id' | 'created_at'>): Promise<Manutencao> {
-        const { data, error } = await supabase
-            .from('frota_manutencoes')
-            .insert([manutencao])
-            .select()
-            .single();
-
-        if (error) throw error;
+        const data = await prisma.frota_manutencoes.create({
+            data: manutencao as any
+        });
 
         await this.atualizarKmVeiculo(manutencao.veiculo_id, manutencao.km);
 
-        return data;
+        return data as unknown as Manutencao;
     },
 
     // --- Serviços (Lavagem, Calibragem) ---
 
     async getServicos(veiculoId: string): Promise<Servico[]> {
-        const { data, error } = await supabase
-            .from('frota_servicos')
-            .select('*')
-            .eq('veiculo_id', veiculoId)
-            .order('data', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        return await prisma.frota_servicos.findMany({
+            where: { veiculo_id: veiculoId },
+            orderBy: { data: 'desc' }
+        }) as unknown as Servico[];
     },
 
     async registrarServico(servico: Omit<Servico, 'id' | 'created_at'>): Promise<Servico> {
-        const { data, error } = await supabase
-            .from('frota_servicos')
-            .insert([servico])
-            .select()
-            .single();
-
-        if (error) throw error;
+        const data = await prisma.frota_servicos.create({
+            data: servico as any
+        });
 
         await this.atualizarKmVeiculo(servico.veiculo_id, servico.km);
 
-        return data;
+        return data as unknown as Servico;
     },
 
     // --- Helper Privado ---
 
     async atualizarKmVeiculo(veiculoId: string, novoKm: number): Promise<void> {
-        // Verifica KM atual para não reduzir (em caso de lançamentos retroativos)
-        const { data: veiculo } = await supabase
-            .from('frota_veiculos')
-            .select('km_atual')
-            .eq('id', veiculoId)
-            .single();
+        const veiculo = await prisma.frota_veiculos.findUnique({
+            where: { id: veiculoId },
+            select: { km_atual: true }
+        });
 
-        if (veiculo && novoKm > veiculo.km_atual) {
-            await supabase
-                .from('frota_veiculos')
-                .update({ km_atual: novoKm })
-                .eq('id', veiculoId);
+        if (veiculo && novoKm > Number(veiculo.km_atual)) {
+            await prisma.frota_veiculos.update({
+                where: { id: veiculoId },
+                data: { km_atual: novoKm }
+            });
         }
     }
 };

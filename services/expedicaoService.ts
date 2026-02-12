@@ -1,117 +1,147 @@
-import { supabase } from './supabaseClient';
+import { prisma } from '../lib/prisma';
 import { Carga, CargaPedido } from '../types_expedicao';
 import { VendaPedido } from '../types_vendas';
 
 export const expedicaoService = {
     // --- CARGAS ---
     async getCargasAbertas() {
-        const { data, error } = await supabase
-            .from('expedicao_carga')
-            .select('*')
-            .eq('status', 'ABERTA')
-            .order('created_at', { ascending: false });
-        if (error) throw error;
-        return data as Carga[];
+        const data = await prisma.expedicao_carga.findMany({
+            where: { status: 'ABERTA' },
+            orderBy: { created_at: 'desc' }
+        });
+        return data as unknown as Carga[];
     },
 
     async criarCarga(carga: Partial<Carga>) {
-        const { data, error } = await supabase
-            .from('expedicao_carga')
-            .insert(carga)
-            .select()
-            .single();
-        if (error) throw error;
-        return data as Carga;
+        const data = await prisma.expedicao_carga.create({
+            data: carga as any
+        });
+        return data as unknown as Carga;
     },
 
     async fecharCarga(id: string) {
-        const { error } = await supabase
-            .from('expedicao_carga')
-            .update({ status: 'FECHADA' })
-            .eq('id', id);
-        if (error) throw error;
+        await prisma.expedicao_carga.update({
+            where: { id },
+            data: { status: 'FECHADA', updated_at: new Date() }
+        });
     },
 
     async excluirCarga(id: string) {
-        // Primeiro remove vínculos (cascade deve cuidar, mas por segurança...)
-        const { error } = await supabase
-            .from('expedicao_carga')
-            .delete()
-            .eq('id', id);
-        if (error) throw error;
+        await prisma.expedicao_carga.delete({
+            where: { id }
+        });
     },
 
     // --- PEDIDOS NA CARGA ---
     async getPedidosDaCarga(cargaId: string) {
-        const { data, error } = await supabase
-            .from('expedicao_carga_pedido')
-            .select(`
-                *,
-                pedido:vendas_pedido (
-                    *,
-                    cliente:vendas_cliente(nome, cidade, bairro),
-                    itens:vendas_item (
-                        quantidade,
-                        produto:produto_acabado(nome, unidade_medida)
-                    )
-                )
-            `)
-            .eq('carga_id', cargaId);
+        const data = await prisma.expedicao_carga_pedido.findMany({
+            where: { carga_id: cargaId },
+            include: {
+                vendas_pedido_pedido_id: {
+                    include: {
+                        vendas_cliente_cliente_id: {
+                            select: { nome: true, cnpj_cpf: true, contato: true } // Mapear campos reais conforme schema
+                        },
+                        vendas_item_pedido_id_list: {
+                            include: {
+                                produto_acabado_produto_id: {
+                                    select: { nome: true, unidade_medida: true }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
-        if (error) throw error;
-        return data;
+        // Mapear para o formato esperado pelo frontend
+        return data.map((vinculo: any) => {
+            const p = vinculo.vendas_pedido_pedido_id;
+            // No frontend o campo é 'cliente' e 'itens'
+            // Mas o return data legada do Supabase fazia o mapeamento automático se o select fosse aliasado.
+            // Aqui fazemos manual para garantir compatibilidade.
+            return {
+                ...vinculo,
+                pedido: {
+                    ...p,
+                    cliente: p.vendas_cliente_cliente_id,
+                    itens: p.vendas_item_pedido_id_list?.map((it: any) => ({
+                        ...it,
+                        produto: it.produto_acabado_produto_id
+                    }))
+                }
+            };
+        });
     },
 
     async adicionarPedidoCarga(cargaId: string, pedidoId: string) {
-        // 1. Cria vinculo
-        const { error } = await supabase
-            .from('expedicao_carga_pedido')
-            .insert({ carga_id: cargaId, pedido_id: pedidoId });
-        if (error) throw error;
-
-        // 2. Atualiza flag no pedido
-        await supabase
-            .from('vendas_pedido')
-            .update({ carga_id: cargaId })
-            .eq('id', pedidoId);
+        // 1. Cria vinculo e atualiza pedido em transação
+        await prisma.$transaction([
+            prisma.expedicao_carga_pedido.create({
+                data: { carga_id: cargaId, pedido_id: pedidoId }
+            }),
+            prisma.vendas_pedido.update({
+                where: { id: pedidoId },
+                data: { carga_id: cargaId, updated_at: new Date() }
+            })
+        ]);
     },
 
     async removerPedidoCarga(cargaId: string, pedidoId: string) {
-        // 1. Remove vinculo
-        const { error } = await supabase
-            .from('expedicao_carga_pedido')
-            .delete()
-            .match({ carga_id: cargaId, pedido_id: pedidoId });
-        if (error) throw error;
-
-        // 2. Limpa flag no pedido
-        await supabase
-            .from('vendas_pedido')
-            .update({ carga_id: null })
-            .eq('id', pedidoId);
+        // 1. Remove vinculo (Prisma deleteMany para match composto se não tiver ID)
+        await prisma.$transaction([
+            prisma.expedicao_carga_pedido.deleteMany({
+                where: { carga_id: cargaId, pedido_id: pedidoId }
+            }),
+            prisma.vendas_pedido.update({
+                where: { id: pedidoId },
+                data: { carga_id: null, updated_at: new Date() }
+            })
+        ]);
     },
 
     // --- PEDIDOS DISPONÍVEIS ---
     async getPedidosDisponiveis(filtro: 'TODO' | 'UBERLANDIA' | 'REGIAO' = 'TODO') {
-        let query = supabase
-            .from('vendas_pedido')
-            .select(`
-                *,
-                cliente:vendas_cliente(nome, cidade, bairro, endereco),
-                itens:vendas_item(quantidade, produto:produto_acabado(nome))
-            `)
-            .is('carga_id', null) // Apenas sem carga
-            // .neq('status', 'CANCELADO') // Ignora cancelados
-            .order('data_previsao_entrega', { ascending: true });
+        const dataFiltered = await prisma.vendas_pedido.findMany({
+            where: {
+                carga_id: null,
+                // status: { not: 'CANCELADO' }
+            },
+            include: {
+                vendas_cliente_cliente_id: {
+                    select: { nome: true, endereco: true }
+                },
+                vendas_item_pedido_id_list: {
+                    include: {
+                        produto_acabado_produto_id: {
+                            select: { nome: true }
+                        }
+                    }
+                }
+            },
+            orderBy: { data_previsao_entrega: 'asc' }
+        });
 
-        const { data, error } = await query;
-        if (error) throw error;
+        // Mapear campos para compatibilidade
+        const data = dataFiltered.map((p: any) => ({
+            ...p,
+            cliente: p.vendas_cliente_cliente_id,
+            itens: p.vendas_item_pedido_id_list?.map((it: any) => ({
+                ...it,
+                produto: it.produto_acabado_produto_id
+            }))
+        }));
 
-        // Filtragem em memória devido a complexidade de cidade/região string
+        // Filtragem Uberlandia (em memória como no original)
+        // Nota: No schema real 'cidade' e 'bairro' parecem estar consolidados em 'endereco' ou faltam no vendas_cliente.
+        // Vou assumir que o frontend lida com o que estiver disponível ou filtrar se encontrar o campo.
+        // Mas o schema.prisma não mostra 'cidade' em vendas_cliente.
+        // Vou manter a estrutura de retorno mas o filtro precisará de ajuste se o campo mudar.
+
         if (filtro === 'UBERLANDIA') {
-            return data.filter((p: any) => p.cliente?.cidade?.toUpperCase().includes('UBERL'));
+            return data.filter((p: any) => p.cliente?.endereco?.toUpperCase().includes('UBERL'));
         } else if (filtro === 'REGIAO') {
-            return data.filter((p: any) => !p.cliente?.cidade?.toUpperCase().includes('UBERL'));
+            return data.filter((p: any) => !p.cliente?.endereco?.toUpperCase().includes('UBERL'));
         }
 
         return data;
@@ -125,7 +155,7 @@ export const expedicaoService = {
 
         itens.forEach(item => {
             const nome = item.produto?.nome?.toUpperCase() || '';
-            const qtd = item.quantidade || 0;
+            const qtd = Number(item.quantidade) || 0;
 
             if (nome.includes('REJUNT')) {
                 totalRejunte += qtd;
@@ -152,53 +182,46 @@ export const expedicaoService = {
 
     // --- PENDÊNCIAS ---
     async listarPendencias(mostrarTodas: boolean = false) {
-        let query = supabase
-            .from('expedicao_pendencia')
-            .select(`
-                *,
-                cliente:vendas_cliente(id, nome),
-                produto:produto_acabado(id, nome, codigo) // Ajuste conforme seu schema real
-            `)
-            .order('created_at', { ascending: false });
+        const data = await prisma.expedicao_pendencia.findMany({
+            where: mostrarTodas ? {} : { data_resolvida: null },
+            include: {
+                vendas_cliente_cliente_id: {
+                    select: { id: true, nome: true }
+                },
+                produto_acabado_produto_id: {
+                    select: { id: true, nome: true }
+                }
+            },
+            orderBy: { created_at: 'desc' }
+        });
 
-        if (!mostrarTodas) {
-            query = query.is('data_resolvida', null);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-        return data;
+        return data.map((pen: any) => ({
+            ...pen,
+            cliente: pen.vendas_cliente_cliente_id,
+            produto: pen.produto_acabado_produto_id
+        }));
     },
 
     async criarPendencia(pendencia: { cliente_id: string; produto_id: string; quantidade: number; observacao?: string }) {
-        const { data, error } = await supabase
-            .from('expedicao_pendencia')
-            .insert(pendencia)
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
+        return await prisma.expedicao_pendencia.create({
+            data: pendencia as any
+        });
     },
 
     async resolverPendencia(id: string) {
-        const { data, error } = await supabase
-            .from('expedicao_pendencia')
-            .update({ data_resolvida: new Date().toISOString() })
-            .eq('id', id)
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
+        return await prisma.expedicao_pendencia.update({
+            where: { id },
+            data: { data_resolvida: new Date(), updated_at: new Date() }
+        });
     },
 
     async verificarPendenciasCliente(clienteId: string): Promise<boolean> {
-        const { count, error } = await supabase
-            .from('expedicao_pendencia')
-            .select('*', { count: 'exact', head: true })
-            .eq('cliente_id', clienteId)
-            .is('data_resolvida', null);
-
-        if (error) throw error;
-        return (count || 0) > 0;
+        const count = await prisma.expedicao_pendencia.count({
+            where: {
+                cliente_id: clienteId,
+                data_resolvida: null
+            }
+        });
+        return count > 0;
     }
 };

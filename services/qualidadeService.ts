@@ -1,58 +1,36 @@
-import { supabase } from './supabaseClient';
+import { prisma } from '../lib/prisma';
 import { NaoConformidade } from '../types_nc';
 import { PlanoAcao, Tarefa } from '../types_plano_acao';
+import { logger } from '../utils/logger';
 
 // ==================== NÃO CONFORMIDADES ====================
 
 export const qualidadeService = {
     // Listar todas as não conformidades
     async getNaoConformidades(): Promise<NaoConformidade[]> {
-        const { data, error } = await supabase
-            .from('nao_conformidade')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Erro ao buscar não conformidades:', error);
-            throw error;
-        }
-
-        return data || [];
+        const data = await prisma.nao_conformidade.findMany({
+            orderBy: { created_at: 'desc' }
+        });
+        return data as unknown as NaoConformidade[];
     },
 
     // Buscar uma não conformidade específica
     async getNaoConformidadeById(id: string): Promise<NaoConformidade | null> {
-        const { data, error } = await supabase
-            .from('nao_conformidade')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (error) {
-            console.error('Erro ao buscar não conformidade:', error);
-            return null;
-        }
-
-        return data;
+        const data = await prisma.nao_conformidade.findUnique({
+            where: { id }
+        });
+        return data as unknown as NaoConformidade;
     },
 
     // Criar nova não conformidade
     async createNaoConformidade(nc: Omit<NaoConformidade, 'id' | 'created_at'>): Promise<NaoConformidade> {
-        const { data, error } = await supabase
-            .from('nao_conformidade')
-            .insert([nc])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Erro ao criar não conformidade:', error);
-            throw error;
-        }
+        const data = await prisma.nao_conformidade.create({
+            data: nc as any
+        });
 
         // Se for um problema, criar OS automaticamente
         if (data) {
             try {
-                // @ts-ignore - Import dinâmico ou serviço cruzado pode causar ciclo, ignorando tipagem estrita aqui por simplicidade
                 const { manutencaoService } = await import('./manutencaoService');
 
                 await manutencaoService.createOS({
@@ -67,29 +45,20 @@ export const qualidadeService = {
                     pecas_utilizadas: []
                 });
             } catch (osError) {
-                console.error('Erro ao criar OS automática para NC:', osError);
-                // Não falhar a criação da NC se a OS falhar, mas logar o erro
+                logger.error('Erro ao criar OS automática para NC:', osError);
             }
         }
 
-        return data;
+        return data as unknown as NaoConformidade;
     },
 
     // Atualizar não conformidade
     async updateNaoConformidade(id: string, updates: Partial<NaoConformidade>): Promise<NaoConformidade> {
-        const { data, error } = await supabase
-            .from('nao_conformidade')
-            .update({ ...updates, updated_at: new Date().toISOString() })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Erro ao atualizar não conformidade:', error);
-            throw error;
-        }
-
-        return data;
+        const data = await prisma.nao_conformidade.update({
+            where: { id },
+            data: { ...updates as any, updated_at: new Date() }
+        });
+        return data as unknown as NaoConformidade;
     },
 
     // Salvar análise de causa (5 Porquês)
@@ -101,19 +70,12 @@ export const qualidadeService = {
         pq5?: string;
         causa_raiz: string;
     }) {
-        const { data, error } = await supabase
-            .from('analise_causa')
-            .insert([{
+        const data = await prisma.analise_causa.create({
+            data: {
                 nao_conformidade_id: ncId,
                 ...analise
-            }])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Erro ao salvar análise de causa:', error);
-            throw error;
-        }
+            }
+        });
 
         // Atualizar status da NC para ACAO_DEFINIDA
         await this.updateNaoConformidade(ncId, { status: 'ACAO_DEFINIDA' });
@@ -123,193 +85,111 @@ export const qualidadeService = {
 
     // Buscar análise de causa de uma NC
     async getAnaliseCausa(ncId: string) {
-        const { data, error } = await supabase
-            .from('analise_causa')
-            .select('*')
-            .eq('nao_conformidade_id', ncId)
-            .single();
-
-        if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-            console.error('Erro ao buscar análise de causa:', error);
-        }
-
+        const data = await prisma.analise_causa.findFirst({
+            where: { nao_conformidade_id: ncId }
+        });
         return data;
     },
 
     // Deletar não conformidade
     async deleteNaoConformidade(id: string): Promise<void> {
-        const { error } = await supabase
-            .from('nao_conformidade')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error('Erro ao deletar não conformidade:', error);
-            throw error;
-        }
+        await prisma.nao_conformidade.delete({
+            where: { id }
+        });
     },
 
     // ==================== PLANOS DE AÇÃO ====================
 
     // Deletar plano de ação
     async deletePlanoAcao(id: string): Promise<void> {
-        const { error } = await supabase
-            .from('plano_acao')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error('Erro ao deletar plano de ação:', error);
-            throw error;
-        }
+        await prisma.plano_acao.delete({
+            where: { id }
+        });
     },
 
     // Listar todos os planos de ação
     async getPlanosAcao(): Promise<PlanoAcao[]> {
-        const { data, error } = await supabase
-            .from('plano_acao')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Erro ao buscar planos de ação:', error);
-            throw error;
-        }
-
-        return data || [];
+        const data = await prisma.plano_acao.findMany({
+            orderBy: { created_at: 'desc' }
+        });
+        return data as unknown as PlanoAcao[];
     },
 
     // Buscar planos de ação de uma NC específica
     async getPlanosByNC(ncId: string): Promise<PlanoAcao[]> {
-        const { data, error } = await supabase
-            .from('plano_acao')
-            .select('*')
-            .eq('nao_conformidade_id', ncId);
-
-        if (error) {
-            console.error('Erro ao buscar planos de ação:', error);
-            throw error;
-        }
-
-        return data || [];
+        const data = await prisma.plano_acao.findMany({
+            where: { nao_conformidade_id: ncId }
+        });
+        return data as unknown as PlanoAcao[];
     },
 
     // Criar novo plano de ação
     async createPlanoAcao(plano: Omit<PlanoAcao, 'id' | 'created_at' | 'updated_at'>): Promise<PlanoAcao> {
-        const { data, error } = await supabase
-            .from('plano_acao')
-            .insert([plano])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Erro ao criar plano de ação:', error);
-            throw error;
-        }
-
-        return data;
+        const data = await prisma.plano_acao.create({
+            data: plano as any
+        });
+        return data as unknown as PlanoAcao;
     },
 
     // Atualizar plano de ação
     async updatePlanoAcao(id: string, updates: Partial<PlanoAcao>): Promise<PlanoAcao> {
-        const { data, error } = await supabase
-            .from('plano_acao')
-            .update({ ...updates, updated_at: new Date().toISOString() })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Erro ao atualizar plano de ação:', error);
-            throw error;
-        }
-
-        return data;
+        const data = await prisma.plano_acao.update({
+            where: { id },
+            data: { ...updates as any, updated_at: new Date() }
+        });
+        return data as unknown as PlanoAcao;
     },
 
     // ==================== TAREFAS ====================
 
     // Listar tarefas de um plano de ação
     async getTarefasByPlano(planoId: string): Promise<Tarefa[]> {
-        const { data, error } = await supabase
-            .from('tarefa')
-            .select('*')
-            .eq('plano_acao_id', planoId)
-            .order('prazo', { ascending: true });
-
-        if (error) {
-            console.error('Erro ao buscar tarefas:', error);
-            throw error;
-        }
-
-        return data || [];
+        const data = await prisma.tarefa.findMany({
+            where: { plano_acao_id: planoId },
+            orderBy: { prazo: 'asc' }
+        });
+        return data as unknown as Tarefa[];
     },
 
     // Listar todas as tarefas (para visualização geral ou por responsável)
     async getTodasTarefas(): Promise<Tarefa[]> {
-        const { data, error } = await supabase
-            .from('tarefa')
-            .select(`
-                *,
-                plano_acao:plano_acao(titulo)
-            `)
-            .order('prazo', { ascending: true });
+        const data = await prisma.tarefa.findMany({
+            include: {
+                plano_acao_plano_acao_id: {
+                    select: { titulo: true }
+                }
+            },
+            orderBy: { prazo: 'asc' }
+        });
 
-        if (error) {
-            console.error('Erro ao buscar todas as tarefas:', error);
-            throw error;
-        }
-
-        // Mapear para adicionar título do plano se necessário, ou retornar como está
-        // O tipo Tarefa precisaria ser estendido se quisermos incluir o título do plano no objeto, 
-        // mas por enquanto retornamos os dados "como vêm" do supabase com o join, 
-        // precisaremos ajustar o componente para ler isso.
-        return data as any || [];
+        // Mapear para adicionar título do plano
+        return data.map((t: any) => ({
+            ...t,
+            plano_acao: t.plano_acao_plano_acao_id
+        })) as unknown as Tarefa[];
     },
 
     // Criar nova tarefa
     async createTarefa(tarefa: Omit<Tarefa, 'id' | 'created_at' | 'updated_at'>): Promise<Tarefa> {
-        const { data, error } = await supabase
-            .from('tarefa')
-            .insert([tarefa])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Erro ao criar tarefa:', error);
-            throw error;
-        }
-
-        return data;
+        const data = await prisma.tarefa.create({
+            data: tarefa as any
+        });
+        return data as unknown as Tarefa;
     },
 
     // Atualizar tarefa
     async updateTarefa(id: string, updates: Partial<Tarefa>): Promise<Tarefa> {
-        const { data, error } = await supabase
-            .from('tarefa')
-            .update({ ...updates, updated_at: new Date().toISOString() })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Erro ao atualizar tarefa:', error);
-            throw error;
-        }
-
-        return data;
+        const data = await prisma.tarefa.update({
+            where: { id },
+            data: { ...updates as any, updated_at: new Date() }
+        });
+        return data as unknown as Tarefa;
     },
 
     // Deletar tarefa
     async deleteTarefa(id: string): Promise<void> {
-        const { error } = await supabase
-            .from('tarefa')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error('Erro ao deletar tarefa:', error);
-            throw error;
-        }
+        await prisma.tarefa.delete({
+            where: { id }
+        });
     }
 };
