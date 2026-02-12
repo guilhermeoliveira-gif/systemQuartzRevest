@@ -30,11 +30,23 @@ const CadastroPedido: React.FC = () => {
     const [itens, setItens] = useState<Partial<VendaItem>[]>([]);
 
     // Busca Clientes
+    const [loadingClientes, setLoadingClientes] = useState(false);
     useEffect(() => {
-        if (clienteBusca.length > 2) {
+        if (clienteBusca.length >= 1) { // Reduzido para 1 char
+            setLoadingClientes(true);
             const timeout = setTimeout(async () => {
-                const { data } = await supabase.from('vendas_cliente').select('*').ilike('nome', `%${clienteBusca}%`).limit(5);
-                setClientesEncontrados(data || []);
+                try {
+                    const { data } = await supabase
+                        .from('vendas_cliente')
+                        .select('*')
+                        .ilike('nome', `%${clienteBusca}%`)
+                        .limit(10);
+                    setClientesEncontrados(data || []);
+                } catch (err) {
+                    console.error('Erro ao buscar clientes', err);
+                } finally {
+                    setLoadingClientes(false);
+                }
             }, 300);
             return () => clearTimeout(timeout);
         } else {
@@ -43,11 +55,19 @@ const CadastroPedido: React.FC = () => {
     }, [clienteBusca]);
 
     // Busca Produtos
+    const [loadingProdutos, setLoadingProdutos] = useState(false);
     useEffect(() => {
-        if (produtoBusca.length > 2) {
+        if (produtoBusca.length >= 1) { // Reduzido para 1 char
+            setLoadingProdutos(true);
             const timeout = setTimeout(async () => {
-                const prods = await vendasService.buscarProdutos(produtoBusca);
-                setProdutosEncontrados(prods || []);
+                try {
+                    const prods = await vendasService.buscarProdutos(produtoBusca);
+                    setProdutosEncontrados(prods || []);
+                } catch (err) {
+                    console.error('Erro ao buscar produtos', err);
+                } finally {
+                    setLoadingProdutos(false);
+                }
             }, 300);
             return () => clearTimeout(timeout);
         } else {
@@ -133,20 +153,29 @@ const CadastroPedido: React.FC = () => {
                                 }}
                             />
                             {/* Dropdown de Clientes */}
-                            {!clienteSelecionado && clientesEncontrados.length > 0 && (
-                                <ul className="absolute z-10 w-full bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-auto">
+                            {(clienteBusca.length >= 1 && !clienteSelecionado) && (
+                                <ul className="absolute z-50 w-full bg-white border rounded-lg shadow-xl mt-1 max-h-60 overflow-auto border-slate-200">
+                                    {loadingClientes && (
+                                        <li className="p-3 text-center text-slate-500 text-sm">Buscando...</li>
+                                    )}
+                                    {!loadingClientes && clientesEncontrados.length === 0 && (
+                                        <li className="p-3 text-center text-slate-400 text-sm italic">Nenhum cliente encontrado.</li>
+                                    )}
                                     {clientesEncontrados.map(cli => (
                                         <li
                                             key={cli.id}
-                                            className="p-2 hover:bg-slate-100 cursor-pointer"
+                                            className="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-0 border-slate-100 flex justify-between items-center group"
                                             onClick={() => {
                                                 setClienteSelecionado(cli);
                                                 setEnderecoEntrega(cli.endereco || '');
                                                 setClientesEncontrados([]);
+                                                setClienteBusca(''); // Limpa busca visual
                                             }}
                                         >
-                                            <div className="font-bold text-slate-800">{cli.nome}</div>
-                                            <div className="text-xs text-slate-500">{cli.cnpj_cpf || 'Sem documento'}</div>
+                                            <div>
+                                                <div className="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{cli.nome}</div>
+                                                <div className="text-xs text-slate-500">{cli.cnpj_cpf || 'CPF/CNPJ não informado'}</div>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
@@ -216,24 +245,30 @@ const CadastroPedido: React.FC = () => {
                             }}
                         />
                         {/* Dropdown de Produtos */}
-                        {!produtoSelecionado && produtosEncontrados.length > 0 && (
-                            <ul className="absolute z-10 w-full bg-white border rounded-lg shadow-lg mt-1 max-h-48 overflow-auto">
+                        {(produtoBusca.length >= 1 && !produtoSelecionado) && (
+                            <ul className="absolute z-50 w-full bg-white border rounded-lg shadow-xl mt-1 max-h-60 overflow-auto border-slate-200 bottom-full mb-1">
+                                {loadingProdutos && (
+                                    <li className="p-3 text-center text-slate-500 text-sm">Buscando produtos...</li>
+                                )}
+                                {!loadingProdutos && produtosEncontrados.length === 0 && (
+                                    <li className="p-3 text-center text-slate-400 text-sm italic">Nenhum produto encontrado.</li>
+                                )}
                                 {produtosEncontrados.map(prod => (
                                     <li
                                         key={prod.id}
-                                        className="p-2 hover:bg-slate-100 cursor-pointer border-b last:border-0"
+                                        className="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-0 border-slate-100"
                                         onClick={() => {
                                             setProdutoSelecionado(prod);
                                             setProdutosEncontrados([]);
-                                            // Mock valor unitario (futuro: pegar da tabela)
-                                            setValorUnitario(100.00);
+                                            setProdutoBusca('');
+                                            setValorUnitario(100.00); // Mock
                                         }}
                                     >
-                                        <div className="flex justify-between">
-                                            <span className="font-bold text-slate-800">{prod.nome}</span>
-                                            <span className="text-xs bg-slate-100 px-2 rounded">{prod.codigo}</span>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-semibold text-slate-800">{prod.nome}</span>
+                                            <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 border border-slate-200 font-mono">{prod.codigo}</span>
                                         </div>
-                                        <div className="text-xs text-slate-500">Unidade: {prod.unidade}</div>
+                                        <div className="text-xs text-slate-500">Unidade: <span className="font-medium text-slate-700">{prod.unidade}</span></div>
                                     </li>
                                 ))}
                             </ul>
