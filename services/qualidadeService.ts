@@ -25,10 +25,7 @@ export const qualidadeService = {
     // Criar nova não conformidade
     async createNaoConformidade(nc: Omit<NaoConformidade, 'id' | 'created_at'>): Promise<NaoConformidade> {
         const data = await prisma.nao_conformidade.create({
-            data: {
-                ...(nc as any),
-                id: crypto.randomUUID()
-            }
+            data: nc as any
         });
 
         // Se for um problema, criar OS automaticamente
@@ -75,9 +72,8 @@ export const qualidadeService = {
     }) {
         const data = await prisma.analise_causa.create({
             data: {
-                ...(analise as any),
-                id: crypto.randomUUID(),
-                nao_conformidade_nao_conformidade_id: { connect: { id: ncId } }
+                nao_conformidade_id: ncId,
+                ...analise
             }
         });
 
@@ -129,13 +125,8 @@ export const qualidadeService = {
 
     // Criar novo plano de ação
     async createPlanoAcao(plano: Omit<PlanoAcao, 'id' | 'created_at' | 'updated_at'>): Promise<PlanoAcao> {
-        const { nao_conformidade_id, ...rest } = plano as any;
         const data = await prisma.plano_acao.create({
-            data: {
-                ...(rest as any),
-                id: crypto.randomUUID(),
-                nao_conformidade_nao_conformidade_id: nao_conformidade_id ? { connect: { id: nao_conformidade_id } } : undefined
-            }
+            data: plano as any
         });
         return data as unknown as PlanoAcao;
     },
@@ -180,16 +171,8 @@ export const qualidadeService = {
 
     // Criar nova tarefa
     async createTarefa(tarefa: Omit<Tarefa, 'id' | 'created_at' | 'updated_at'>): Promise<Tarefa> {
-        const { plano_acao_id, responsavel_id, maquina_id, os_id, ...rest } = tarefa as any;
         const data = await prisma.tarefa.create({
-            data: {
-                ...(rest as any),
-                id: crypto.randomUUID(),
-                plano_acao_plano_acao_id: plano_acao_id ? { connect: { id: plano_acao_id } } : undefined,
-                usuarios_responsavel_id: responsavel_id ? { connect: { id: responsavel_id } } : undefined,
-                manutencao_maquina_maquina_id: maquina_id ? { connect: { id: maquina_id } } : undefined,
-                manutencao_os_os_id: os_id ? { connect: { id: os_id } } : undefined
-            }
+            data: tarefa as any
         });
         return data as unknown as Tarefa;
     },

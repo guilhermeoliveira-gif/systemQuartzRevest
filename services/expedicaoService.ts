@@ -14,10 +14,7 @@ export const expedicaoService = {
 
     async criarCarga(carga: Partial<Carga>) {
         const data = await prisma.expedicao_carga.create({
-            data: {
-                ...(carga as any),
-                id: carga.id || crypto.randomUUID()
-            }
+            data: carga as any
         });
         return data as unknown as Carga;
     },
@@ -81,11 +78,7 @@ export const expedicaoService = {
         // 1. Cria vinculo e atualiza pedido em transação
         await prisma.$transaction([
             prisma.expedicao_carga_pedido.create({
-                data: {
-                    id: crypto.randomUUID(),
-                    expedicao_carga_carga_id: { connect: { id: cargaId } },
-                    vendas_pedido_pedido_id: { connect: { id: pedidoId } }
-                }
+                data: { carga_id: cargaId, pedido_id: pedidoId }
             }),
             prisma.vendas_pedido.update({
                 where: { id: pedidoId },
@@ -210,14 +203,8 @@ export const expedicaoService = {
     },
 
     async criarPendencia(pendencia: { cliente_id: string; produto_id: string; quantidade: number; observacao?: string }) {
-        const { cliente_id, produto_id, ...rest } = pendencia;
         return await prisma.expedicao_pendencia.create({
-            data: {
-                ...(rest as any),
-                id: crypto.randomUUID(),
-                vendas_cliente_cliente_id: { connect: { id: cliente_id } },
-                produto_acabado_produto_id: { connect: { id: produto_id } }
-            }
+            data: pendencia as any
         });
     },
 

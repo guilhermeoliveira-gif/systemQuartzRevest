@@ -57,8 +57,7 @@ export const notificacoesService = {
     ): Promise<string> {
         const data = await prisma.notificacao.create({
             data: {
-                id: crypto.randomUUID(),
-                usuarios_usuario_id: { connect: { id: usuarioId } },
+                usuario_id: usuarioId,
                 tipo,
                 titulo,
                 mensagem,
