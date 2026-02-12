@@ -266,7 +266,7 @@ const ConferenciaEstoque: React.FC = () => {
               className="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center gap-2"
             >
               {isLoading ? <RefreshCcw className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
-              Confirmar Balanço 4.0
+              Confirmar Balanço
             </button>
           </div>
         </div>
