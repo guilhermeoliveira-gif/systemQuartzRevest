@@ -62,6 +62,7 @@ import DetalheCotacao from './pages/compras/DetalheCotacao';
 
 import VendasDashboard from './pages/Vendas/VendasDashboard';
 import CadastroPedido from './pages/Vendas/CadastroPedido';
+import MontagemCarga from './pages/Expedicao/MontagemCarga';
 
 // Frotas Module
 import FrotaDashboard from './pages/Frotas/FrotaDashboard';
@@ -152,6 +153,9 @@ const App: React.FC = () => {
                   {/* Vendas Module */}
                   <Route path="/vendas" element={<VendasDashboard />} />
                   <Route path="/vendas/novo" element={<CadastroPedido />} />
+
+                  {/* Expedição Module */}
+                  <Route path="/expedicao/nova" element={<MontagemCarga />} />
 
                   {/* Frotas Module */}
                   <Route path="/frotas" element={<FrotaDashboard />} />
