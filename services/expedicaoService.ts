@@ -148,5 +148,46 @@ export const expedicaoService = {
             qtdArgamassa: totalArgamassa,
             qtdRejunte: totalRejunte
         };
+    },
+
+    // --- PENDÊNCIAS ---
+    async listarPendencias(mostrarTodas: boolean = false) {
+        let query = supabase
+            .from('expedicao_pendencia')
+            .select(`
+                *,
+                cliente:vendas_cliente(id, nome),
+                produto:produto_acabado(id, nome, codigo) // Ajuste conforme seu schema real
+            `)
+            .order('created_at', { ascending: false });
+
+        if (!mostrarTodas) {
+            query = query.is('data_resolvida', null);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
+    },
+
+    async criarPendencia(pendencia: { cliente_id: string; produto_id: string; quantidade: number; observacao?: string }) {
+        const { data, error } = await supabase
+            .from('expedicao_pendencia')
+            .insert(pendencia)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
+    async resolverPendencia(id: string) {
+        const { data, error } = await supabase
+            .from('expedicao_pendencia')
+            .update({ data_resolvida: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
     }
 };
