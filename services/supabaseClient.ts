@@ -4,23 +4,22 @@ import { createClient } from '@supabase/supabase-js';
 // Load env vars
 // Load env vars with fallback for Node.js environment (scripts)
 // Load env vars with fallback for Node.js environment (scripts)
-let supabaseUrl = '';
-let supabaseKey = '';
-
-// Check for Vite environment (client-side) - explicit access required for static replacement
-if (typeof import.meta !== 'undefined' && import.meta.env) {
-    supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-}
-
-// Fallback to Node environment (scripts) if not found in Vite env
-if (!supabaseUrl && typeof process !== 'undefined' && process.env) {
-    supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-    supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-}
+// 1. Tentar obter do Vite (Substituição estática na build)
+// @ts-ignore
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+// @ts-ignore
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-    console.warn("⚠️ Supabase credentials missing. Check .env.local or environment variables.");
+    const msg = `CRITICAL: Supabase credentials missing.
+    URL: ${supabaseUrl ? 'Defined' : 'Missing'}
+    Key: ${supabaseKey ? 'Defined' : 'Missing'}
+    
+    Verifique se o arquivo .env ou .env.local existe e contém as chaves VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.`;
+
+    console.error(msg);
+    // Lançar erro para ser pego pelo GlobalErrorProvider na tela
+    throw new Error(msg);
 }
 
 export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
