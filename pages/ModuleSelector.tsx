@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield, FolderKanban, Wrench, Truck } from 'lucide-react';
+import { Package, Factory, Users, ShoppingCart, BarChart3, AlertTriangle, Shield, FolderKanban, Wrench, Truck, ClipboardList } from 'lucide-react';
 
 interface ModuleSelectorProps {
   onLogout: () => void;
@@ -80,7 +80,8 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
       borderColor: 'border-slate-200',
       iconBg: 'bg-slate-100',
       iconColor: 'text-slate-500',
-      active: false,
+      active: true,
+      path: '/vendas'
     },
     {
       id: 'rh',
@@ -140,6 +141,30 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
       iconColor: 'text-cyan-600',
       active: true,
       path: '/frotas'
+    },
+    {
+      id: 'expedicao',
+      name: 'Expedição & Logística',
+      description: 'Gestão de cargas, romaneios, controle de entregas e pendências.',
+      icon: Truck,
+      color: 'from-indigo-600 to-indigo-700',
+      borderColor: 'border-indigo-200',
+      iconBg: 'bg-indigo-100',
+      iconColor: 'text-indigo-600',
+      active: true,
+      path: '/expedicao/nova'
+    },
+    {
+      id: 'checklist',
+      name: 'Checklist & Inspeções',
+      description: 'Agendamento e execução de inspeções de rotina e segurança.',
+      icon: ClipboardList,
+      color: 'from-green-600 to-green-700',
+      borderColor: 'border-green-200',
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+      active: true,
+      path: '/checklist/agendamento'
     },
     {
       id: 'analytics',
