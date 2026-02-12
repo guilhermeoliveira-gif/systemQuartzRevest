@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { Maquina } from '../../types_manutencao';
+import { Maquina, MaquinaPlanoVinculo } from '../../types_manutencao';
 import { manutencaoService } from '../../services/manutencaoService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -21,21 +22,28 @@ const ManutencaoPreventiva: React.FC = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
-    const [maquinas, setMaquinas] = useState<Maquina[]>([]);
+    const [maquinas, setMaquinas] = useState<(Maquina & { planos?: MaquinaPlanoVinculo[] })[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<'ALL' | 'CRITICO' | 'ALERTA' | 'OK'>('ALL');
 
     useEffect(() => {
-        loadMaquinas();
+        loadData();
     }, []);
 
-    const loadMaquinas = async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
-            const data = await manutencaoService.getMaquinas();
-            setMaquinas(data);
+            const maquinasData = await manutencaoService.getMaquinas();
+
+            // Carregar planos para cada máquina
+            const maquinasComPlanos = await Promise.all(maquinasData.map(async (m) => {
+                const planos = await manutencaoService.getPlanosByMaquina(m.id);
+                return { ...m, planos };
+            }));
+
+            setMaquinas(maquinasComPlanos);
         } catch (error) {
-            console.error('Erro ao carregar máquinas:', error);
+            console.error('Erro ao carregar dados:', error);
             showToast('Erro ao carregar dados de manutenção.', { type: 'error' });
         } finally {
             setLoading(false);
@@ -47,6 +55,34 @@ const ManutencaoPreventiva: React.FC = () => {
         if (horasRestantes <= 0) return { status: 'CRITICO', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: 'Vencida' };
         if (horasRestantes <= maquina.intervalo_manutencao_horas * 0.1) return { status: 'ALERTA', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', label: 'Próxima' };
         return { status: 'OK', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: 'Em dia' };
+    };
+
+    const handleGerarOSDePlano = async (maquina: Maquina, vinculo: MaquinaPlanoVinculo) => {
+        try {
+            if (!confirm(`Abrir Ordem de Serviço para o plano "${vinculo.plano?.nome}" na máquina ${maquina.nome}?`)) return;
+
+            // Buscar itens do plano para colocar na descrição
+            const planos = await manutencaoService.getPlanos();
+            const planoCompleto = planos.find(p => p.id === vinculo.plano_id);
+            const checklistTxt = planoCompleto?.itens.map(i => `- [ ] ${i.tarefa}`).join('\n') || '';
+
+            await manutencaoService.createOS({
+                maquina_id: maquina.id,
+                tipo: 'Preventiva',
+                tipo_os: 'Manutencao Preventiva',
+                status: 'Aberta',
+                prioridade: 'Alta',
+                descricao: `PLANO: ${vinculo.plano?.nome}\n\nRoteiro:\n${checklistTxt}`,
+                data_abertura: new Date().toISOString(),
+                custo_total: 0,
+                pecas_utilizadas: []
+            });
+
+            showToast('OS do Plano gerada com sucesso!', { type: 'success' });
+        } catch (error) {
+            console.error(error);
+            showToast('Erro ao gerar OS do plano.', { type: 'error' });
+        }
     };
 
     const handleGerarOS = async (maquina: Maquina) => {
@@ -92,6 +128,9 @@ const ManutencaoPreventiva: React.FC = () => {
                     </h1>
                     <p className="text-slate-500 mt-1">Acompanhamento de horímetros e planos de manutenção</p>
                 </div>
+                <Link to="/manutencao/planos" className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-colors border border-slate-200 shadow-sm">
+                    <Wrench size={18} className="text-slate-400" /> Configurar Planos
+                </Link>
             </div>
 
             {/* Filtros e Busca */}
@@ -113,8 +152,8 @@ const ManutencaoPreventiva: React.FC = () => {
                             key={status}
                             onClick={() => setFilterStatus(status as any)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterStatus === status
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             {status === 'ALL' ? 'Todos' : status}
@@ -147,35 +186,53 @@ const ManutencaoPreventiva: React.FC = () => {
                             </div>
 
                             <div className="p-4 space-y-4">
-                                <div className="flex justify-between text-sm text-slate-600 mb-1">
-                                    <span>Uso Atual</span>
-                                    <span className="font-mono font-bold">{maquina.horas_uso_total}h</span>
-                                </div>
+                                {maquina.planos && maquina.planos.length > 0 && (
+                                    <div className="space-y-2">
+                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Planos Ativos</h4>
+                                        {maquina.planos.map(v => (
+                                            <div key={v.id} className="p-2 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center group">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-bold text-slate-700">{v.plano?.nome}</span>
+                                                    <span className="text-[10px] text-slate-400 italic">Vencimento: {v.status_vencimento}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleGerarOSDePlano(maquina, v)}
+                                                    className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                                    title="Abrir OS deste Plano"
+                                                >
+                                                    <ArrowRight size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
-                                <div className="relative h-4 bg-slate-100 rounded-full overflow-hidden">
-                                    <div
-                                        className={`absolute top-0 left-0 h-full transition-all duration-500 ${statusInfo.status === 'CRITICO' ? 'bg-red-500' :
+                                <div className="pt-2">
+                                    <div className="flex justify-between text-sm text-slate-600 mb-1">
+                                        <span>Horímetro Geral</span>
+                                        <span className="font-mono font-bold">{maquina.horas_uso_total}h</span>
+                                    </div>
+
+                                    <div className="relative h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div
+                                            className={`absolute top-0 left-0 h-full transition-all duration-500 ${statusInfo.status === 'CRITICO' ? 'bg-red-500' :
                                                 statusInfo.status === 'ALERTA' ? 'bg-orange-500' : 'bg-blue-500'
-                                            }`}
-                                        style={{ width: `${percentual}%` }}
-                                    />
+                                                }`}
+                                            style={{ width: `${percentual}%` }}
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="flex justify-between text-xs text-slate-400">
-                                    <span>Última: {maquina.ultima_manutencao_horas}h</span>
-                                    <span>Próxima: {maquina.ultima_manutencao_horas + maquina.intervalo_manutencao_horas}h</span>
-                                </div>
-
-                                <div className="pt-4 border-t border-slate-100 flex gap-2">
+                                <div className="pt-2 border-t border-slate-100 flex gap-2">
                                     <button
                                         onClick={() => handleGerarOS(maquina)}
-                                        className="flex-1 py-2 bg-blue-50 text-blue-700 font-bold rounded-lg hover:bg-blue-100 flex items-center justify-center gap-2 text-sm transition-colors"
+                                        className="flex-1 py-1.5 bg-slate-50 text-slate-600 font-bold rounded-lg hover:bg-slate-100 flex items-center justify-center gap-2 text-xs transition-colors"
                                     >
-                                        <Plus size={16} />
-                                        Gerar OS Manual
+                                        <Plus size={14} />
+                                        Geração Manual
                                     </button>
-                                    <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg">
-                                        <MoreVertical size={20} />
+                                    <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg">
+                                        <MoreVertical size={18} />
                                     </button>
                                 </div>
                             </div>

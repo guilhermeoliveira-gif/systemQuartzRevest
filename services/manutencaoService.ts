@@ -6,7 +6,10 @@ import {
     StatusMaquina,
     StatusOS,
     MaquinaItem,
-    Aprendizado
+    Aprendizado,
+    ManutencaoPlano,
+    ManutencaoPlanoItem,
+    MaquinaPlanoVinculo
 } from '../types_manutencao';
 
 export const manutencaoService = {
@@ -150,5 +153,56 @@ export const manutencaoService = {
             .from('manutencao_aprendizado')
             .insert([aprendizado]);
         if (error) throw error;
+    },
+
+    // ==================== PLANOS DE MANUTENÇÃO ====================
+    async getPlanos(): Promise<(ManutencaoPlano & { itens: ManutencaoPlanoItem[] })[]> {
+        const { data, error } = await supabase
+            .from('manutencao_plano')
+            .select(`*, itens:manutencao_plano_item(*)`)
+            .order('nome');
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    async createPlano(plano: Partial<ManutencaoPlano>, itens: Partial<ManutencaoPlanoItem>[]): Promise<void> {
+        // 1. Criar Cabeçalho
+        const { data: novoPlano, error: errPlano } = await supabase
+            .from('manutencao_plano')
+            .insert([plano])
+            .select()
+            .single();
+
+        if (errPlano) throw errPlano;
+
+        // 2. Criar Itens
+        if (itens.length > 0) {
+            const itensComId = itens.map(i => ({ ...i, plano_id: novoPlano.id }));
+            const { error: errItens } = await supabase
+                .from('manutencao_plano_item')
+                .insert(itensComId);
+            if (errItens) throw errItens;
+        }
+    },
+
+    async vincularPlanoMaquina(maquinaId: string, planoId: string): Promise<void> {
+        const { error } = await supabase
+            .from('manutencao_maquina_plano')
+            .upsert({
+                maquina_id: maquinaId,
+                plano_id: planoId,
+                status_vencimento: 'OK'
+            });
+        if (error) throw error;
+    },
+
+    async getPlanosByMaquina(maquinaId: string): Promise<MaquinaPlanoVinculo[]> {
+        const { data, error } = await supabase
+            .from('manutencao_maquina_plano')
+            .select(`*, plano:manutencao_plano(*)`)
+            .eq('maquina_id', maquinaId);
+        if (error) throw error;
+        return data || [];
     }
 };

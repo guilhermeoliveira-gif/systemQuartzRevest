@@ -45,6 +45,7 @@ import ManutencaoPreventiva from './pages/Manutencao/ManutencaoPreventiva';
 import Maquinas from './pages/Manutencao/Maquinas';
 import MaquinaDetalhes from './pages/Manutencao/MaquinaDetalhes';
 import OrdensServico from './pages/Manutencao/OrdensServico';
+import ManutencaoPlanosAdmin from './pages/Manutencao/ManutencaoPlanosAdmin';
 
 // Checklist Module
 import ChecklistCadastro from './pages/Checklist/ChecklistCadastro';
@@ -137,6 +138,7 @@ const App: React.FC = () => {
                   <Route path="/manutencao/maquinas" element={<Maquinas />} />
                   <Route path="/manutencao/maquinas/:id" element={<MaquinaDetalhes />} />
                   <Route path="/manutencao/os" element={<OrdensServico />} />
+                  <Route path="/manutencao/planos" element={<ManutencaoPlanosAdmin />} />
 
                   {/* Checklist Module */}
                   <Route path="/checklist/cadastro" element={<ChecklistCadastro />} />

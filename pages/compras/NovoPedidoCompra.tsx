@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export const NovoPedidoCompra: React.FC = () => {
     const navigate = useNavigate();
-    const { profile } = useAuth();
+    const { user, profile } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<Partial<PedidoCompra>>({
         titulo: '',
@@ -52,10 +52,16 @@ export const NovoPedidoCompra: React.FC = () => {
 
         try {
             setLoading(true);
+            if (!user?.id) {
+                alert('Erro: Usuário não identificado. Tente fazer login novamente.');
+                setLoading(false);
+                return;
+            }
+
             const pedidoPayload = {
                 ...formData,
                 status,
-                solicitante_id: profile?.id || 'user-id-placeholder'
+                solicitante_id: user.id
             } as any;
 
             const itemsPayload = items.map(item => ({

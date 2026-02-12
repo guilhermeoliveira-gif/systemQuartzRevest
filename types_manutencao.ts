@@ -5,6 +5,36 @@ export type StatusOS = 'Aberta' | 'Em Execução' | 'Concluída' | 'Cancelada';
 export type PrioridadeOS = 'Baixa' | 'Média' | 'Alta' | 'Urgente';
 export type TipoOS = 'Corretiva' | 'Preventiva' | 'Preditiva' | 'Problema' | 'Tarefa' | 'Manutencao Preventiva';
 
+export interface ManutencaoPlano {
+    id: string;
+    organization_id?: string;
+    nome: string;
+    descricao?: string;
+    ativo: boolean;
+    created_at?: string;
+}
+
+export interface ManutencaoPlanoItem {
+    id: string;
+    plano_id: string;
+    tarefa: string;
+    descricao_detalhada?: string;
+    periodicidade_horas?: number;
+    periodicidade_dias?: number;
+    pecas_sugeridas?: any[];
+}
+
+export interface MaquinaPlanoVinculo {
+    id: string;
+    maquina_id: string;
+    plano_id: string;
+    plano?: ManutencaoPlano;
+    ultima_execucao_data?: string;
+    ultima_execucao_horas?: number;
+    status_vencimento: string;
+}
+
+
 export interface Maquina {
     id: string;
     org_id?: string;
