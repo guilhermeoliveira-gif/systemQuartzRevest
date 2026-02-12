@@ -75,6 +75,7 @@ export const modules: ModuleConfig[] = [
         subItems: [
             { name: 'Dashboard', path: '/vendas', icon: LayoutDashboard },
             { name: 'Novo Pedido', path: '/vendas/novo', icon: ShoppingCart },
+            { name: 'Clientes', path: '/vendas/clientes', icon: Users },
         ]
     },
     {

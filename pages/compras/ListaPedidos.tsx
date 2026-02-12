@@ -144,8 +144,8 @@ export const ListaPedidos: React.FC = () => {
                                 <div key={pedido.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group cursor-pointer" onClick={() => navigate(`/compras/pedidos/${pedido.id}`)}>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-semibold text-slate-900">{pedido.titulo}</h3>
-                                            {pedido.codigo && <span className="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{pedido.codigo}</span>}
+                                            <h3 className="font-semibold text-slate-900">{String(pedido.titulo)}</h3>
+                                            {pedido.codigo && <span className="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{String(pedido.codigo)}</span>}
                                         </div>
                                         <div className="flex items-center gap-3 text-sm text-slate-500">
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(pedido.status)}`}>
@@ -181,10 +181,10 @@ export const ListaPedidos: React.FC = () => {
                                     <AlertCircle className="w-4 h-4 text-red-500" />
                                 )}
                             </div>
-                            <h3 className="font-semibold text-slate-900 mb-1">{pedido.titulo}</h3>
-                            <p className="text-xs text-slate-500 mb-4 line-clamp-2">{pedido.descricao || 'Sem descrição'}</p>
+                            <h3 className="font-semibold text-slate-900 mb-1">{String(pedido.titulo)}</h3>
+                            <p className="text-xs text-slate-500 mb-4 line-clamp-2">{String(pedido.descricao || 'Sem descrição')}</p>
                             <div className="flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-100">
-                                <span>{pedido.department}</span>
+                                <span>{String(pedido.departamento || '')}</span>
                                 <span>{new Date(pedido.created_at || '').toLocaleDateString('pt-BR')}</span>
                             </div>
                         </div>

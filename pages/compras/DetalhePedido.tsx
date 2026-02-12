@@ -122,7 +122,7 @@ export const DetalhePedido: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <h3 className="text-sm font-medium text-slate-500">Departamento</h3>
-                                <p className="text-slate-900">{pedido.departamento}</p>
+                                <p className="text-slate-900">{String(pedido.departamento || '')}</p>
                             </div>
                             <div>
                                 <h3 className="text-sm font-medium text-slate-500">Urgência</h3>
@@ -130,11 +130,11 @@ export const DetalhePedido: React.FC = () => {
                             </div>
                             <div className="md:col-span-2">
                                 <h3 className="text-sm font-medium text-slate-500">Descrição</h3>
-                                <p className="text-slate-900">{pedido.descricao}</p>
+                                <p className="text-slate-900">{String(pedido.descricao || '')}</p>
                             </div>
                             <div className="md:col-span-2">
                                 <h3 className="text-sm font-medium text-slate-500">Justificativa</h3>
-                                <p className="text-slate-900">{pedido.justificativa_negocio}</p>
+                                <p className="text-slate-900">{String(pedido.justificativa_negocio || '')}</p>
                             </div>
                         </div>
 

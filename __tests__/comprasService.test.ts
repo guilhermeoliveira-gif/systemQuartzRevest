@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { comprasService } from '../services/comprasService';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../services/supabaseClient';
 import { PedidoCompra, Cotacao, PropostaCotacao } from '../types_compras';
 
 // Mock Supabase client
-vi.mock('../supabaseClient', () => ({
+vi.mock('../services/supabaseClient', () => ({
     supabase: {
         from: vi.fn(() => ({
             select: vi.fn().mockReturnThis(),
@@ -14,6 +14,7 @@ vi.mock('../supabaseClient', () => ({
             eq: vi.fn().mockReturnThis(),
             single: vi.fn(),
             order: vi.fn().mockReturnThis(),
+            abortSignal: vi.fn().mockReturnThis(),
         })),
     },
 }));
@@ -32,7 +33,8 @@ describe('comprasService', () => {
 
             // Correctly mock the chain: from -> select -> order -> result
             const mockOrder = vi.fn().mockResolvedValue({ data: mockPedidos, error: null });
-            const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
+            const mockAbortSignal = vi.fn().mockReturnValue({ order: mockOrder });
+            const mockSelect = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
             const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
 
             (supabase.from as any).mockImplementation(mockFrom);
@@ -48,7 +50,8 @@ describe('comprasService', () => {
 
             // Correctly mock the chain for error case
             const mockOrder = vi.fn().mockResolvedValue({ data: null, error: mockError });
-            const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
+            const mockAbortSignal = vi.fn().mockReturnValue({ order: mockOrder });
+            const mockSelect = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
             const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
 
             (supabase.from as any).mockImplementation(mockFrom);
@@ -74,11 +77,13 @@ describe('comprasService', () => {
             // Mock implementation specifically for create flow
             // 1. Insert Pedido
             const mockSingle = vi.fn().mockReturnValue({ data: mockCreatedPedido, error: null });
-            const mockSelectPedido = vi.fn().mockReturnValue({ single: mockSingle });
+            const mockAbortSignal = vi.fn().mockReturnValue({ single: mockSingle });
+            const mockSelectPedido = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
             const mockInsertPedido = vi.fn().mockReturnValue({ select: mockSelectPedido });
 
             // 2. Insert Items (mock separate call)
-            const mockInsertItems = vi.fn().mockReturnValue({ error: null });
+            const mockAbortSignalItems = vi.fn().mockReturnValue({ error: null });
+            const mockInsertItems = vi.fn().mockReturnValue({ abortSignal: mockAbortSignalItems });
 
             // Setup mock implementation to return different things based on table name
             (supabase.from as any).mockImplementation((table: string) => {
