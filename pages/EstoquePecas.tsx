@@ -46,9 +46,8 @@ const EstoquePecas: React.FC = () => {
     const [moveReason, setMoveReason] = useState('');
     const [selectedMaquinaId, setSelectedMaquinaId] = useState('');
     const [retiranteName, setRetiranteName] = useState('');
-    const [fotoFile, setFotoFile] = useState<File | null>(null);
-    const [fotoPreview, setFotoPreview] = useState<string | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
+
+    // Photo state removed
 
     const [itemsLoading, setItemsLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -141,61 +140,25 @@ const EstoquePecas: React.FC = () => {
         setMoveQty('');
         setMoveReason('');
         setRetiranteName('');
-        setFotoFile(null);
-        setFotoPreview(null);
+        // Photo reset removed
         // Se houver apenas uma máquina vinculada, pré-seleciona ela
         const initialMachine = item.maquina_ids && item.maquina_ids.length === 1 ? item.maquina_ids[0] : '';
         setSelectedMaquinaId(initialMachine);
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setFotoFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFotoPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+    // Photo upload functions removed
 
-    const uploadFoto = async (file: File): Promise<string> => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `movimentacao/${fileName}`;
-
-        const { error: uploadError, data } = await supabase.storage
-            .from('pecas-movimentacao')
-            .upload(filePath, file);
-
-        if (uploadError) {
-            throw uploadError;
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-            .from('pecas-movimentacao')
-            .getPublicUrl(filePath);
-
-        return publicUrl;
-    };
 
     const handleMoveSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (moveModal.item && moveQty) {
-            if (moveModal.type === 'SAIDA' && (!retiranteName.trim() || !fotoFile)) {
-                showFeedback('error', 'Nome do retirante e foto são obrigatórios para retirada.');
+            if (moveModal.type === 'SAIDA' && (!retiranteName.trim())) {
+                showFeedback('error', 'Nome do retirante é obrigatório para retirada.');
                 return;
             }
 
             setSubmitting(true);
-            setIsUploading(true);
             try {
-                let uploadedUrl = '';
-                if (fotoFile) {
-                    uploadedUrl = await uploadFoto(fotoFile);
-                }
-
                 // Adaptação para o novo método addMovimentoPeca
                 await estoqueService.addMovimentoPeca({
                     peca_id: moveModal.item.id,
@@ -204,8 +167,7 @@ const EstoquePecas: React.FC = () => {
                     motivo_maquina: moveReason || (moveModal.type === 'ENTRADA' ? 'Compra/Reposição' : 'Uso Interno'),
                     usuario_id: 'CURRENT_USER',
                     maquina_id: selectedMaquinaId || undefined,
-                    nome_retirante: retiranteName || undefined,
-                    foto_url: uploadedUrl || undefined
+                    nome_retirante: retiranteName || undefined
                 });
 
                 await loadData();
@@ -218,7 +180,6 @@ const EstoquePecas: React.FC = () => {
                 showFeedback('error', 'Erro ao registrar movimentação.');
             } finally {
                 setSubmitting(false);
-                setIsUploading(false);
             }
         }
     };
@@ -662,41 +623,7 @@ const EstoquePecas: React.FC = () => {
                                 )}
                             </div>
 
-                            {moveModal.type === 'SAIDA' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Foto da Evidência (Peça/Local)</label>
-                                    <div
-                                        onClick={() => document.getElementById('foto-upload')?.click()}
-                                        className={`relative border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all ${fotoPreview ? 'border-blue-400 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'}`}
-                                    >
-                                        {fotoPreview ? (
-                                            <div className="relative w-full aspect-video rounded-lg overflow-hidden group">
-                                                <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                                    <Camera className="text-white" />
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="bg-slate-100 p-3 rounded-full text-slate-500 mb-2">
-                                                    <Camera size={32} />
-                                                </div>
-                                                <p className="text-sm font-medium text-slate-600">Clique para tirar ou selecionar foto</p>
-                                                <p className="text-xs text-slate-400 mt-1">Obrigatório para retirada</p>
-                                            </>
-                                        )}
-                                        <input
-                                            id="foto-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            capture="environment"
-                                            className="hidden"
-                                            onChange={handleFileChange}
-                                            required={moveModal.type === 'SAIDA'}
-                                        />
-                                    </div>
-                                </div>
-                            )}
+
 
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -745,10 +672,10 @@ const EstoquePecas: React.FC = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={!moveQty || submitting || isUploading}
+                                    disabled={!moveQty || submitting}
                                     className={`flex-1 py-2.5 text-white font-bold rounded-lg shadow-lg hover:opacity-90 transition-all flex justify-center items-center gap-2 ${moveModal.type === 'ENTRADA' ? 'bg-green-600' : 'bg-red-600'}`}
                                 >
-                                    {submitting || isUploading ? (
+                                    {submitting ? (
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : (
                                         <>

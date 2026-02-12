@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:2R4ZOQKdfKbsmSxr3YEZAt8cXRKZUJz4ZGZMvm5x7iR51t1o6neqS0rwdIwq7d5g@76.13.237.176:5432/postgres"
+}
+
+model cotacao_fornecedores {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cotacao_id    String       @db.Uuid
+  fornecedor_id String       @db.Uuid
+  status        String?      @default("CONVIDADO") @db.VarChar(50)
+  created_at    DateTime?    @default(now()) @db.Timestamptz(6)
+  cotacoes      cotacoes     @relation(fields: [cotacao_id], references: [id], onDelete: Cascade)
+  fornecedores  fornecedores @relation(fields: [fornecedor_id], references: [id])
+  propostas     propostas[]
+
+  @@unique([cotacao_id, fornecedor_id])
+}
+
+model cotacoes {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pedido_id            String?                @db.Uuid
+  titulo               String                 @db.VarChar(255)
+  descricao            String?
+  data_abertura        DateTime?              @default(now()) @db.Timestamptz(6)
+  prazo_resposta       DateTime?              @db.Date
+  status               String?                @default("ABERTA") @db.VarChar(50)
+  responsavel_id       String?                @db.Uuid
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  cotacao_fornecedores cotacao_fornecedores[]
+  pedidos_compra       pedidos_compra?        @relation(fields: [pedido_id], references: [id])
+  itens_cotacao        itens_cotacao[]
+  propostas            propostas[]
+}
+
+model fornecedores {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                 String                 @db.VarChar(255)
+  nome_fantasia        String?                @db.VarChar(255)
+  cnpj                 String?                @db.VarChar(20)
+  email                String?                @db.VarChar(255)
+  telefone             String?                @db.VarChar(50)
+  endereco             String?
+  categoria            String?                @db.VarChar(100)
+  status               String?                @default("ATIVO") @db.VarChar(20)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  cotacao_fornecedores cotacao_fornecedores[]
+  propostas            propostas[]
+}
+
+model itens_cotacao {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cotacao_id          String               @db.Uuid
+  item_pedido_id      String?              @db.Uuid
+  descricao           String               @db.VarChar(255)
+  quantidade          Decimal              @db.Decimal(10, 2)
+  unidade             String?              @db.VarChar(20)
+  created_at          DateTime?            @default(now()) @db.Timestamptz(6)
+  cotacoes            cotacoes             @relation(fields: [cotacao_id], references: [id], onDelete: Cascade)
+  itens_pedido_compra itens_pedido_compra? @relation(fields: [item_pedido_id], references: [id])
+  itens_proposta      itens_proposta[]
+}
+
+model itens_pedido_compra {
+  id                    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pedido_id             String          @db.Uuid
+  descricao             String          @db.VarChar(255)
+  quantidade            Decimal         @db.Decimal(10, 2)
+  unidade               String?         @default("UN") @db.VarChar(20)
+  preco_estimado        Decimal?        @db.Decimal(10, 2)
+  especificacao_tecnica String?
+  requisitos_tecnicos   String?
+  created_at            DateTime?       @default(now()) @db.Timestamptz(6)
+  itens_cotacao         itens_cotacao[]
+  pedidos_compra        pedidos_compra  @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+}
+
+model itens_proposta {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  proposta_id         String        @db.Uuid
+  item_cotacao_id     String        @db.Uuid
+  preco_unitario      Decimal       @db.Decimal(10, 2)
+  quantidade_ofertada Decimal?      @db.Decimal(10, 2)
+  valor_total_item    Decimal?      @db.Decimal(10, 2)
+  marca_modelo        String?       @db.VarChar(255)
+  observacao          String?       @db.VarChar(255)
+  is_vencedor         Boolean?      @default(false)
+  created_at          DateTime?     @default(now()) @db.Timestamptz(6)
+  itens_cotacao       itens_cotacao @relation(fields: [item_cotacao_id], references: [id])
+  propostas           propostas     @relation(fields: [proposta_id], references: [id], onDelete: Cascade)
+}
+
+model materia_prima {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome             String    @db.VarChar
+  unidade_medida   String    @db.VarChar
+  quantidade_atual Decimal?  @default(0) @db.Decimal
+  custo_unitario   Decimal?  @default(0) @db.Decimal
+  minimo_seguranca Decimal?  @default(0) @db.Decimal
+  organization_id  String?   @default("1") @db.VarChar
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  estoque_minimo   Decimal?  @default(0) @db.Decimal
+  estoque_atual    Decimal?  @default(0) @db.Decimal
+  alerta_ativo     Boolean?  @default(true)
+  categoria        String?   @default("Insumos")
+}
+
+model pedidos_compra {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titulo                String                @db.VarChar(255)
+  codigo                String?               @db.VarChar(50)
+  urgencia              String                @db.VarChar(20)
+  departamento          String?               @db.VarChar(100)
+  workflow_tipo         String?               @db.VarChar(100)
+  data_entrega_desejada DateTime?             @db.Date
+  descricao             String?
+  justificativa_negocio String?
+  status                String?               @default("RASCUNHO") @db.VarChar(50)
+  solicitante_id        String?               @db.Uuid
+  aprovador_id          String?               @db.Uuid
+  data_aprovacao        DateTime?             @db.Timestamptz(6)
+  created_at            DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?             @default(now()) @db.Timestamptz(6)
+  cotacoes              cotacoes[]
+  itens_pedido_compra   itens_pedido_compra[]
+}
+
+model perfil {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome       String     @unique @db.VarChar
+  descricao  String?
+  ativo      Boolean?   @default(true)
+  created_at DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?  @default(now()) @db.Timestamptz(6)
+  usuarios   usuarios[]
+}
+
+model produto_acabado {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                    String    @db.VarChar
+  unidade_medida          String    @db.VarChar
+  quantidade_atual        Decimal?  @default(0) @db.Decimal
+  custo_producao_estimado Decimal?  @default(0) @db.Decimal
+  organization_id         String?   @default("1") @db.VarChar
+  created_at              DateTime? @default(now()) @db.Timestamptz(6)
+  estoque_minimo          Decimal?  @default(0) @db.Decimal
+  estoque_atual           Decimal?  @default(0) @db.Decimal
+  alerta_ativo            Boolean?  @default(true)
+}
+
+model propostas {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cotacao_id            String                @db.Uuid
+  fornecedor_id         String                @db.Uuid
+  cotacao_fornecedor_id String?               @db.Uuid
+  valor_total           Decimal?              @db.Decimal(10, 2)
+  prazo_entrega_dias    Int?
+  validade_proposta     DateTime?             @db.Date
+  observacoes           String?
+  anexo_url             String?
+  is_vencedora          Boolean?              @default(false)
+  created_at            DateTime?             @default(now()) @db.Timestamptz(6)
+  itens_proposta        itens_proposta[]
+  cotacao_fornecedores  cotacao_fornecedores? @relation(fields: [cotacao_fornecedor_id], references: [id])
+  cotacoes              cotacoes              @relation(fields: [cotacao_id], references: [id], onDelete: Cascade)
+  fornecedores          fornecedores          @relation(fields: [fornecedor_id], references: [id])
+}
+
+model usuarios {
+  id         String    @id @db.Uuid
+  email      String    @unique
+  nome       String?
+  cargo      String?
+  setor      String?
+  avatar_url String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  perfil_id  String?   @db.Uuid
+  telefone   String?   @db.VarChar
+  ativo      Boolean?  @default(true)
+  perfil     perfil?   @relation(fields: [perfil_id], references: [id])
+}

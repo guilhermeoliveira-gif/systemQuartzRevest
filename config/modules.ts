@@ -49,7 +49,6 @@ export const modules: ModuleConfig[] = [
         path: '/estoque/dashboard',
         subItems: [
             { name: 'Dashboard', path: '/estoque/dashboard', icon: LayoutDashboard },
-            { name: 'Minhas Tarefas', path: '/estoque/tarefas', icon: ListTodo },
             { name: 'Matéria-Prima', path: '/estoque/cadastro/mp', icon: Package },
             { name: 'Produto Acabado', path: '/estoque/cadastro/pa', icon: Box },
             { name: 'Peças e Insumos', path: '/estoque/pecas', icon: Wrench },

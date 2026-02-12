@@ -37,6 +37,7 @@
     "prisma": "6.4.1",
     "supabase": "^2.75.5",
     "tailwindcss": "^4.1.18",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^4.0.18"
