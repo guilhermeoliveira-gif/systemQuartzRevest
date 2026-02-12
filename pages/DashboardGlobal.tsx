@@ -27,79 +27,23 @@ const DashboardGlobal: React.FC = () => {
         loadStats();
     }, []);
 
-    const loadStats = async (retryCount = 0) => {
+    const loadStats = async () => {
         try {
             setLoading(true);
 
-            // Using Promise.allSettled to prevent one failure from breaking everything
-            const [ncsResult, projetosResult, tarefasResult, estoqueResult] = await Promise.allSettled([
-                supabase.from('nao_conformidade').select('status, severidade').abortSignal(AbortSignal.timeout(15000)),
-                supabase.from('projeto').select('status, data_fim_prevista').abortSignal(AbortSignal.timeout(15000)),
-                supabase.from('tarefas_unificadas').select('status, prazo').abortSignal(AbortSignal.timeout(20000)),
-                supabase.from('alerta_estoque').select('nivel_alerta').is('resolved_at', null).abortSignal(AbortSignal.timeout(15000))
-            ]);
+            const { data, error } = await supabase.rpc('get_dashboard_global_stats');
 
-            // NCs
-            let ncsStats = { total: 0, abertas: 0, criticas: 0 };
-            if (ncsResult.status === 'fulfilled' && ncsResult.value.data) {
-                const ncs = ncsResult.value.data;
-                ncsStats = {
-                    total: ncs.length,
-                    abertas: ncs.filter(nc => nc.status === 'ABERTA').length,
-                    criticas: ncs.filter(nc => nc.severidade === 'CRITICA').length
-                };
-            }
-
-            // Projetos
-            let projetosStats = { total: 0, emAndamento: 0, atrasados: 0 };
-            if (projetosResult.status === 'fulfilled' && projetosResult.value.data) {
-                const projetos = projetosResult.value.data;
-                projetosStats = {
-                    total: projetos.length,
-                    emAndamento: projetos.filter(p => p.status === 'EM_ANDAMENTO').length,
-                    atrasados: projetos.filter(p =>
-                        p.status !== 'CONCLUIDO' && new Date(p.data_fim_prevista) < new Date()
-                    ).length
-                };
-            }
-
-            // Tarefas
-            let tarefasStats = { total: 0, pendentes: 0, atrasadas: 0 };
-            if (tarefasResult.status === 'fulfilled' && tarefasResult.value.data) {
-                const tarefas = tarefasResult.value.data;
-                tarefasStats = {
-                    total: tarefas.length,
-                    pendentes: tarefas.filter(t => t.status !== 'CONCLUIDA').length,
-                    atrasadas: tarefas.filter(t =>
-                        t.status !== 'CONCLUIDA' && new Date(t.prazo) < new Date()
-                    ).length
-                };
-            } else if (tarefasResult.status === 'rejected') {
-                console.warn('Erro ao carregar tarefas:', tarefasResult.reason);
-            }
-
-            // Estoque
-            let estoqueStats = { alertas: 0, criticos: 0 };
-            if (estoqueResult.status === 'fulfilled' && estoqueResult.value.data) {
-                const alertas = estoqueResult.value.data;
-                estoqueStats = {
-                    alertas: alertas.length,
-                    criticos: alertas.filter(a => a.nivel_alerta === 'CRITICO').length
-                };
-            }
-
-            setStats({ ncs: ncsStats, projetos: projetosStats, tarefas: tarefasStats, estoque: estoqueStats });
-        } catch (error: any) {
-            // Retry em caso de AbortError (máximo 2 tentativas)
-            if (error.name === 'AbortError' && retryCount < 2) {
-                console.warn(`Timeout detectado, tentando novamente... (${retryCount + 1}/2)`);
-                setTimeout(() => loadStats(retryCount + 1), 1000);
+            if (error) {
+                console.error('Erro ao carregar estatísticas via RPC:', error);
+                // Fallback para objetos vazios se falhar
                 return;
             }
 
-            if (error.name !== 'AbortError') {
-                console.error('Erro ao carregar estatísticas:', error);
+            if (data) {
+                setStats(data as DashboardStats);
             }
+        } catch (error: any) {
+            console.error('Erro inesperado ao carregar estatísticas:', error);
         } finally {
             setLoading(false);
         }

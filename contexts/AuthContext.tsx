@@ -36,17 +36,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     useEffect(() => {
-        // Safety timeout to prevent infinite loading
+        // Aumentado para 15s para dar tempo ao banco em conexões lentas
         const safetyTimeout = setTimeout(() => {
-            if (isMounted.current) {
-                console.warn('Authentication check timed out');
+            if (isMounted.current && loading) {
+                console.warn('Authentication check timed out - force loading to false to unblock UI');
                 setLoading(false);
             }
-        }, 5000);
+        }, 15000);
 
         const initAuth = async () => {
             try {
-                // 1. Check active session
+                // 1. Verificar sessão ativa
                 const { data: { session }, error } = await supabase.auth.getSession();
 
                 if (error) throw error;
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setLoading(false);
                 }
             } catch (err: any) {
-                // Ignore abort errors
+                // Ignorar erros de aborto
                 if (err.name === 'AbortError' || err.message?.includes('aborted')) return;
 
                 console.error('Error checking session:', err);
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         initAuth();
 
-        // 2. Listen for auth changes
+        // 2. Ouvir mudanças de autenticação
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (!isMounted.current) return;
 
@@ -79,10 +79,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(session?.user ?? null);
 
             if (session?.user) {
+                // Busca perfil apenas se houver sessão para evitar chamadas vazias
                 await fetchUserProfile(session.user.id, session.user);
             } else {
                 setProfile(null);
-                setLoading(false);
+                setLoading(false); // Garante que loading pare se não houver usuário
             }
         });
 
