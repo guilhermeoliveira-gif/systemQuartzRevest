@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { estoqueService } from '../services/estoqueService';
 import { ProdutoAcabado } from '../types';
-import { Factory, CheckCircle, PackageCheck } from 'lucide-react';
+import { Factory, PackageCheck } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 const ControleProducao: React.FC = () => {
+  const toast = useToast();
   const [produtos, setProdutos] = useState<ProdutoAcabado[]>([]);
   const [selectedPA, setSelectedPA] = useState('');
   const [qty, setQty] = useState<number>(0);
-  const [toast, setToast] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,7 +25,7 @@ const ControleProducao: React.FC = () => {
       console.log('Produtos carregados:', data?.length);
     } catch (e) {
       console.error('Erro ao carregar produtos:', e);
-      setToast('❌ Erro ao carregar produtos.');
+      toast.error('Erro de Conexão', 'Erro ao carregar produtos.');
     } finally {
       setIsLoading(false);
     }
@@ -42,16 +43,15 @@ const ControleProducao: React.FC = () => {
         desvio_status: 'OK'
       });
 
-      setToast(`✅ Produção de ${qty} itens registrada com sucesso! Estoque atualizado.`);
+      toast.success('Produção Registrada', `Produção de ${qty} itens registrada com sucesso! Estoque atualizado.`);
 
       // Reset form
       setQty(0);
       setSelectedPA('');
       loadData(); // Refresh list to verify
 
-      setTimeout(() => setToast(null), 5000);
     } catch (error) {
-      setToast('❌ Erro ao registrar produção.');
+      toast.error('Erro', 'Erro ao registrar produção.');
       console.error(error);
     }
   };
@@ -140,13 +140,6 @@ const ControleProducao: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {toast && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg p-4 rounded-xl shadow-2xl border flex items-start gap-4 animate-in slide-in-from-bottom bg-green-50 border-green-200 text-green-800">
-          <CheckCircle size={24} className="shrink-0" />
-          <p className="font-medium text-sm leading-relaxed">{toast}</p>
-        </div>
-      )}
     </div>
   );
 };

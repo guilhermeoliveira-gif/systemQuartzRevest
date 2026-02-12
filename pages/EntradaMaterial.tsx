@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { estoqueService } from '../services/estoqueService';
 import { MateriaPrima, EntradaMateriaPrima } from '../types';
 import { Warehouse, Save, History, FileText, User, RefreshCcw, DollarSign } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const EntradaMaterial: React.FC = () => {
   const { user, profile } = useAuth();
+  const toast = useToast();
   const [materiasPrimas, setMateriasPrimas] = useState<MateriaPrima[]>([]);
   const [historico, setHistorico] = useState<EntradaMateriaPrima[]>([]);
 
@@ -18,8 +20,6 @@ const EntradaMaterial: React.FC = () => {
     nota_fiscal: '',
     usuario_id: user?.id || ''
   });
-
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,7 +37,7 @@ const EntradaMaterial: React.FC = () => {
       console.log('Dados carregados:', { mps: mps?.length, hist: hist?.length });
     } catch (e) {
       console.error('Error loading data', e);
-      setMessage({ type: 'error', text: 'Erro ao carregar dados. Verifique sua conexão.' });
+      toast.error('Erro de Conexão', 'Falha ao carregar dados do estoque.');
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +53,7 @@ const EntradaMaterial: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.materia_prima_id || !form.quantidade) {
-      setMessage({ type: 'error', text: 'Preencha os campos obrigatórios.' });
+      toast.error('Campos Obrigatórios', 'Por favor, selecione o material e informe a quantidade.');
       return;
     }
 
@@ -67,7 +67,7 @@ const EntradaMaterial: React.FC = () => {
         usuario_id: user?.id || ''
       }, profile?.nome || user?.email || undefined);
 
-      setMessage({ type: 'success', text: 'Entrada registrada com sucesso! Custo Médio atualizado.' });
+      toast.success('Entrada registrada com sucesso!', 'Estoque e custo médio atualizados.');
 
       setForm({
         ...form,
@@ -77,10 +77,9 @@ const EntradaMaterial: React.FC = () => {
         fornecedor: ''
       });
       await loadData();
-      setTimeout(() => setMessage(null), 3000);
 
     } catch (err: any) {
-      setMessage({ type: 'error', text: `Erro ao registrar entrada: ${err.message || 'Erro desconhecido'}` });
+      toast.error('Erro ao registrar entrada', err.message || 'Erro desconhecido');
       console.error(err);
     }
   };
@@ -90,13 +89,13 @@ const EntradaMaterial: React.FC = () => {
       try {
         const success = await estoqueService.estornarEntrada(id);
         if (success) {
-          setMessage({ type: 'success', text: 'Lançamento estornado com sucesso.' });
+          toast.success('Sucesso', 'Lançamento estornado com sucesso.');
           await loadData();
         } else {
-          setMessage({ type: 'error', text: 'Não foi possível estornar.' });
+          toast.error('Erro', 'Não foi possível estornar.');
         }
       } catch (e) {
-        setMessage({ type: 'error', text: 'Erro ao estornar.' });
+        toast.error('Erro', 'Erro ao estornar.');
         console.error(e);
       }
     }
@@ -214,12 +213,6 @@ const EntradaMaterial: React.FC = () => {
                   />
                 </div>
               </div>
-
-              {message && (
-                <div className={`p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                  {message.text}
-                </div>
-              )}
 
               <div className="pt-4 flex justify-end">
                 <button
