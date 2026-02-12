@@ -132,6 +132,33 @@ export const projetosService = {
             throw error;
         }
 
+        // Se a tarefa tiver maquina_id, sugerir criar uma OS
+        if (data && tarefa.maquina_id) {
+            try {
+                // @ts-ignore
+                const { manutencaoService } = await import('./manutencaoService');
+                const os = await manutencaoService.createOS({
+                    descricao: `OS vinculada à tarefa de projeto: ${tarefa.titulo}`,
+                    tipo: 'Preventiva', // Default, pode ser ajustado
+                    tipo_os: 'Tarefa',
+                    prioridade: 'Média',
+                    status: 'Aberta',
+                    tarefa_id: data.id,
+                    maquina_id: tarefa.maquina_id,
+                    data_abertura: new Date().toISOString(),
+                    custo_total: 0,
+                    pecas_utilizadas: []
+                });
+
+                // Atualizar a tarefa com o ID da OS criada
+                await this.updateTarefa(data.id, { os_id: os.id });
+
+            } catch (osError) {
+                console.error('Erro ao criar OS para tarefa:', osError);
+                // Não falhar a tarefa
+            }
+        }
+
         return data;
     },
 

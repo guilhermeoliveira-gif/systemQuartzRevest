@@ -49,6 +49,29 @@ export const qualidadeService = {
             throw error;
         }
 
+        // Se for um problema, criar OS automaticamente
+        if (data) {
+            try {
+                // @ts-ignore - Import dinâmico ou serviço cruzado pode causar ciclo, ignorando tipagem estrita aqui por simplicidade
+                const { manutencaoService } = await import('./manutencaoService');
+
+                await manutencaoService.createOS({
+                    descricao: `OS gerada automaticamente a partir do problema: ${data.titulo}`,
+                    tipo: 'Corretiva',
+                    tipo_os: 'Problema',
+                    prioridade: 'Urgente',
+                    status: 'Aberta',
+                    nc_id: data.id,
+                    data_abertura: new Date().toISOString(),
+                    custo_total: 0,
+                    pecas_utilizadas: []
+                });
+            } catch (osError) {
+                console.error('Erro ao criar OS automática para NC:', osError);
+                // Não falhar a criação da NC se a OS falhar, mas logar o erro
+            }
+        }
+
         return data;
     },
 

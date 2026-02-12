@@ -41,6 +41,7 @@ import PCPHistorico from './pages/PCP/PCPHistorico';
 
 // Manutenção Module
 import ManutencaoDashboard from './pages/Manutencao/ManutencaoDashboard';
+import ManutencaoPreventiva from './pages/Manutencao/ManutencaoPreventiva';
 import Maquinas from './pages/Manutencao/Maquinas';
 import MaquinaDetalhes from './pages/Manutencao/MaquinaDetalhes';
 import OrdensServico from './pages/Manutencao/OrdensServico';
@@ -121,6 +122,7 @@ const App: React.FC = () => {
 
                   {/* Manutenção Module */}
                   <Route path="/manutencao" element={<ManutencaoDashboard />} />
+                  <Route path="/manutencao/preventiva" element={<ManutencaoPreventiva />} />
                   <Route path="/manutencao/maquinas" element={<Maquinas />} />
                   <Route path="/manutencao/maquinas/:id" element={<MaquinaDetalhes />} />
                   <Route path="/manutencao/os" element={<OrdensServico />} />

@@ -83,12 +83,29 @@ export const manutencaoService = {
 
         if (error) throw error;
 
-        // Se a OS for concluída, atualizar as horas da última manutenção na máquina
-        if (updates.status === 'Concluída' && updates.maquina_id && updates.horas_maquina_na_os) {
-            await this.updateMaquina(updates.maquina_id, {
-                ultima_manutencao_horas: updates.horas_maquina_na_os,
-                status: 'Operacional'
-            });
+        if (updates.status === 'Concluída') {
+            // Atualizar horas da máquina se houver
+            if (updates.maquina_id && updates.horas_maquina_na_os) {
+                await this.updateMaquina(updates.maquina_id, {
+                    ultima_manutencao_horas: updates.horas_maquina_na_os,
+                    status: 'Operacional'
+                });
+            }
+
+            // Se for do tipo Tarefa e tiver tarefa_id, atualizar a tarefa
+            if (updates.tarefa_id) {
+                try {
+                    // @ts-ignore
+                    const { projetosService } = await import('./projetosService');
+                    await projetosService.updateTarefa(updates.tarefa_id, {
+                        status: 'CONCLUIDA',
+                        progresso: 100,
+                        updated_at: new Date().toISOString()
+                    });
+                } catch (taskError) {
+                    console.error('Erro ao atualizar tarefa vinculada à OS:', taskError);
+                }
+            }
         }
     },
 

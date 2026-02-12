@@ -3,6 +3,7 @@ export type StatusMaquina = 'Operacional' | 'Em Manutenção' | 'Parada';
 export type TipoManutencao = 'Preventiva' | 'Corretiva' | 'Preditiva';
 export type StatusOS = 'Aberta' | 'Em Execução' | 'Concluída' | 'Cancelada';
 export type PrioridadeOS = 'Baixa' | 'Média' | 'Alta' | 'Urgente';
+export type TipoOS = 'Corretiva' | 'Preventiva' | 'Preditiva' | 'Problema' | 'Tarefa' | 'Manutencao Preventiva';
 
 export interface Maquina {
     id: string;
@@ -61,9 +62,12 @@ export interface PecaUtilizada {
 export interface OrdemServico {
     id: string;
     org_id?: string;
-    maquina_id: string;
+    maquina_id?: string; // Agora opcional
     maquina?: Maquina;
     tipo: TipoManutencao;
+    tipo_os?: TipoOS; // Novo campo
+    nc_id?: string; // Relacionamento com Problema
+    tarefa_id?: string; // Relacionamento com Tarefa
     status: StatusOS;
     prioridade: PrioridadeOS;
     descricao: string;
