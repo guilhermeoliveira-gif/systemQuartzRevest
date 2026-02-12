@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Fuel, DollarSign, Wrench, BarChart2, Activity } from 'lucide-react';
+import { Truck, Fuel, DollarSign, Wrench, BarChart2, Activity, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { frotaService } from '../../services/frotaService';
-import { Veiculo } from '../../types_frota';
+import { RegistrarAbastecimentoModal } from '../../components/Frotas/RegistrarAbastecimentoModal';
 
 const FrotaDashboard: React.FC = () => {
     const [stats, setStats] = useState({
@@ -14,6 +14,7 @@ const FrotaDashboard: React.FC = () => {
         mediaKmLGeral: 0
     });
     const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         loadDashboard();
@@ -104,10 +105,19 @@ const FrotaDashboard: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <BarChart2 className="text-blue-600" />
-                Dashboard da Frota
-            </h1>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <BarChart2 className="text-blue-600" />
+                    Dashboard da Frota
+                </h1>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-all font-bold shadow-md transform active:scale-95"
+                >
+                    <Plus size={20} />
+                    Registrar Abastecimento
+                </button>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {cards.map((card, i) => (
@@ -156,15 +166,22 @@ const FrotaDashboard: React.FC = () => {
                     <div className="relative z-10">
                         <h3 className="text-xl font-bold mb-2">Dica de Gestão</h3>
                         <p className="text-blue-100 mb-4">Mantenha os odômetros sempre atualizados para garantir cálculos precisos de média de consumo e alertas de manutenção preventiva.</p>
-                        <button className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors backdrop-blur-sm">
-                            Saiba mais
-                        </button>
+                        <Link to="/frotas/veiculos" className="inline-block bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors backdrop-blur-sm">
+                            Verificar Veículos
+                        </Link>
                     </div>
                     <Truck className="absolute -bottom-6 -right-6 w-48 h-48 text-white/10" />
                 </div>
             </div>
+
+            <RegistrarAbastecimentoModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={loadDashboard}
+            />
         </div>
     );
 };
 
 export default FrotaDashboard;
+

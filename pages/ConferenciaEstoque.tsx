@@ -5,6 +5,7 @@ import { MateriaPrima, ProdutoAcabado } from '../types';
 import { estoqueService } from '../services/estoqueService';
 import { supabase } from '../services/supabaseClient';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ItemConferencia {
   id: string;
@@ -16,6 +17,7 @@ interface ItemConferencia {
 
 const ConferenciaEstoque: React.FC = () => {
   const toast = useToast();
+  const { user, profile } = useAuth();
   const [categoria, setCategoria] = useState<'MP' | 'PA'>('MP');
   const [itens, setItens] = useState<ItemConferencia[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,7 +72,7 @@ const ConferenciaEstoque: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // Atualizar estoques no banco
+      // Atualizar estoques no banco e registrar histórico
       for (const item of itens) {
         const divergencia = item.contagemFisica - item.saldoSistema;
 
@@ -92,6 +94,18 @@ const ConferenciaEstoque: React.FC = () => {
               })
               .eq('id', item.id);
           }
+
+          // Registrar no Histórico de Conferência
+          await estoqueService.registrarHistoricoConferencia({
+            tipo_item: categoria,
+            item_id: item.id,
+            item_nome: item.nome,
+            quantidade_anterior: item.saldoSistema,
+            quantidade_nova: item.contagemFisica,
+            diferenca: divergencia,
+            usuario_id: user?.id,
+            usuario_nome: profile?.nome || user?.email
+          });
         }
       }
 

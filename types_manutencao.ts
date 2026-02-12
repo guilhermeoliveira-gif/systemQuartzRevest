@@ -17,6 +17,7 @@ export interface Maquina {
     ultima_manutencao_data?: string;
     quantidade_manutencoes: number;
     status: StatusMaquina;
+    tipo?: string;
     created_at?: string;
     updated_at?: string;
 }

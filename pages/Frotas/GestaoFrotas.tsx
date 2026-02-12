@@ -47,8 +47,9 @@ const GestaoFrotas: React.FC = () => {
             });
             loadVeiculos();
         } catch (error: any) {
-            console.error(error);
-            alert(`Erro ao salvar veículo: ${error.message || 'Erro desconhecido'}`);
+            console.error('Erro detalhado ao salvar veículo:', error);
+            const errorMessage = error.details || error.message || 'Erro desconhecido ao cadastrar veículo no Supabase.';
+            alert(`Erro ao salvar veículo: ${errorMessage}`);
         }
     };
 

@@ -134,7 +134,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
         </div>
 
         <button
-          onClick={() => navigate('/')}
+          onClick={() => {
+            onCloseSidebar();
+            navigate('/');
+          }}
           className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-600 text-slate-400 hover:text-white text-xs font-bold rounded-lg transition-all border border-slate-600/30"
         >
           <ArrowLeft size={14} />

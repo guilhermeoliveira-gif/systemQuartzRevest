@@ -28,13 +28,16 @@ const CadastroUsuarios: React.FC = () => {
         try {
             setLoading(true);
             const [usuariosData, perfisData] = await Promise.all([
-                segurancaService.getUsuarios(),
+                segurancaService.getUsuarios(true), // Force refresh to avoid stale cache
                 segurancaService.getPerfis()
             ]);
-            setUsuarios(usuariosData);
-            setPerfis(perfisData);
-        } catch (error) {
-            console.error('Erro ao carregar dados:', error);
+
+            console.log(`Carregados ${usuariosData?.length || 0} usuários e ${perfisData?.length || 0} perfis`);
+            setUsuarios(usuariosData || []);
+            setPerfis(perfisData || []);
+        } catch (error: any) {
+            console.error('Erro ao carregar dados em CadastroUsuarios:', error);
+            alert(`Erro ao carregar dados: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -129,10 +132,12 @@ const CadastroUsuarios: React.FC = () => {
         }
     };
 
-    const filteredUsuarios = usuarios.filter(u =>
-        u.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsuarios = usuarios.filter(u => {
+        const term = searchTerm.toLowerCase();
+        const nome = (u.nome || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        return nome.includes(term) || email.includes(term);
+    });
 
     if (loading) {
         return (

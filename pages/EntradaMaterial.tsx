@@ -3,8 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { estoqueService } from '../services/estoqueService';
 import { MateriaPrima, EntradaMateriaPrima } from '../types';
 import { Warehouse, Save, History, FileText, User, RefreshCcw, DollarSign } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const EntradaMaterial: React.FC = () => {
+  const { user, profile } = useAuth();
   const [materiasPrimas, setMateriasPrimas] = useState<MateriaPrima[]>([]);
   const [historico, setHistorico] = useState<EntradaMateriaPrima[]>([]);
 
@@ -14,7 +16,7 @@ const EntradaMaterial: React.FC = () => {
     valor_total: '', // New field for Weighted Average Cost
     fornecedor: '',
     nota_fiscal: '',
-    usuario_id: 'CURRENT_USER'
+    usuario_id: user?.id || ''
   });
 
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -53,8 +55,8 @@ const EntradaMaterial: React.FC = () => {
         custo_total_nota: Number(form.valor_total) || 0,
         fornecedor: form.fornecedor,
         nota_fiscal: form.nota_fiscal,
-        usuario_id: form.usuario_id
-      });
+        usuario_id: user?.id || ''
+      }, profile?.nome || user?.email || undefined);
 
       setMessage({ type: 'success', text: 'Entrada registrada com sucesso! Custo Médio atualizado.' });
 

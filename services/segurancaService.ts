@@ -149,13 +149,16 @@ export const segurancaService = {
             .order('nome', { ascending: true });
 
         if (error) {
-            console.error('Erro ao buscar usuários:', error);
+            console.error('Erro ao buscar usuários no Supabase:', error);
             throw error;
         }
 
-        this._usuariosCache = data as any || [];
+        const usuariosList = (data as any || []) as Usuario[];
+        console.log(`segurancaService.getUsuarios: ${usuariosList.length} usuários encontrados`);
+
+        this._usuariosCache = usuariosList;
         this._usuariosCacheTime = now;
-        return this._usuariosCache!;
+        return this._usuariosCache;
     },
 
     async createUsuario(usuario: UsuarioCreate): Promise<Usuario> {

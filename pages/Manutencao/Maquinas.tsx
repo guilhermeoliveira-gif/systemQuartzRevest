@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Plus, Search, Filter, Pencil, Trash2,
-    ChevronLeft, Settings, Cpu, Calendar, Clock
+    ChevronLeft, Settings, Cpu, Calendar, Clock, Truck, Hammer
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
@@ -32,7 +32,8 @@ const Maquinas: React.FC = () => {
         serie: '',
         intervalo_manutencao_horas: 500,
         horas_uso_total: 0,
-        status: 'Operacional'
+        status: 'Operacional',
+        tipo: 'Ensacadeira'
     });
 
     useEffect(() => {
@@ -63,7 +64,8 @@ const Maquinas: React.FC = () => {
                 serie: '',
                 intervalo_manutencao_horas: 500,
                 horas_uso_total: 0,
-                status: 'Operacional'
+                status: 'Operacional',
+                tipo: 'Ensacadeira'
             });
             loadData();
         } catch (error) {
@@ -162,9 +164,12 @@ const Maquinas: React.FC = () => {
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 bg-blue-50 text-blue-700 rounded-lg flex items-center justify-center font-black text-xs group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                                {m.nome.charAt(0)}
+                                                {m.tipo === 'Empilhadeira' ? <Truck size={16} /> : m.tipo === 'Pá' ? <Hammer size={16} /> : m.nome.charAt(0)}
                                             </div>
-                                            <span className="font-bold text-slate-800">{m.nome}</span>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-slate-800">{m.nome}</span>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase">{m.tipo || 'Ensacadeira'}</span>
+                                            </div>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-slate-500 font-medium">
@@ -244,6 +249,19 @@ const Maquinas: React.FC = () => {
                                 value={formData.intervalo_manutencao_horas}
                                 onChange={(e) => setFormData({ ...formData, intervalo_manutencao_horas: Number(e.target.value) })}
                             />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tipo de Ativo</label>
+                            <select
+                                className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none"
+                                value={formData.tipo}
+                                onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                            >
+                                <option value="Ensacadeira">Ensacadeira</option>
+                                <option value="Empilhadeira">Empilhadeira</option>
+                                <option value="Pá">Pá Carregadeira</option>
+                                <option value="Outro">Outro</option>
+                            </select>
                         </div>
                         <div>
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Horas Atuais</label>

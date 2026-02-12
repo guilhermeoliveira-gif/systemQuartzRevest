@@ -46,9 +46,9 @@ import MaquinaDetalhes from './pages/Manutencao/MaquinaDetalhes';
 import OrdensServico from './pages/Manutencao/OrdensServico';
 
 // Compras Module
-import ComprasDashboard from './pages/compras/ComprasDashboard';
-import ListaPedidos from './pages/compras/ListaPedidos';
-import NovoPedidoCompra from './pages/compras/NovoPedidoCompra';
+import { ComprasDashboard } from './pages/compras/ComprasDashboard';
+import { ListaPedidos } from './pages/compras/ListaPedidos';
+import { NovoPedidoCompra } from './pages/compras/NovoPedidoCompra';
 import DetalhePedido from './pages/compras/DetalhePedido';
 import GestaoCotacoes from './pages/compras/GestaoCotacoes';
 import NovaCotacao from './pages/compras/NovaCotacao';

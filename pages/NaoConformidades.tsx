@@ -330,9 +330,10 @@ const NaoConformidades: React.FC = () => {
                                         </div>
                                         <button
                                             onClick={() => handleOpenAnalysis(oc)}
-                                            className="text-xs font-medium border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 transition-colors"
+                                            className="bg-indigo-600 text-white shadow-md rounded-lg px-4 py-2 hover:bg-indigo-700 transition-all font-bold text-xs flex items-center gap-2"
                                         >
-                                            Ver Detalhes
+                                            <AlertTriangle size={14} />
+                                            Resolver problema
                                         </button>
                                     </div>
 
@@ -386,7 +387,13 @@ const NaoConformidades: React.FC = () => {
                                             <td className="px-6 py-4">{new Date(oc.data_ocorrencia).toLocaleDateString()}</td>
                                             <td className="px-6 py-4">{oc.severidade}</td>
                                             <td className="px-6 py-4 text-right">
-                                                <button onClick={() => handleOpenAnalysis(oc)} className="text-indigo-600 hover:text-indigo-800">Ver Detalhes</button>
+                                                <button
+                                                    onClick={() => handleOpenAnalysis(oc)}
+                                                    className="bg-indigo-600 text-white shadow-md rounded-lg px-4 py-2 hover:bg-indigo-700 transition-all font-bold text-xs flex items-center gap-2 ml-auto"
+                                                >
+                                                    <AlertTriangle size={14} />
+                                                    Resolver problema
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

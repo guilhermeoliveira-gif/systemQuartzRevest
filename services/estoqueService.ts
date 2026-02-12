@@ -73,14 +73,13 @@ class EstoqueService {
     }
 
     // --- Entrada Materia Prima ---
-    public async addEntrada(entrada: Omit<EntradaMateriaPrima, 'id' | 'data_entrada' | 'estornado'>): Promise<void> {
+    public async addEntrada(entrada: Omit<EntradaMateriaPrima, 'id' | 'data_entrada' | 'estornado'>, usuarioNome?: string): Promise<void> {
         // 1. Inserir Registro de Entrada
         const { error: insertError } = await supabase
             .from('entrada_materia_prima')
             .insert({
                 ...entrada,
                 estornado: false
-                // data_entrada é gerado pelo default do banco ou trigger, mas podemos mandar se necessário
             });
 
         if (insertError) {
@@ -88,8 +87,26 @@ class EstoqueService {
             throw insertError;
         }
 
-        // 2. Atualizar Estoque (Cálculo de Média)
-        // Nota: O ideal seria usar uma RPC/Transaction no banco para garantir atomicidade
+        // 2. Buscar nome da MP para o histórico
+        const { data: mp } = await supabase
+            .from('materia_prima')
+            .select('nome')
+            .eq('id', entrada.materia_prima_id)
+            .single();
+
+        // 3. Registrar no novo Histórico de Entrada (Audit)
+        await this.registrarHistoricoEntrada({
+            materia_prima_id: entrada.materia_prima_id,
+            item_nome: mp?.nome || 'Desconhecido',
+            quantidade_entrada: entrada.quantidade,
+            custo_total_nota: entrada.custo_total_nota,
+            nf: entrada.nota_fiscal,
+            fornecedor: entrada.fornecedor,
+            usuario_id: (entrada.usuario_id === 'CURRENT_USER' || !entrada.usuario_id) ? null : entrada.usuario_id,
+            usuario_nome: usuarioNome
+        });
+
+        // 4. Atualizar Estoque (Cálculo de Média)
         await this.updateMateriaPrimaStock(entrada.materia_prima_id, entrada.quantidade, entrada.custo_total_nota);
         logger.info(`Entrada de matéria-prima registrada: ${entrada.materia_prima_id} (${entrada.quantidade})`);
     }
@@ -197,6 +214,36 @@ class EstoqueService {
             throw updateError;
         }
 
+        // 3. Dedução Automática de Matéria-Prima (Baseada na Fórmula)
+        try {
+            // Buscar fórmula ativa do produto
+            const { data: formula } = await supabase
+                .from('formula')
+                .select('id')
+                .eq('produto_acabado_id', registro.produto_acabado_id)
+                .single();
+
+            if (formula) {
+                // Buscar itens da fórmula
+                const { data: itensFormula } = await supabase
+                    .from('formula_item')
+                    .select('materia_prima_id, quantidade')
+                    .eq('formula_id', formula.id);
+
+                if (itensFormula && itensFormula.length > 0) {
+                    // Para cada item da fórmula, deduzir do estoque proporcionalmente à qtd produzida
+                    for (const item of itensFormula) {
+                        const qtdConsumida = item.quantidade * registro.quantidade_produzida;
+                        await this.updateMateriaPrimaStock(item.materia_prima_id, -qtdConsumida);
+                    }
+                    logger.info(`Dedução de matéria-prima concluída para produção ${registro.produto_acabado_id}`);
+                }
+            }
+        } catch (error) {
+            // Logar erro mas não falhar a operação principal de registro de produção para não travar o processo
+            logger.error(`Falha na dedução automática de MP para o produto ${registro.produto_acabado_id}`, error);
+        }
+
         logger.info(`Produção registrada: ${registro.produto_acabado_id} (+${registro.quantidade_produzida})`);
     }
 
@@ -227,11 +274,17 @@ class EstoqueService {
 
     public async addMovimentoPeca(movimento: Omit<MovimentoPeca, 'id' | 'data_movimento'>): Promise<void> {
         // 1. Inserir Movimento
+        // Garantir que a quantidade salva seja positiva para ENTRADA e negativa para SAIDA no registro de movimento se desejado,
+        // mas aqui vamos manter a lógica de que o 'tipo' define a operação e a 'quantidade' é o valor absoluto ou sinalizado.
+        // Para consistência, vamos salvar a quantidade como positiva no registro e usar o 'tipo' para identificar.
+        const qtdAjustada = Math.abs(Number(movimento.quantidade));
+
         const { error: movError } = await supabase
             .from('movimento_peca')
             .insert({
                 ...movimento,
-                tipo: movimento.quantidade > 0 ? 'ENTRADA' : 'SAIDA'
+                quantidade: qtdAjustada,
+                tipo: movimento.tipo // O frontend já envia 'ENTRADA' ou 'SAIDA'
                 // data_movimento default now()
             });
 
@@ -252,7 +305,8 @@ class EstoqueService {
             throw fetchError || new Error('Item not found');
         }
 
-        const novaQuantidade = Number(item.quantidade_atual) + Number(movimento.quantidade);
+        const quantidadeParaEstoque = movimento.tipo === 'SAIDA' ? -qtdAjustada : qtdAjustada;
+        const novaQuantidade = Number(item.quantidade_atual) + quantidadeParaEstoque;
 
         const { error: updateError } = await supabase
             .from('mecanica_insumo')
@@ -353,6 +407,30 @@ class EstoqueService {
         }
 
         logger.info(`Peça excluída: ${id}`);
+    }
+
+    // --- Histórico e Auditoria ---
+
+    public async registrarHistoricoConferencia(dados: any): Promise<void> {
+        const { error } = await supabase
+            .from('historico_conferencia')
+            .insert([dados]);
+
+        if (error) {
+            logger.error('Erro ao registrar histórico de conferência', error);
+            throw error;
+        }
+    }
+
+    public async registrarHistoricoEntrada(dados: any): Promise<void> {
+        const { error } = await supabase
+            .from('historico_entrada')
+            .insert([dados]);
+
+        if (error) {
+            logger.error('Erro ao registrar histórico de entrada', error);
+            throw error;
+        }
     }
 }
 

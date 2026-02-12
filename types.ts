@@ -100,3 +100,29 @@ export interface Alerta {
   data_alerta: string;
   status: string;
 }
+
+export interface HistoricoConferencia {
+  id: string;
+  tipo_item: string;
+  item_id: string;
+  item_nome: string;
+  quantidade_anterior: number;
+  quantidade_nova: number;
+  diferenca: number;
+  usuario_id?: string;
+  usuario_nome?: string;
+  created_at?: string;
+}
+
+export interface HistoricoEntrada {
+  id: string;
+  materia_prima_id: string;
+  item_nome: string;
+  quantidade_entrada: number;
+  custo_total_nota?: number;
+  nf?: string;
+  fornecedor?: string;
+  usuario_id?: string;
+  usuario_nome?: string;
+  created_at?: string;
+}
