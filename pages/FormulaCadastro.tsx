@@ -151,9 +151,16 @@ const FormulaCadastro: React.FC = () => {
                 <tr key={f.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-neutral-900">{f.produto_acabado_nome}</td>
                   <td className="px-6 py-4 text-sm text-neutral-600">
-                    <div className="flex items-center gap-2 group cursor-help">
-                      <span className="truncate max-w-xs">{f.items_resumo}</span>
-                      <Info size={14} className="text-blue-500" />
+                    <div className="flex items-center gap-2 group relative cursor-help">
+                      <span className="truncate max-w-xs text-xs text-neutral-600">{f.items_resumo}</span>
+                      <Info size={14} className="text-blue-500 flex-shrink-0" />
+
+                      {/* Tooltip Customizado */}
+                      <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                        <p className="font-bold mb-1 border-b border-slate-600 pb-1">Composição Completa:</p>
+                        {f.items_resumo}
+                        <div className="absolute top-full left-4 border-4 border-transparent border-t-slate-800"></div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-neutral-500">{f.created_at}</td>

@@ -21,24 +21,33 @@ const EntradaMaterial: React.FC = () => {
 
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
     try {
+      setIsLoading(true);
       const mps = await estoqueService.getMateriasPrimas();
       const hist = await estoqueService.getHistoricoEntradas();
-      setMateriasPrimas(mps);
-      setHistorico(hist);
-    } catch (e) { console.error('Error loading data', e); }
+      setMateriasPrimas(mps || []);
+      setHistorico(hist || []);
+      console.log('Dados carregados:', { mps: mps?.length, hist: hist?.length });
+    } catch (e) {
+      console.error('Error loading data', e);
+      setMessage({ type: 'error', text: 'Erro ao carregar dados. Verifique sua conexão.' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const calculateNewTotal = () => {
     if (!form.materia_prima_id || !form.quantidade) return null;
     const mp = materiasPrimas.find(m => m.id === form.materia_prima_id);
     if (!mp) return null;
-    return mp.quantidade_atual + Number(form.quantidade);
+    return (Number(mp.quantidade_atual) || 0) + Number(form.quantidade);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,8 +79,8 @@ const EntradaMaterial: React.FC = () => {
       await loadData();
       setTimeout(() => setMessage(null), 3000);
 
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Erro ao registrar entrada.' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: `Erro ao registrar entrada: ${err.message || 'Erro desconhecido'}` });
       console.error(err);
     }
   };
@@ -121,14 +130,15 @@ const EntradaMaterial: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">Selecione o Material</label>
                   <select
                     required
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
                     value={form.materia_prima_id}
                     onChange={e => setForm({ ...form, materia_prima_id: e.target.value })}
+                    disabled={isLoading}
                   >
-                    <option value="">Selecione...</option>
+                    <option value="">{isLoading ? 'Carregando materiais...' : 'Selecione...'}</option>
                     {materiasPrimas.map(mp => (
                       <option key={mp.id} value={mp.id}>
-                        {mp.nome} ({mp.unidade_medida}) - Atual: {mp.quantidade_atual} | Custo Médio: R$ {mp.custo_unitario.toFixed(2)}
+                        {mp.nome} ({mp.unidade_medida}) - Atual: {mp.quantidade_atual} | Custo Médio: R$ {Number(mp.custo_unitario || 0).toFixed(2)}
                       </option>
                     ))}
                   </select>
