@@ -5,6 +5,8 @@ import {
     TrendingUp, Clock, Users, BarChart3
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
+import VendasSummary from '../components/dashboard/VendasSummary';
+import ChecklistSummary from '../components/dashboard/ChecklistSummary';
 
 interface DashboardStats {
     ncs: { total: number; abertas: number; criticas: number };
@@ -122,7 +124,13 @@ const DashboardGlobal: React.FC = () => {
 
             {/* Cards de Módulos */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Widgets Customizados - Vendas e Checklist */}
+                <VendasSummary />
+                <ChecklistSummary />
+
+                {/* Cards Genéricos (já existentes) */}
                 {cards.map((card) => {
+                    // ...
                     const Icon = card.icon;
                     const colors = getColorClasses(card.color);
 
