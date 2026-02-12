@@ -204,7 +204,9 @@ const MontagemCarga: React.FC = () => {
                                     </div>
                                     {/* Resumo de itens visual */}
                                     <div className="mt-2 text-xs text-slate-600 line-clamp-1">
-                                        {pedido.itens?.map((i: any) => i.quantidade + 'x ' + i.produto?.nome).join(', ')}
+                                        {Array.isArray(pedido.itens) ? pedido.itens.map((i: any) =>
+                                            `${i.quantidade || 0}x ${(i.produto && i.produto.nome) ? i.produto.nome : 'Produto'}`
+                                        ).join(', ') : 'Sem itens'}
                                     </div>
                                 </div>
                                 <button
@@ -258,7 +260,7 @@ const MontagemCarga: React.FC = () => {
                         <div className="grid grid-cols-4 gap-4 mb-2">
                             <div className="bg-slate-50 p-3 rounded-lg border text-center">
                                 <div className="text-xs text-slate-500 font-bold uppercase">Peso Total</div>
-                                <div className="text-xl font-bold text-slate-800">{resumo.pesoTotal.toLocaleString()} <span className="text-xs text-slate-400">kg</span></div>
+                                <div className="text-xl font-bold text-slate-800">{(resumo.pesoTotal || 0).toLocaleString()} <span className="text-xs text-slate-400">kg</span></div>
                             </div>
                             <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-center">
                                 <div className="text-xs text-blue-500 font-bold uppercase">Paletes</div>

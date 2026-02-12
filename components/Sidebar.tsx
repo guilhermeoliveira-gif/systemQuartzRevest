@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
 
   const expedicaoNavItems = [
     { name: 'Nova Carga', path: '/expedicao/nova', icon: Truck },
-    { name: 'Pendências', path: '/expedicao/pendencias', icon: ClipboardCheck },
+    { name: 'Pendências', path: '/expedicao/pendencias', icon: ListTodo },
   ];
 
   const generalNavItems = [
