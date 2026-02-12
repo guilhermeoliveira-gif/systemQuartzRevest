@@ -6,9 +6,11 @@ import { VendaCliente, VendaItem } from '../../types_vendas';
 import { EstoquePA } from '../../types_estoque';
 import { Search, Plus, Trash2, Save, Calendar, User, Package } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CadastroPedido: React.FC = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { showToast } = useToast();
 
     // Estados do Cabeçalho
@@ -92,7 +94,8 @@ const CadastroPedido: React.FC = () => {
                 observacao,
                 endereco_entrega: enderecoEntrega,
                 valor_total: itens.reduce((acc, curr) => acc + (curr.valor_total || 0), 0),
-                status: 'ORCAMENTO'
+                status: 'ORCAMENTO',
+                user_id: user?.id
             }, itens);
 
             showToast('Pedido criado com sucesso!', { type: 'success' });
