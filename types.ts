@@ -52,6 +52,8 @@ export interface MovimentoPeca {
   motivo_maquina?: string; // Onde foi usada ou motivo da retirada
   maquina_id?: string;
   usuario_id: string;
+  nome_retirante?: string; // NOVO: Nome de quem retirou a peça
+  foto_url?: string; // NOVO: URL da foto da evidência
   peca?: { nome: string; unidade_medida: string };
 }
 

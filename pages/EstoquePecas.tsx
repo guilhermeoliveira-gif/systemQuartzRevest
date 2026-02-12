@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { estoqueService } from '../services/estoqueService';
 import { MecanicaInsumo } from '../types';
-import { Plus, Search, Wrench, Package, ArrowUp, ArrowDown, Trash2, MapPin, AlertCircle, X, Settings as MachineIcon, Settings as SettingsIcon, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Wrench, Package, ArrowUp, ArrowDown, Trash2, MapPin, AlertCircle, X, Settings as MachineIcon, Settings as SettingsIcon, CheckCircle2, Camera, User, Loader2 } from 'lucide-react';
+import { supabase } from '../services/supabaseClient';
 import { manutencaoService } from '../services/manutencaoService';
 import { Maquina } from '../types_manutencao';
 import { LoadingState } from '../components/LoadingState';
@@ -44,6 +45,10 @@ const EstoquePecas: React.FC = () => {
     const [moveQty, setMoveQty] = useState('');
     const [moveReason, setMoveReason] = useState('');
     const [selectedMaquinaId, setSelectedMaquinaId] = useState('');
+    const [retiranteName, setRetiranteName] = useState('');
+    const [fotoFile, setFotoFile] = useState<File | null>(null);
+    const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     const [itemsLoading, setItemsLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -135,24 +140,72 @@ const EstoquePecas: React.FC = () => {
         setMoveModal({ open: true, type, item });
         setMoveQty('');
         setMoveReason('');
+        setRetiranteName('');
+        setFotoFile(null);
+        setFotoPreview(null);
         // Se houver apenas uma máquina vinculada, pré-seleciona ela
         const initialMachine = item.maquina_ids && item.maquina_ids.length === 1 ? item.maquina_ids[0] : '';
         setSelectedMaquinaId(initialMachine);
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setFotoFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFotoPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const uploadFoto = async (file: File): Promise<string> => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `movimentacao/${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+            .from('pecas-movimentacao')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('pecas-movimentacao')
+            .getPublicUrl(filePath);
+
+        return publicUrl;
+    };
+
     const handleMoveSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (moveModal.item && moveQty) {
+            if (moveModal.type === 'SAIDA' && (!retiranteName.trim() || !fotoFile)) {
+                showFeedback('error', 'Nome do retirante e foto são obrigatórios para retirada.');
+                return;
+            }
+
             setSubmitting(true);
+            setIsUploading(true);
             try {
+                let uploadedUrl = '';
+                if (fotoFile) {
+                    uploadedUrl = await uploadFoto(fotoFile);
+                }
+
                 // Adaptação para o novo método addMovimentoPeca
                 await estoqueService.addMovimentoPeca({
                     peca_id: moveModal.item.id,
                     tipo: moveModal.type,
                     quantidade: Number(moveQty),
                     motivo_maquina: moveReason || (moveModal.type === 'ENTRADA' ? 'Compra/Reposição' : 'Uso Interno'),
-                    usuario_id: 'CURRENT_USER', // Renomeado de responsavel_id se necessário, ou mantido se o backend aceitar. O tipo diz usuario_id.
-                    maquina_id: selectedMaquinaId || undefined
+                    usuario_id: 'CURRENT_USER',
+                    maquina_id: selectedMaquinaId || undefined,
+                    nome_retirante: retiranteName || undefined,
+                    foto_url: uploadedUrl || undefined
                 });
 
                 await loadData();
@@ -165,6 +218,7 @@ const EstoquePecas: React.FC = () => {
                 showFeedback('error', 'Erro ao registrar movimentação.');
             } finally {
                 setSubmitting(false);
+                setIsUploading(false);
             }
         }
     };
@@ -556,7 +610,7 @@ const EstoquePecas: React.FC = () => {
             {moveModal.open && moveModal.item && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMoveModal({ ...moveModal, open: false })} />
-                    <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in-95">
+                    <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-md animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                             {moveModal.type === 'ENTRADA' ? (
                                 <div className="bg-green-100 p-2 rounded-lg text-green-700"><ArrowUp size={24} /></div>
@@ -566,85 +620,142 @@ const EstoquePecas: React.FC = () => {
                             {moveModal.type === 'ENTRADA' ? 'Adicionar Estoque' : 'Retirar Peça'}
                         </h3>
 
-                        <div className="mb-4">
-                            <p className="text-sm text-slate-500">Item</p>
-                            <p className="font-semibold text-slate-800">{moveModal.item.nome}</p>
-                            <p className="text-xs text-slate-400">Saldo Atual: {moveModal.item.quantidade_atual} {moveModal.item.unidade_medida}</p>
+                        <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Item Selecionado</p>
+                            <p className="font-bold text-slate-800 text-lg">{moveModal.item.nome}</p>
+                            <div className="flex justify-between items-center mt-1">
+                                <p className="text-sm text-slate-500">Saldo Atual:</p>
+                                <p className="font-bold text-blue-600">{moveModal.item.quantidade_atual} {moveModal.item.unidade_medida}</p>
+                            </div>
                         </div>
 
                         <form onSubmit={handleMoveSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Quantidade</label>
-                                <input
-                                    className="w-full text-2xl font-bold p-2 border-b-2 border-slate-200 focus:border-blue-600 outline-none bg-transparent"
-                                    type="number"
-                                    autoFocus
-                                    min="1"
-                                    step="0.01"
-                                    placeholder="0"
-                                    value={moveQty}
-                                    onChange={e => setMoveQty(e.target.value)}
-                                    required
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Quantidade</label>
+                                    <input
+                                        className="w-full text-xl font-bold p-2 border-b-2 border-slate-200 focus:border-blue-600 outline-none bg-transparent"
+                                        type="number"
+                                        autoFocus
+                                        min="1"
+                                        step="0.01"
+                                        placeholder="0"
+                                        value={moveQty}
+                                        onChange={e => setMoveQty(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                {moveModal.type === 'SAIDA' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Retirado por</label>
+                                        <div className="relative">
+                                            <User size={16} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                className="w-full pl-8 pr-2 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                                                placeholder="Nome..."
+                                                value={retiranteName}
+                                                onChange={e => setRetiranteName(e.target.value)}
+                                                required={moveModal.type === 'SAIDA'}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
+                            {moveModal.type === 'SAIDA' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Foto da Evidência (Peça/Local)</label>
+                                    <div
+                                        onClick={() => document.getElementById('foto-upload')?.click()}
+                                        className={`relative border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all ${fotoPreview ? 'border-blue-400 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'}`}
+                                    >
+                                        {fotoPreview ? (
+                                            <div className="relative w-full aspect-video rounded-lg overflow-hidden group">
+                                                <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                    <Camera className="text-white" />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="bg-slate-100 p-3 rounded-full text-slate-500 mb-2">
+                                                    <Camera size={32} />
+                                                </div>
+                                                <p className="text-sm font-medium text-slate-600">Clique para tirar ou selecionar foto</p>
+                                                <p className="text-xs text-slate-400 mt-1">Obrigatório para retirada</p>
+                                            </>
+                                        )}
+                                        <input
+                                            id="foto-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            capture="environment"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                            required={moveModal.type === 'SAIDA'}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    {moveModal.type === 'ENTRADA' ? 'Origem / Fornecedor' : 'Justificativa da Retirada'}
+                                    {moveModal.type === 'ENTRADA' ? 'Origem / Fornecedor' : 'Justificativa'}
                                 </label>
                                 <textarea
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                                     rows={2}
-                                    placeholder={moveModal.type === 'SAIDA' ? "Ex: Desgaste natural, quebra..." : "Ex: Compra NF 123..."}
+                                    placeholder={moveModal.type === 'SAIDA' ? "Ex: Quebra, manutenção preventiva..." : "Ex: Compra NF 123..."}
                                     value={moveReason}
                                     onChange={e => setMoveReason(e.target.value)}
                                     required
                                 />
                             </div>
 
-                            {moveModal.type === 'SAIDA' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Máquina Destino</label>
-                                    <select
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                                        value={selectedMaquinaId}
-                                        onChange={e => setSelectedMaquinaId(e.target.value)}
-                                        required
-                                    >
-                                        <option value="">Selecione a Máquina...</option>
-                                        {/* Mostra primeiro as máquinas vinculadas à peça, depois o resto */}
-                                        {maquinas
-                                            .sort((a, b) => {
-                                                const aVenc = moveModal.item?.maquina_ids?.includes(a.id) ? 0 : 1;
-                                                const bVenc = moveModal.item?.maquina_ids?.includes(b.id) ? 0 : 1;
-                                                return aVenc - bVenc;
-                                            })
-                                            .map(m => (
-                                                <option key={m.id} value={m.id}>
-                                                    {moveModal.item?.maquina_ids?.includes(m.id) ? '★ ' : ''}
-                                                    {m.nome}
-                                                </option>
-                                            ))}
-                                    </select>
-                                </div>
-                            )}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Máquina (Opcional)</label>
+                                <select
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"
+                                    value={selectedMaquinaId}
+                                    onChange={e => setSelectedMaquinaId(e.target.value)}
+                                >
+                                    <option value="">Nenhuma máquina específica</option>
+                                    {maquinas
+                                        .sort((a, b) => {
+                                            const aVenc = moveModal.item?.maquina_ids?.includes(a.id) ? 0 : 1;
+                                            const bVenc = moveModal.item?.maquina_ids?.includes(b.id) ? 0 : 1;
+                                            return aVenc - bVenc;
+                                        })
+                                        .map(m => (
+                                            <option key={m.id} value={m.id}>
+                                                {moveModal.item?.maquina_ids?.includes(m.id) ? '★ ' : ''}
+                                                {m.nome}
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
 
                             <div className="flex gap-3 pt-2">
                                 <button
                                     type="button"
                                     onClick={() => setMoveModal({ ...moveModal, open: false })}
-                                    className="flex-1 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg"
+                                    className="flex-1 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={!moveQty || submitting}
-                                    className={`flex-1 py-2 text-white font-bold rounded-lg shadow-md hover:opacity-90 transition-opacity flex justify-center items-center ${moveModal.type === 'ENTRADA' ? 'bg-green-600' : 'bg-red-600'}`}
+                                    disabled={!moveQty || submitting || isUploading}
+                                    className={`flex-1 py-2.5 text-white font-bold rounded-lg shadow-lg hover:opacity-90 transition-all flex justify-center items-center gap-2 ${moveModal.type === 'ENTRADA' ? 'bg-green-600' : 'bg-red-600'}`}
                                 >
-                                    {submitting ? (
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    ) : 'Confirmar'}
+                                    {submitting || isUploading ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 size={18} />
+                                            Confirmar
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -733,7 +844,6 @@ const EstoquePecas: React.FC = () => {
                 </div>
             )}
 
-            {/* Quick Add Machine Modal - Simplified */}
             {/* Quick Add Machine Modal */}
             {isMachineModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">

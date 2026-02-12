@@ -286,7 +286,9 @@ class EstoqueService {
             .insert({
                 ...movimento,
                 quantidade: qtdAjustada,
-                tipo: tipoNormalized
+                tipo: tipoNormalized,
+                nome_retirante: movimento.nome_retirante,
+                foto_url: movimento.foto_url
             });
 
         if (movError) {
