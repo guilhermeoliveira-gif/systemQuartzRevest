@@ -18,6 +18,7 @@ const CadastroUsuarios: React.FC = () => {
         cargo: '',
         setor: ''
     });
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -49,6 +50,8 @@ const CadastroUsuarios: React.FC = () => {
                 return;
             }
 
+            setIsSaving(true);
+
             if (editingId) {
                 // Update
                 const updates: Partial<Usuario> = {
@@ -59,17 +62,13 @@ const CadastroUsuarios: React.FC = () => {
                     setor: formData.setor
                 };
 
-                // Only update password if provided (for security/simplicity in this context)
-                // Note: Updating password via Supabase Auth usually requires a separate call or admin API. 
-                // For now, we focus on profile data or assume service handles it if possible.
-                // The service `segurancaService.updateUsuario` updates the `usuarios` table.
-
                 await segurancaService.updateUsuario(editingId, updates);
                 alert('Usuário atualizado com sucesso!');
             } else {
                 // Create
                 if (!formData.email || !formData.password) {
                     alert('E-mail e senha são obrigatórios para novos usuários');
+                    setIsSaving(false);
                     return;
                 }
                 await segurancaService.createUsuario(formData as UsuarioCreate);
@@ -81,7 +80,14 @@ const CadastroUsuarios: React.FC = () => {
             resetForm();
         } catch (error: any) {
             console.error('Erro ao salvar usuário:', error);
-            alert(`Erro ao salvar usuário: ${error.message}`);
+            // Melhora a mensagem de erro para o limite do Supabase
+            if (error.message?.includes('security purposes')) {
+                alert('Muitas tentativas em pouco tempo. Por segurança, o Supabase bloqueou novas criações por 1 minuto. Por favor, aguarde um momento.');
+            } else {
+                alert(`Erro ao salvar usuário: ${error.message}`);
+            }
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -292,10 +298,20 @@ const CadastroUsuarios: React.FC = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-8 py-2 bg-purple-600 text-white font-bold rounded-lg shadow-md hover:bg-purple-700 flex items-center gap-2"
+                                    disabled={isSaving}
+                                    className={`px-8 py-2 ${isSaving ? 'bg-slate-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} text-white font-bold rounded-lg shadow-md flex items-center gap-2 transition-colors`}
                                 >
-                                    <Save size={18} />
-                                    Salvar Usuário
+                                    {isSaving ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                            Salvando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save size={18} />
+                                            Salvar Usuário
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
