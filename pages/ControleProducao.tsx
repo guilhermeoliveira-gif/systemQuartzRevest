@@ -10,15 +10,24 @@ const ControleProducao: React.FC = () => {
   const [qty, setQty] = useState<number>(0);
   const [toast, setToast] = useState<string | null>(null);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
     try {
+      setIsLoading(true);
       const data = await estoqueService.getProdutosAcabados();
-      setProdutos(data);
-    } catch (e) { console.error(e); }
+      setProdutos(data || []);
+      console.log('Produtos carregados:', data?.length);
+    } catch (e) {
+      console.error('Erro ao carregar produtos:', e);
+      setToast('❌ Erro ao carregar produtos.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,7 +38,7 @@ const ControleProducao: React.FC = () => {
       await estoqueService.addProducao({
         produto_acabado_id: selectedPA,
         quantidade_produzida: qty,
-        usuario_id: 'CURRENT_USER',
+        usuario_id: 'CURRENT_USER', // TODO: Use real user ID
         desvio_status: 'OK'
       });
 
@@ -65,12 +74,15 @@ const ControleProducao: React.FC = () => {
               <select
                 value={selectedPA}
                 onChange={e => setSelectedPA(e.target.value)}
-                className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
+                className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none disabled:bg-gray-100"
                 required
+                disabled={isLoading}
               >
-                <option value="">Selecione o produto...</option>
+                <option value="">{isLoading ? 'Carregando produtos...' : 'Selecione o produto...'}</option>
                 {produtos.map(p => (
-                  <option key={p.id} value={p.id}>{p.nome}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.nome} (Atual: {p.quantidade_atual} {p.unidade_medida})
+                  </option>
                 ))}
               </select>
             </div>
