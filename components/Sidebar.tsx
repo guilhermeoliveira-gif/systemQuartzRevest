@@ -77,6 +77,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     { name: 'Cotações (RFQ)', path: '/compras/cotacoes', icon: FileText },
   ];
 
+  const expedicaoNavItems = [
+    { name: 'Nova Carga', path: '/expedicao/nova', icon: Truck },
+    { name: 'Pendências', path: '/expedicao/pendencias', icon: ClipboardCheck },
+  ];
+
   const generalNavItems = [
     { name: 'Configurações', path: '/configuracoes', icon: Settings },
   ];
@@ -118,6 +123,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
     navItems = comprasNavItems;
     moduleName = 'Compras';
     moduleColor = 'bg-amber-600';
+  } else if (currentModule === 'expedicao') {
+    navItems = expedicaoNavItems;
+    moduleName = 'Expedição';
+    moduleColor = 'bg-indigo-600';
   }
 
   return (

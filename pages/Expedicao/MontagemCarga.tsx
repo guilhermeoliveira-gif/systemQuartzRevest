@@ -46,7 +46,20 @@ const MontagemCarga: React.FC = () => {
         }
     };
 
-    const moverParaCarga = (pedido: any) => {
+    const moverParaCarga = async (pedido: any) => {
+        // Verificar pendências
+        try {
+            const temPendencias = await expedicaoService.verificarPendenciasCliente(pedido.cliente.id);
+            if (temPendencias) {
+                const confirmar = window.confirm(`ATENÇÃO: O cliente ${pedido.cliente.nome} possui pendências de entrega em aberto.\n\nDeseja continuar e adicionar o pedido à carga mesmo assim?`);
+                if (!confirmar) return;
+            }
+        } catch (error) {
+            console.error('Erro ao verificar pendências:', error);
+            // Em caso de erro, permitir adicionar mas avisar
+            showToast('Erro ao verificar pendências do cliente', { type: 'error' });
+        }
+
         setPedidosNaCarga([...pedidosNaCarga, pedido]);
         setPedidosDisponiveis(pedidosDisponiveis.filter(p => p.id !== pedido.id));
     };

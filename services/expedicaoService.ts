@@ -189,5 +189,16 @@ export const expedicaoService = {
             .single();
         if (error) throw error;
         return data;
+    },
+
+    async verificarPendenciasCliente(clienteId: string): Promise<boolean> {
+        const { count, error } = await supabase
+            .from('expedicao_pendencia')
+            .select('*', { count: 'exact', head: true })
+            .eq('cliente_id', clienteId)
+            .is('data_resolvida', null);
+
+        if (error) throw error;
+        return (count || 0) > 0;
     }
 };

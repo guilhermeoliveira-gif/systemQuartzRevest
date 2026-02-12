@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     FileText, FolderKanban, CheckSquare, Package, AlertCircle,
-    TrendingUp, Clock, Users, BarChart3
+    TrendingUp, Clock, Users, BarChart3, Truck
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import VendasSummary from '../components/dashboard/VendasSummary';
@@ -94,6 +94,16 @@ const DashboardGlobal: React.FC = () => {
                 { label: 'Críticos', value: stats.estoque.criticos, urgent: true }
             ],
             link: '/estoque/mp'
+        },
+        {
+            title: 'Expedição',
+            icon: Truck, // Precisa importar Truck
+            color: 'indigo',
+            stats: [
+                { label: 'Nova Carga', value: 'Criar', highlight: true },
+                { label: 'Pendências', value: 'Ver', highlight: false }
+            ],
+            link: '/expedicao/nova'
         }
     ];
 
@@ -102,7 +112,8 @@ const DashboardGlobal: React.FC = () => {
             red: { bg: 'bg-red-100', text: 'text-red-600', border: 'border-red-200' },
             teal: { bg: 'bg-teal-100', text: 'text-teal-600', border: 'border-teal-200' },
             blue: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' },
-            orange: { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200' }
+            orange: { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200' },
+            indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600', border: 'border-indigo-200' }
         };
         return colors[color] || colors.blue;
     };
