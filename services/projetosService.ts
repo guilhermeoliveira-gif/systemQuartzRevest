@@ -1,90 +1,145 @@
-import { prisma } from '../lib/prisma';
+import { supabase } from './supabaseClient';
 import { Projeto, TarefaProjeto, ComentarioProjeto } from '../types_projetos';
 
 export const projetosService = {
     // ==================== PROJETOS ====================
 
     async getProjetos(): Promise<Projeto[]> {
-        return await prisma.projeto.findMany({
-            include: {
-                responsavel: {
-                    select: { id: true, nome: true, email: true }
-                }
-            },
-            orderBy: { created_at: 'desc' }
-        }) as unknown as Projeto[];
+        const { data, error } = await supabase
+            .from('projeto')
+            .select(`
+                *,
+                responsavel:usuarios(id, nome, email)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Erro ao buscar projetos:', error);
+            throw error;
+        }
+
+        return data as any || [];
     },
 
     async getProjetoById(id: string): Promise<Projeto | null> {
-        return await prisma.projeto.findUnique({
-            where: { id },
-            include: {
-                responsavel: {
-                    select: { id: true, nome: true, email: true }
-                }
-            }
-        }) as unknown as Projeto;
+        const { data, error } = await supabase
+            .from('projeto')
+            .select(`
+                *,
+                responsavel:usuarios(id, nome, email)
+            `)
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            console.error('Erro ao buscar projeto:', error);
+            return null;
+        }
+
+        return data as any;
     },
 
     async createProjeto(projeto: Omit<Projeto, 'id' | 'created_at' | 'updated_at' | 'progresso'>): Promise<Projeto> {
-        return await prisma.projeto.create({
-            data: { ...projeto as any, progresso: 0 }
-        }) as unknown as Projeto;
+        const { data, error } = await supabase
+            .from('projeto')
+            .insert([{ ...projeto, progresso: 0 }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Erro ao criar projeto:', error);
+            throw error;
+        }
+
+        return data;
     },
 
     async updateProjeto(id: string, updates: Partial<Projeto>): Promise<Projeto> {
-        return await prisma.projeto.update({
-            where: { id },
-            data: { ...updates as any, updated_at: new Date() }
-        }) as unknown as Projeto;
+        const { data, error } = await supabase
+            .from('projeto')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Erro ao atualizar projeto:', error);
+            throw error;
+        }
+
+        return data;
     },
 
     async deleteProjeto(id: string): Promise<void> {
-        await prisma.projeto.delete({
-            where: { id }
-        });
+        const { error } = await supabase
+            .from('projeto')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Erro ao deletar projeto:', error);
+            throw error;
+        }
     },
 
     // ==================== TAREFAS ====================
 
     async getTarefasByProjeto(projetoId: string): Promise<TarefaProjeto[]> {
-        return await prisma.tarefa_projeto.findMany({
-            where: { projeto_id: projetoId },
-            include: {
-                responsavel: {
-                    select: { id: true, nome: true, email: true }
-                }
-            },
-            orderBy: { data_fim_prevista: 'asc' }
-        }) as unknown as TarefaProjeto[];
+        const { data, error } = await supabase
+            .from('tarefa_projeto')
+            .select(`
+                *,
+                responsavel:usuarios(id, nome, email)
+            `)
+            .eq('projeto_id', projetoId)
+            .order('data_fim_prevista', { ascending: true });
+
+        if (error) {
+            console.error('Erro ao buscar tarefas:', error);
+            throw error;
+        }
+
+        return data as any || [];
     },
 
     async getTodasTarefas(): Promise<TarefaProjeto[]> {
-        return await prisma.tarefa_projeto.findMany({
-            include: {
-                responsavel: {
-                    select: { id: true, nome: true, email: true }
-                },
-                projeto: {
-                    select: { id: true, nome: true }
-                }
-            },
-            orderBy: { data_fim_prevista: 'asc' }
-        }) as unknown as TarefaProjeto[];
+        const { data, error } = await supabase
+            .from('tarefa_projeto')
+            .select(`
+                *,
+                responsavel:usuarios(id, nome, email),
+                projeto:projeto(id, nome)
+            `)
+            .order('data_fim_prevista', { ascending: true });
+
+        if (error) {
+            console.error('Erro ao buscar tarefas:', error);
+            throw error;
+        }
+
+        return data as any || [];
     },
 
     async createTarefa(tarefa: Omit<TarefaProjeto, 'id' | 'created_at' | 'updated_at' | 'progresso'>): Promise<TarefaProjeto> {
-        const data = await prisma.tarefa_projeto.create({
-            data: { ...tarefa as any, progresso: 0 }
-        }) as unknown as TarefaProjeto;
+        const { data, error } = await supabase
+            .from('tarefa_projeto')
+            .insert([{ ...tarefa, progresso: 0 }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Erro ao criar tarefa:', error);
+            throw error;
+        }
 
         // Se a tarefa tiver maquina_id, sugerir criar uma OS
         if (data && tarefa.maquina_id) {
             try {
+                // @ts-ignore
                 const { manutencaoService } = await import('./manutencaoService');
                 const os = await manutencaoService.createOS({
                     descricao: `OS vinculada à tarefa de projeto: ${tarefa.titulo}`,
-                    tipo: 'Preventiva',
+                    tipo: 'Preventiva', // Default, pode ser ajustado
                     tipo_os: 'Tarefa',
                     prioridade: 'Média',
                     status: 'Aberta',
@@ -95,10 +150,12 @@ export const projetosService = {
                     pecas_utilizadas: []
                 });
 
+                // Atualizar a tarefa com o ID da OS criada
                 await this.updateTarefa(data.id, { os_id: os.id });
 
             } catch (osError) {
                 console.error('Erro ao criar OS para tarefa:', osError);
+                // Não falhar a tarefa
             }
         }
 
@@ -106,62 +163,97 @@ export const projetosService = {
     },
 
     async updateTarefa(id: string, updates: Partial<TarefaProjeto>): Promise<TarefaProjeto> {
-        return await prisma.tarefa_projeto.update({
-            where: { id },
-            data: { ...updates as any, updated_at: new Date() }
-        }) as unknown as TarefaProjeto;
+        const { data, error } = await supabase
+            .from('tarefa_projeto')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Erro ao atualizar tarefa:', error);
+            throw error;
+        }
+
+        return data;
     },
 
     async deleteTarefa(id: string): Promise<void> {
-        await prisma.tarefa_projeto.delete({
-            where: { id }
-        });
+        const { error } = await supabase
+            .from('tarefa_projeto')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Erro ao deletar tarefa:', error);
+            throw error;
+        }
     },
 
     // ==================== COMENTÁRIOS ====================
 
     async getComentarios(projetoId?: string, tarefaId?: string): Promise<ComentarioProjeto[]> {
-        return await prisma.comentario_projeto.findMany({
-            where: {
-                projeto_id: projetoId,
-                tarefa_id: tarefaId
-            },
-            include: {
-                usuario: {
-                    select: { id: true, nome: true, email: true }
-                }
-            },
-            orderBy: { created_at: 'desc' }
-        }) as unknown as ComentarioProjeto[];
+        let query = supabase
+            .from('comentario_projeto')
+            .select(`
+                *,
+                usuario:usuarios(id, nome, email)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (projetoId) {
+            query = query.eq('projeto_id', projetoId);
+        }
+        if (tarefaId) {
+            query = query.eq('tarefa_id', tarefaId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Erro ao buscar comentários:', error);
+            throw error;
+        }
+
+        return data as any || [];
     },
 
     async createComentario(comentario: Omit<ComentarioProjeto, 'id' | 'created_at'>): Promise<ComentarioProjeto> {
-        return await prisma.comentario_projeto.create({
-            data: comentario as any
-        }) as unknown as ComentarioProjeto;
+        const { data, error } = await supabase
+            .from('comentario_projeto')
+            .insert([comentario])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Erro ao criar comentário:', error);
+            throw error;
+        }
+
+        return data;
     },
 
     // ==================== ESTATÍSTICAS ====================
 
     async getEstatisticas() {
-        const projetos = await prisma.projeto.findMany({
-            select: { status: true, prioridade: true }
-        });
+        const { data: projetos } = await supabase
+            .from('projeto')
+            .select('status, prioridade');
 
-        const tarefas = await prisma.tarefa_projeto.findMany({
-            select: { status: true, prioridade: true }
-        });
+        const { data: tarefas } = await supabase
+            .from('tarefa_projeto')
+            .select('status, prioridade');
 
         return {
             projetos: {
-                total: projetos.length,
-                porStatus: this.contarPorCampo(projetos, 'status'),
-                porPrioridade: this.contarPorCampo(projetos, 'prioridade')
+                total: projetos?.length || 0,
+                porStatus: this.contarPorCampo(projetos || [], 'status'),
+                porPrioridade: this.contarPorCampo(projetos || [], 'prioridade')
             },
             tarefas: {
-                total: tarefas.length,
-                porStatus: this.contarPorCampo(tarefas, 'status'),
-                porPrioridade: this.contarPorCampo(tarefas, 'prioridade')
+                total: tarefas?.length || 0,
+                porStatus: this.contarPorCampo(tarefas || [], 'status'),
+                porPrioridade: this.contarPorCampo(tarefas || [], 'prioridade')
             }
         };
     },

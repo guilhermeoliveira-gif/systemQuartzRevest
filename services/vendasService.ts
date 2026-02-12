@@ -1,94 +1,113 @@
-import { prisma } from '../lib/prisma';
+import { supabase } from './supabaseClient';
 import { VendaCliente, VendaPedido, VendaItem } from '../types_vendas';
 import { EstoquePA } from '../types_estoque';
 
 export const vendasService = {
     // --- CLIENTES ---
     async getClientes() {
-        return await prisma.vendas_cliente.findMany({
-            orderBy: { nome: 'asc' }
-        }) as unknown as VendaCliente[];
+        const { data, error } = await supabase
+            .from('vendas_cliente')
+            .select('*')
+            .order('nome');
+        if (error) throw error;
+        return data as VendaCliente[];
     },
 
     async getClienteById(id: string) {
-        return await prisma.vendas_cliente.findUnique({
-            where: { id }
-        }) as unknown as VendaCliente[];
+        const { data, error } = await supabase
+            .from('vendas_cliente')
+            .select('*')
+            .eq('id', id)
+            .single();
+        if (error) throw error;
+        return data as VendaCliente[];
     },
 
     async criarCliente(cliente: Omit<VendaCliente, 'id' | 'created_at'>) {
-        return await prisma.vendas_cliente.create({
-            data: cliente as any
-        });
+        const { data, error } = await supabase
+            .from('vendas_cliente')
+            .insert(cliente)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
     },
 
     // --- PRODUTOS (Integração Estoque PA) ---
     async buscarProdutos(query: string) {
-        const data = await prisma.produto_acabado.findMany({
-            where: {
-                nome: {
-                    contains: query,
-                    mode: 'insensitive'
-                }
-            },
-            select: {
-                id: true,
-                nome: true,
-                unidade_medida: true
-            },
-            take: 20
-        });
+        const { data, error } = await supabase
+            .from('produto_acabado')
+            .select('id, nome, unidade_medida') // Ajustado para colunas reais
+            .ilike('nome', `%${query}%`)
+            .limit(20);
 
+        if (error) throw error;
+        // Map para interface EstoquePA (compatibilidade)
         return data.map((p: any) => ({
             id: p.id,
-            descricao: p.nome,
-            codigo: p.id.split('-')[0],
+            descricao: p.nome, // Alias
+            codigo: p.id.split('-')[0], // Mock de código
             unidade: p.unidade_medida
-        })) as unknown as EstoquePA[];
+        })) as EstoquePA[];
     },
 
     // --- PEDIDOS ---
     async getPedidos() {
-        return await prisma.vendas_pedido.findMany({
-            include: {
-                cliente: {
-                    select: { nome: true }
-                }
-            },
-            orderBy: { created_at: 'desc' }
-        });
+        const { data, error } = await supabase
+            .from('vendas_pedido')
+            .select(`
+        *,
+        cliente:vendas_cliente(nome)
+      `)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data;
     },
 
     async getPedidoById(id: string) {
-        const pedido = await prisma.vendas_pedido.findUnique({
-            where: { id },
-            include: {
-                cliente: true,
-                itens: {
-                    include: {
-                        produto: {
-                            select: { nome: true, unidade_medida: true }
-                        }
-                    }
-                }
-            }
-        });
+        // Busca Cabeçalho
+        const { data: pedido, error: errPedido } = await supabase
+            .from('vendas_pedido')
+            .select(`*, cliente:vendas_cliente(*)`)
+            .eq('id', id)
+            .single();
+        if (errPedido) throw errPedido;
 
-        return pedido;
+        // Busca Itens
+        const { data: itens, error: errItens } = await supabase
+            .from('vendas_item')
+            .select(`*, produto:produto_acabado(nome, unidade_medida)`)
+            .eq('pedido_id', id);
+        if (errItens) throw errItens;
+
+        return { ...pedido, itens };
     },
 
     async criarPedido(pedido: Partial<VendaPedido>, itens: Partial<VendaItem>[]) {
-        const novoPedido = await prisma.vendas_pedido.create({
-            data: {
-                ...(pedido as any),
-                itens: {
-                    create: itens as any
-                }
-            },
-            include: {
-                itens: true
-            }
-        });
+        // 1. Criar Cabeçalho
+        const { data: novoPedido, error: errPedido } = await supabase
+            .from('vendas_pedido')
+            .insert(pedido)
+            .select()
+            .single();
+
+        if (errPedido) throw errPedido;
+
+        // 2. Criar Itens
+        const itensComPedido = itens.map(item => ({
+            ...item,
+            pedido_id: novoPedido.id
+        }));
+
+        const { error: errItens } = await supabase
+            .from('vendas_item')
+            .insert(itensComPedido);
+
+        if (errItens) {
+            // Rollback manual se falhar itens (básico)
+            await supabase.from('vendas_pedido').delete().eq('id', novoPedido.id);
+            throw errItens;
+        }
 
         return novoPedido;
     },

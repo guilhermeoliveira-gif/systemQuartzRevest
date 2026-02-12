@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma';
+import { supabase } from './supabaseClient';
 import {
     ChecklistModelo,
     ChecklistItemModelo,
@@ -7,88 +7,93 @@ import {
     ChecklistResposta
 } from '../types_checklist';
 import { qualidadeService } from './qualidadeService';
-import { logger } from '../utils/logger';
 
 export const checklistService = {
     // ==================== MODELOS ====================
     async getModelos(): Promise<ChecklistModelo[]> {
-        const data = await prisma.checklist_modelo.findMany({
-            include: {
-                checklist_item_modelo_modelo_id_list: true
-            },
-            orderBy: { nome: 'asc' }
-        });
+        const { data, error } = await supabase
+            .from('checklist_modelo')
+            .select('*, itens:checklist_item_modelo(*)')
+            .order('nome', { ascending: true });
 
-        return data.map((m: any) => ({
-            ...m,
-            itens: m.checklist_item_modelo_modelo_id_list
-        })) as unknown as ChecklistModelo[];
+        if (error) throw error;
+        return data || [];
     },
 
     async createModelo(modelo: Omit<ChecklistModelo, 'id' | 'created_at' | 'updated_at'>): Promise<ChecklistModelo> {
-        const data = await prisma.checklist_modelo.create({
-            data: modelo as any
-        });
-        return data as unknown as ChecklistModelo;
+        const { data, error } = await supabase
+            .from('checklist_modelo')
+            .insert([modelo])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     },
 
     async createItemModelo(item: Omit<ChecklistItemModelo, 'id' | 'created_at'>): Promise<ChecklistItemModelo> {
-        const data = await prisma.checklist_item_modelo.create({
-            data: item as any
-        });
-        return data as unknown as ChecklistItemModelo;
+        const { data, error } = await supabase
+            .from('checklist_item_modelo')
+            .insert([item])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     },
 
     // ==================== AGENDAMENTOS ====================
     async getAgendamentos(filtro?: { status?: string, responsavel_id?: string }): Promise<ChecklistAgendamento[]> {
-        const data = await prisma.checklist_agendamento.findMany({
-            where: {
-                status: filtro?.status,
-                responsavel_id: filtro?.responsavel_id
-            },
-            include: {
-                checklist_modelo_modelo_id: {
-                    select: { nome: true, area: true }
-                }
-                // Nota: Relacionamento com usuarios na responsavel_id não parece estar no schema.prisma de forma direta para agendamento.
-                // Vou manter o mapeamento manual se necessário ou ajustar via include se o schema permitir.
-            },
-            orderBy: { data_agendada: 'asc' }
-        });
+        let query = supabase
+            .from('checklist_agendamento')
+            .select(`
+                *,
+                modelo:checklist_modelo(nome, area),
+                responsavel:usuarios(nome)
+            `)
+            .order('data_agendada', { ascending: true });
 
-        // Mapear relacionamentos
-        return data.map((a: any) => ({
-            ...a,
-            modelo: a.checklist_modelo_modelo_id
-        })) as unknown as ChecklistAgendamento[];
+        if (filtro?.status) query = query.eq('status', filtro.status);
+        if (filtro?.responsavel_id) query = query.eq('responsavel_id', filtro.responsavel_id);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
     },
 
     async createAgendamento(agendamento: Omit<ChecklistAgendamento, 'id' | 'created_at' | 'updated_at'>): Promise<ChecklistAgendamento> {
-        const data = await prisma.checklist_agendamento.create({
-            data: agendamento as any
-        });
-        return data as unknown as ChecklistAgendamento;
+        const { data, error } = await supabase
+            .from('checklist_agendamento')
+            .insert([agendamento])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     },
 
     // ==================== EXECUÇÃO ====================
     async iniciarExecucao(agendamentoId: string, executorId: string): Promise<ChecklistExecucao> {
-        // Usar transação para garantir atomicidade
-        const [_, execucao] = await prisma.$transaction([
-            prisma.checklist_agendamento.update({
-                where: { id: agendamentoId },
-                data: { status: 'EM_ANDAMENTO', updated_at: new Date() }
-            }),
-            prisma.checklist_execucao.create({
-                data: {
-                    agendamento_id: agendamentoId,
-                    executor_id: executorId,
-                    status: 'EM_ANDAMENTO',
-                    data_inicio: new Date()
-                }
-            })
-        ]);
+        // Atualizar status do agendamento
+        await supabase
+            .from('checklist_agendamento')
+            .update({ status: 'EM_ANDAMENTO' })
+            .eq('id', agendamentoId);
 
-        return execucao as unknown as ChecklistExecucao;
+        // Criar registro de execução
+        const { data, error } = await supabase
+            .from('checklist_execucao')
+            .insert([{
+                agendamento_id: agendamentoId,
+                executor_id: executorId,
+                status: 'EM_ANDAMENTO',
+                data_inicio: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     },
 
     async salvarResposta(resposta: Omit<ChecklistResposta, 'id' | 'created_at'>, modeloItem: ChecklistItemModelo, entidadeContexto: string): Promise<ChecklistResposta> {
@@ -105,34 +110,38 @@ export const checklistService = {
                     data_ocorrencia: new Date().toISOString(),
                     status: 'EM_ANALISE',
                     severidade: 'ALTA', // Default alta para disparar OS
-                    responsavel_id: 'SYSTEM_CHECKLIST' // Alterado de CURRENT_USER para valor constante compatível
+                    responsavel_id: 'CURRENT_USER' // Idealmente o responsável da área
                 });
                 ncId = nc.id;
             } catch (e) {
-                logger.error('Erro ao gerar NC automática:', e);
+                console.error('Erro ao gerar NC automática:', e);
             }
         }
 
-        const data = await prisma.checklist_resposta.create({
-            data: { ...resposta as any, nao_conformidade_id: ncId }
-        });
+        const { data, error } = await supabase
+            .from('checklist_resposta')
+            .insert([{ ...resposta, nao_conformidade_id: ncId }])
+            .select()
+            .single();
 
-        return data as unknown as ChecklistResposta;
+        if (error) throw error;
+        return data;
     },
 
     async finalizarExecucao(execucaoId: string, agendamentoId: string): Promise<void> {
-        await prisma.$transaction([
-            prisma.checklist_execucao.update({
-                where: { id: execucaoId },
-                data: {
-                    status: 'FINALIZADO',
-                    data_fim: new Date()
-                }
-            }),
-            prisma.checklist_agendamento.update({
-                where: { id: agendamentoId },
-                data: { status: 'CONCLUIDO', updated_at: new Date() }
+        // Finalizar Execução
+        await supabase
+            .from('checklist_execucao')
+            .update({
+                status: 'FINALIZADO',
+                data_fim: new Date().toISOString()
             })
-        ]);
+            .eq('id', execucaoId);
+
+        // Finalizar Agendamento
+        await supabase
+            .from('checklist_agendamento')
+            .update({ status: 'CONCLUIDO' })
+            .eq('id', agendamentoId);
     }
 };

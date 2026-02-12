@@ -1,6 +1,4 @@
 import { supabase } from './supabaseClient';
-import { prisma } from '../lib/prisma';
-import { logger } from '../utils/logger';
 
 export interface ResultadoBusca {
     id: string;
@@ -16,55 +14,50 @@ export const buscaService = {
         if (!query || query.length < 2) return [];
 
         const resultados: ResultadoBusca[] = [];
+        const searchTerm = `%${query.toLowerCase()}%`;
 
         try {
             // Buscar em Não Conformidades
-            const ncs = await prisma.nao_conformidade.findMany({
-                where: {
-                    OR: [
-                        { titulo: { contains: query, mode: 'insensitive' } },
-                        { descricao: { contains: query, mode: 'insensitive' } }
-                    ]
-                },
-                select: { id: true, titulo: true, descricao: true, status: true },
-                take: 5
-            });
+            const { data: ncs } = await supabase
+                .from('nao_conformidade')
+                .select('id, titulo, descricao, status')
+                .or(`titulo.ilike.${searchTerm},descricao.ilike.${searchTerm}`)
+                .limit(5);
 
-            resultados.push(...ncs.map(nc => ({
-                id: nc.id,
-                tipo: 'NC' as const,
-                titulo: nc.titulo,
-                subtitulo: `Status: ${nc.status}`,
-                link: `/qualidade/nao-conformidades`,
-                metadata: { status: nc.status }
-            })));
+            if (ncs) {
+                resultados.push(...ncs.map(nc => ({
+                    id: nc.id,
+                    tipo: 'NC' as const,
+                    titulo: nc.titulo,
+                    subtitulo: `Status: ${nc.status}`,
+                    link: `/qualidade/nao-conformidades`,
+                    metadata: { status: nc.status }
+                })));
+            }
 
             // Buscar em Projetos
-            const projetos = await prisma.projeto.findMany({
-                where: {
-                    OR: [
-                        { nome: { contains: query, mode: 'insensitive' } },
-                        { descricao: { contains: query, mode: 'insensitive' } }
-                    ]
-                },
-                select: { id: true, nome: true, descricao: true, status: true },
-                take: 5
-            });
+            const { data: projetos } = await supabase
+                .from('projeto')
+                .select('id, nome, descricao, status')
+                .or(`nome.ilike.${searchTerm},descricao.ilike.${searchTerm}`)
+                .limit(5);
 
-            resultados.push(...projetos.map(p => ({
-                id: p.id,
-                tipo: 'PROJETO' as const,
-                titulo: p.nome,
-                subtitulo: `Status: ${p.status}`,
-                link: `/projetos/dashboard`,
-                metadata: { status: p.status }
-            })));
+            if (projetos) {
+                resultados.push(...projetos.map(p => ({
+                    id: p.id,
+                    tipo: 'PROJETO' as const,
+                    titulo: p.nome,
+                    subtitulo: `Status: ${p.status}`,
+                    link: `/projetos/dashboard`,
+                    metadata: { status: p.status }
+                })));
+            }
 
-            // Buscar em Tarefas (View Unificada - Mantido Supabase por falta de mapping no Prisma)
+            // Buscar em Tarefas (View Unificada)
             const { data: tarefas } = await supabase
                 .from('tarefas_unificadas')
                 .select('id, titulo, descricao, origem, status, link')
-                .or(`titulo.ilike.%${query}%,descricao.ilike.%${query}%`)
+                .or(`titulo.ilike.${searchTerm},descricao.ilike.${searchTerm}`)
                 .limit(5);
 
             if (tarefas) {
@@ -79,51 +72,44 @@ export const buscaService = {
             }
 
             // Buscar em Matérias-Primas
-            const mps = await prisma.materia_prima.findMany({
-                where: {
-                    OR: [
-                        { nome: { contains: query, mode: 'insensitive' } }
-                        // Nota: campo 'codigo' não encontrado no schema.prisma para materia_prima. 
-                        // O subtitulo legando usava mp.codigo. Vou remover ou ajustar se encontrar o campo real.
-                    ]
-                },
-                select: { id: true, nome: true, categoria: true },
-                take: 5
-            });
+            const { data: mps } = await supabase
+                .from('materia_prima')
+                .select('id, nome, codigo, categoria')
+                .or(`nome.ilike.${searchTerm},codigo.ilike.${searchTerm}`)
+                .limit(5);
 
-            resultados.push(...mps.map(mp => ({
-                id: mp.id,
-                tipo: 'MATERIAL' as const,
-                titulo: mp.nome,
-                subtitulo: `${mp.categoria}`,
-                link: `/estoque/mp`,
-                metadata: { categoria: mp.categoria }
-            })));
+            if (mps) {
+                resultados.push(...mps.map(mp => ({
+                    id: mp.id,
+                    tipo: 'MATERIAL' as const,
+                    titulo: mp.nome,
+                    subtitulo: `Código: ${mp.codigo} - ${mp.categoria}`,
+                    link: `/estoque/mp`,
+                    metadata: { codigo: mp.codigo, categoria: mp.categoria }
+                })));
+            }
 
             // Buscar em Usuários
-            const usuarios = await prisma.usuarios.findMany({
-                where: {
-                    OR: [
-                        { nome: { contains: query, mode: 'insensitive' } },
-                        { email: { contains: query, mode: 'insensitive' } }
-                    ]
-                },
-                select: { id: true, nome: true, email: true, perfil_id: true },
-                take: 5
-            });
+            const { data: usuarios } = await supabase
+                .from('usuarios')
+                .select('id, nome, email, perfil_id')
+                .or(`nome.ilike.${searchTerm},email.ilike.${searchTerm}`)
+                .limit(5);
 
-            resultados.push(...usuarios.map(u => ({
-                id: u.id,
-                tipo: 'USUARIO' as const,
-                titulo: u.nome || 'Sem Nome',
-                subtitulo: u.email,
-                link: `/seguranca/usuarios`,
-                metadata: { email: u.email }
-            })));
+            if (usuarios) {
+                resultados.push(...usuarios.map(u => ({
+                    id: u.id,
+                    tipo: 'USUARIO' as const,
+                    titulo: u.nome,
+                    subtitulo: u.email,
+                    link: `/seguranca/usuarios`,
+                    metadata: { email: u.email }
+                })));
+            }
 
             return resultados;
         } catch (error) {
-            logger.error('Erro na busca global:', error);
+            console.error('Erro na busca global:', error);
             return [];
         }
     }

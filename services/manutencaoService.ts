@@ -1,4 +1,5 @@
-import { prisma } from '../lib/prisma';
+
+import { supabase } from './supabaseClient';
 import {
     Maquina,
     OrdemServico,
@@ -10,67 +11,80 @@ import {
     ManutencaoPlanoItem,
     MaquinaPlanoVinculo
 } from '../types_manutencao';
-import { logger } from '../utils/logger';
 
 export const manutencaoService = {
     // ==================== MÁQUINAS ====================
     async getMaquinas(): Promise<Maquina[]> {
-        const data = await prisma.manutencao_maquina.findMany({
-            orderBy: { nome: 'asc' }
-        });
-        return data as unknown as Maquina[];
+        const { data, error } = await supabase
+            .from('manutencao_maquina')
+            .select('*')
+            .order('nome', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
     },
 
     async createMaquina(maquina: Partial<Maquina>): Promise<Maquina> {
-        const data = await prisma.manutencao_maquina.create({
-            data: maquina as any
-        });
-        return data as unknown as Maquina;
+        const { data, error } = await supabase
+            .from('manutencao_maquina')
+            .insert([maquina])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     },
 
     async updateMaquina(id: string, updates: Partial<Maquina>): Promise<void> {
-        await prisma.manutencao_maquina.update({
-            where: { id },
-            data: { ...updates as any, updated_at: new Date() }
-        });
+        const { error } = await supabase
+            .from('manutencao_maquina')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id);
+
+        if (error) throw error;
     },
 
     async deleteMaquina(id: string): Promise<void> {
-        await prisma.manutencao_maquina.delete({
-            where: { id }
-        });
+        const { error } = await supabase
+            .from('manutencao_maquina')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
     },
 
     // ==================== ORDENS DE SERVIÇO ====================
     async getOrdensServico(): Promise<OrdemServico[]> {
-        const data = await prisma.manutencao_os.findMany({
-            include: {
-                manutencao_maquina_maquina_id: {
-                    select: { nome: true, modelo: true }
-                }
-            },
-            orderBy: { data_abertura: 'desc' }
-        });
+        const { data, error } = await supabase
+            .from('manutencao_os')
+            .select(`
+                *,
+                maquina:manutencao_maquina(nome, modelo)
+            `)
+            .order('data_abertura', { ascending: false });
 
-        // Mapear para o formato esperado pelo frontend (maquina: { nome, modelo })
-        return data.map((os: any) => ({
-            ...os,
-            maquina: os.manutencao_maquina_maquina_id
-        })) as unknown as OrdemServico[];
+        if (error) throw error;
+        return data || [];
     },
 
     async createOS(os: Partial<OrdemServico>): Promise<OrdemServico> {
-        const data = await prisma.manutencao_os.create({
-            data: os as any
-        });
-        return data as unknown as OrdemServico;
+        const { data, error } = await supabase
+            .from('manutencao_os')
+            .insert([os])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     },
 
     async updateOS(id: string, updates: Partial<OrdemServico>): Promise<void> {
-        await prisma.manutencao_os.update({
-            where: { id },
-            data: { ...updates as any, updated_at: new Date() }
-        });
+        const { error } = await supabase
+            .from('manutencao_os')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id);
+
+        if (error) throw error;
 
         if (updates.status === 'Concluída') {
             // Atualizar horas da máquina se houver
@@ -84,6 +98,7 @@ export const manutencaoService = {
             // Se for do tipo Tarefa e tiver tarefa_id, atualizar a tarefa
             if (updates.tarefa_id) {
                 try {
+                    // @ts-ignore
                     const { projetosService } = await import('./projetosService');
                     await projetosService.updateTarefa(updates.tarefa_id, {
                         status: 'CONCLUIDA',
@@ -91,7 +106,7 @@ export const manutencaoService = {
                         updated_at: new Date().toISOString()
                     });
                 } catch (taskError) {
-                    logger.error('Erro ao atualizar tarefa vinculada à OS:', taskError);
+                    console.error('Erro ao atualizar tarefa vinculada à OS:', taskError);
                 }
             }
         }
@@ -99,116 +114,95 @@ export const manutencaoService = {
 
     // ==================== ITENS DE MÁQUINA ====================
     async getItensMaquina(maquinaId: string): Promise<MaquinaItem[]> {
-        const data = await prisma.manutencao_maquina_item.findMany({
-            where: { maquina_id: maquinaId },
-            include: {
-                mecanica_insumo_peca_estoque_id: {
-                    select: {
-                        nome: true,
-                        unidade_medida: true,
-                        quantidade_atual: true
-                    }
-                }
-            }
-        });
-
-        // Mapear peca_estoque
-        return data.map((item: any) => ({
-            ...item,
-            peca_estoque: item.mecanica_insumo_peca_estoque_id
-        })) as unknown as MaquinaItem[];
+        const { data, error } = await supabase
+            .from('manutencao_maquina_item')
+            .select(`
+                *,
+                peca_estoque:mecanica_insumo (
+                    nome,
+                    unidade_medida,
+                    quantidade_atual
+                )
+            `)
+            .eq('maquina_id', maquinaId);
+        if (error) throw error;
+        return data || [];
     },
 
     async upsertItemMaquina(item: Partial<MaquinaItem>): Promise<void> {
-        const { peca_estoque, id, ...dbItem } = item as any;
-
-        if (id) {
-            await prisma.manutencao_maquina_item.upsert({
-                where: { id },
-                update: dbItem,
-                create: { ...dbItem, id }
-            });
-        } else {
-            // Se não tiver ID, criar um novo
-            await prisma.manutencao_maquina_item.create({
-                data: dbItem
-            });
-        }
+        // Sanitize to remove joined fields not present in table
+        const { peca_estoque, ...dbItem } = item;
+        const { error } = await supabase
+            .from('manutencao_maquina_item')
+            .upsert(dbItem);
+        if (error) throw error;
     },
 
     // ==================== APRENDIZADO / CONHECIMENTO ====================
     async getAprendizados(maquinaId?: string): Promise<Aprendizado[]> {
-        const data = await prisma.manutencao_aprendizado.findMany({
-            where: maquinaId ? { maquina_id: maquinaId } : {},
-            orderBy: { created_at: 'desc' }
-        });
-        return data as unknown as Aprendizado[];
+        let query = supabase.from('manutencao_aprendizado').select('*');
+        if (maquinaId) query = query.eq('maquina_id', maquinaId);
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
     },
 
     async createAprendizado(aprendizado: Partial<Aprendizado>): Promise<void> {
-        await prisma.manutencao_aprendizado.create({
-            data: aprendizado as any
-        });
+        const { error } = await supabase
+            .from('manutencao_aprendizado')
+            .insert([aprendizado]);
+        if (error) throw error;
     },
 
     // ==================== PLANOS DE MANUTENÇÃO ====================
     async getPlanos(): Promise<(ManutencaoPlano & { itens: ManutencaoPlanoItem[] })[]> {
-        const data = await prisma.manutencao_plano.findMany({
-            include: {
-                manutencao_plano_item_plano_id_list: true
-            },
-            orderBy: { nome: 'asc' }
-        });
+        const { data, error } = await supabase
+            .from('manutencao_plano')
+            .select(`*, itens:manutencao_plano_item(*)`)
+            .order('nome');
 
-        return data.map((plano: any) => ({
-            ...plano,
-            itens: plano.manutencao_plano_item_plano_id_list
-        })) as unknown as (ManutencaoPlano & { itens: ManutencaoPlanoItem[] })[];
+        if (error) throw error;
+        return data || [];
     },
 
     async createPlano(plano: Partial<ManutencaoPlano>, itens: Partial<ManutencaoPlanoItem>[]): Promise<void> {
-        await prisma.manutencao_plano.create({
-            data: {
-                ...(plano as any),
-                manutencao_plano_item_plano_id_list: {
-                    create: itens as any
-                }
-            }
-        });
-    },
+        // 1. Criar Cabeçalho
+        const { data: novoPlano, error: errPlano } = await supabase
+            .from('manutencao_plano')
+            .insert([plano])
+            .select()
+            .single();
 
-    async vincularPlanoMaquina(maquinaId: string, planoId: string): Promise<void> {
-        const existente = await prisma.manutencao_maquina_plano.findFirst({
-            where: { maquina_id: maquinaId, plano_id: planoId }
-        });
+        if (errPlano) throw errPlano;
 
-        if (existente) {
-            await prisma.manutencao_maquina_plano.update({
-                where: { id: existente.id },
-                data: { status_vencimento: 'OK', updated_at: new Date() }
-            });
-        } else {
-            await prisma.manutencao_maquina_plano.create({
-                data: {
-                    maquina_id: maquinaId,
-                    plano_id: planoId,
-                    status_vencimento: 'OK'
-                }
-            });
+        // 2. Criar Itens
+        if (itens.length > 0) {
+            const itensComId = itens.map(i => ({ ...i, plano_id: novoPlano.id }));
+            const { error: errItens } = await supabase
+                .from('manutencao_plano_item')
+                .insert(itensComId);
+            if (errItens) throw errItens;
         }
     },
 
-    async getPlanosByMaquina(maquinaId: string): Promise<MaquinaPlanoVinculo[]> {
-        const data = await prisma.manutencao_maquina_plano.findMany({
-            where: { maquina_id: maquinaId },
-            include: {
-                manutencao_plano_plano_id: true
-            }
-        });
+    async vincularPlanoMaquina(maquinaId: string, planoId: string): Promise<void> {
+        const { error } = await supabase
+            .from('manutencao_maquina_plano')
+            .upsert({
+                maquina_id: maquinaId,
+                plano_id: planoId,
+                status_vencimento: 'OK'
+            });
+        if (error) throw error;
+    },
 
-        return data.map((vinculo: any) => ({
-            ...vinculo,
-            plano: vinculo.manutencao_plano_plano_id
-        })) as unknown as MaquinaPlanoVinculo[];
+    async getPlanosByMaquina(maquinaId: string): Promise<MaquinaPlanoVinculo[]> {
+        const { data, error } = await supabase
+            .from('manutencao_maquina_plano')
+            .select(`*, plano:manutencao_plano(*)`)
+            .eq('maquina_id', maquinaId);
+        if (error) throw error;
+        return data || [];
     }
 };
