@@ -46,6 +46,11 @@ import Maquinas from './pages/Manutencao/Maquinas';
 import MaquinaDetalhes from './pages/Manutencao/MaquinaDetalhes';
 import OrdensServico from './pages/Manutencao/OrdensServico';
 
+// Checklist Module
+import ChecklistCadastro from './pages/Checklist/ChecklistCadastro';
+import ChecklistAgendamento from './pages/Checklist/ChecklistAgendamento';
+import ChecklistExecucao from './pages/Checklist/ChecklistExecucao';
+
 // Compras Module
 import { ComprasDashboard } from './pages/compras/ComprasDashboard';
 import { ListaPedidos } from './pages/compras/ListaPedidos';
@@ -126,6 +131,11 @@ const App: React.FC = () => {
                   <Route path="/manutencao/maquinas" element={<Maquinas />} />
                   <Route path="/manutencao/maquinas/:id" element={<MaquinaDetalhes />} />
                   <Route path="/manutencao/os" element={<OrdensServico />} />
+
+                  {/* Checklist Module */}
+                  <Route path="/checklist/cadastro" element={<ChecklistCadastro />} />
+                  <Route path="/checklist/agendamento" element={<ChecklistAgendamento />} />
+                  <Route path="/checklist/execucao/:agendamentoId" element={<ChecklistExecucao />} />
 
                   {/* Compras Module */}
                   <Route path="/compras" element={<ComprasDashboard />} />
