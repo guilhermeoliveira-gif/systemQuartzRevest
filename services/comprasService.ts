@@ -16,6 +16,7 @@ export const comprasService = {
         const { data, error } = await supabase
             .from('fornecedores')
             .select('*')
+            .abortSignal(AbortSignal.timeout(15000))
             .order('nome');
         if (error) throw error;
         return data as Fornecedor[];
@@ -39,6 +40,7 @@ export const comprasService = {
         *,
         itens:itens_pedido_compra(*)
       `)
+            .abortSignal(AbortSignal.timeout(20000))
             .order('created_at', { ascending: false });
         if (error) throw error;
         return data as PedidoCompra[];
@@ -66,6 +68,7 @@ export const comprasService = {
             .from('pedidos_compra')
             .insert(pedido)
             .select()
+            .abortSignal(AbortSignal.timeout(20000))
             .single();
 
         if (pedidoError) throw pedidoError;
@@ -79,7 +82,8 @@ export const comprasService = {
 
             const { error: itensError } = await supabase
                 .from('itens_pedido_compra')
-                .insert(itensComId);
+                .insert(itensComId)
+                .abortSignal(AbortSignal.timeout(20000));
 
             if (itensError) {
                 // Rollback strategy: delete created pedido (optional for MVP)

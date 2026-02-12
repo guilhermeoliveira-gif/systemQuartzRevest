@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, X, Save, Send, ArrowLeft, Calendar } from 'lucide-react';
 import { comprasService } from '../../services/comprasService';
 import { PedidoCompra, ItemPedidoCompra, UrgenciaPedido } from '../../types_compras';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const NovoPedidoCompra: React.FC = () => {
     const navigate = useNavigate();
+    const { profile } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<Partial<PedidoCompra>>({
         titulo: '',
@@ -53,7 +55,7 @@ export const NovoPedidoCompra: React.FC = () => {
             const pedidoPayload = {
                 ...formData,
                 status,
-                solicitante_id: 'user-id-placeholder' // In real app, get from Auth Context
+                solicitante_id: profile?.id || 'user-id-placeholder'
             } as any;
 
             const itemsPayload = items.map(item => ({
@@ -65,9 +67,13 @@ export const NovoPedidoCompra: React.FC = () => {
 
             await comprasService.createPedido(pedidoPayload, itemsPayload);
             navigate('/compras');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao salvar pedido:', error);
-            alert('Erro ao salvar pedido. Verifique o console.');
+            if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+                alert('O servidor demorou muito para responder. Tente novamente em alguns segundos.');
+            } else {
+                alert('Erro ao salvar pedido: ' + (error.message || 'Verifique o console.'));
+            }
         } finally {
             setLoading(false);
         }

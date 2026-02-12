@@ -15,16 +15,24 @@ export const ComprasDashboard: React.FC = () => {
         fetchPedidos();
     }, []);
 
-    const fetchPedidos = async () => {
+    const fetchPedidos = async (retryCount = 0) => {
         try {
             setLoading(true);
+            setError(null);
             const data = await comprasService.getPedidos();
             setPedidos(data);
-        } catch (err) {
+        } catch (err: any) {
+            if ((err.name === 'AbortError' || err.message?.includes('aborted')) && retryCount < 2) {
+                console.warn(`Timeout em pedidos, tentando novamente... (${retryCount + 1}/2)`);
+                setTimeout(() => fetchPedidos(retryCount + 1), 1000);
+                return;
+            }
             console.error('Erro ao buscar pedidos:', err);
-            setError('Falha ao carregar pedidos de compra.');
+            setError('Falha ao carregar pedidos de compra. O servidor pode estar lento.');
         } finally {
-            setLoading(false);
+            if (retryCount === 0 || retryCount >= 2) {
+                setLoading(false);
+            }
         }
     };
 
