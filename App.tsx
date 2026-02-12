@@ -60,6 +60,9 @@ import GestaoCotacoes from './pages/compras/GestaoCotacoes';
 import NovaCotacao from './pages/compras/NovaCotacao';
 import DetalheCotacao from './pages/compras/DetalheCotacao';
 
+import VendasDashboard from './pages/Vendas/VendasDashboard';
+import CadastroPedido from './pages/Vendas/CadastroPedido';
+
 // Frotas Module
 import FrotaDashboard from './pages/Frotas/FrotaDashboard';
 import GestaoFrotas from './pages/Frotas/GestaoFrotas';
@@ -145,6 +148,10 @@ const App: React.FC = () => {
                   <Route path="/compras/cotacoes" element={<GestaoCotacoes />} />
                   <Route path="/compras/cotacoes/nova" element={<NovaCotacao />} />
                   <Route path="/compras/cotacoes/:id" element={<DetalheCotacao />} />
+
+                  {/* Vendas Module */}
+                  <Route path="/vendas" element={<VendasDashboard />} />
+                  <Route path="/vendas/novo" element={<CadastroPedido />} />
 
                   {/* Frotas Module */}
                   <Route path="/frotas" element={<FrotaDashboard />} />
