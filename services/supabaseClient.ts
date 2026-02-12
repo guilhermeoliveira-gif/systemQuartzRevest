@@ -9,4 +9,13 @@ if (!supabaseUrl || !supabaseKey) {
     console.error("⚠️ Supabase credentials missing in .env.local");
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: 'quartz_revest_auth',
+        // @ts-ignore - Propriedade necessária para resolver o erro de navigatorLock timeout
+        lockSession: false
+    }
+} as any);
