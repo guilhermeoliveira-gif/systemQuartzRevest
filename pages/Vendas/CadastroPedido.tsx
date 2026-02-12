@@ -192,7 +192,7 @@ const CadastroPedido: React.FC = () => {
                             type="text"
                             className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                             placeholder="Buscar por código ou nome..."
-                            value={produtoSelecionado ? produtoSelecionado.descricao : produtoBusca}
+                            value={produtoSelecionado ? produtoSelecionado.nome : produtoBusca}
                             onChange={e => {
                                 setProdutoBusca(e.target.value);
                                 setProdutoSelecionado(null);
@@ -213,7 +213,7 @@ const CadastroPedido: React.FC = () => {
                                         }}
                                     >
                                         <div className="flex justify-between">
-                                            <span className="font-bold text-slate-800">{prod.descricao}</span>
+                                            <span className="font-bold text-slate-800">{prod.nome}</span>
                                             <span className="text-xs bg-slate-100 px-2 rounded">{prod.codigo}</span>
                                         </div>
                                         <div className="text-xs text-slate-500">Unidade: {prod.unidade}</div>
@@ -273,7 +273,7 @@ const CadastroPedido: React.FC = () => {
                             ) : itens.map((item, idx) => (
                                 <tr key={idx}>
                                     <td className="p-3">
-                                        <div className="font-medium text-slate-800">{(item.produto as any)?.descricao}</div>
+                                        <div className="font-medium text-slate-800">{(item.produto as any)?.nome}</div>
                                         <div className="text-xs text-slate-500">Cod: {(item.produto as any)?.codigo}</div>
                                     </td>
                                     <td className="p-3 text-center">{(item.produto as any)?.unidade}</td>

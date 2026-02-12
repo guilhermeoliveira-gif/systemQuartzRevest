@@ -36,13 +36,19 @@ export const vendasService = {
     // --- PRODUTOS (Integração Estoque PA) ---
     async buscarProdutos(query: string) {
         const { data, error } = await supabase
-            .from('estoque_pa')
-            .select('id, codigo, descricao, unidade')
-            .ilike('descricao', `%${query}%`)
+            .from('produto_acabado')
+            .select('id, nome, unidade_medida') // Ajustado para colunas reais
+            .ilike('nome', `%${query}%`)
             .limit(20);
 
         if (error) throw error;
-        return data as EstoquePA[];
+        // Map para interface EstoquePA (compatibilidade)
+        return data.map((p: any) => ({
+            id: p.id,
+            descricao: p.nome, // Alias
+            codigo: p.id.split('-')[0], // Mock de código
+            unidade: p.unidade_medida
+        })) as EstoquePA[];
     },
 
     // --- PEDIDOS ---
@@ -70,7 +76,7 @@ export const vendasService = {
         // Busca Itens
         const { data: itens, error: errItens } = await supabase
             .from('vendas_item')
-            .select(`*, produto:estoque_pa(codigo, descricao, unidade)`)
+            .select(`*, produto:produto_acabado(nome, unidade_medida)`)
             .eq('pedido_id', id);
         if (errItens) throw errItens;
 

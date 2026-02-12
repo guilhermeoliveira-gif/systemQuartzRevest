@@ -1,3 +1,12 @@
+-- Função auxiliar para atualização de timestamp
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 -- Criação da tabela de Clientes (Simples)
 CREATE TABLE IF NOT EXISTS vendas_cliente (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -41,7 +50,7 @@ FOR ALL USING (auth.role() = 'authenticated');
 CREATE TABLE IF NOT EXISTS vendas_item (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     pedido_id UUID REFERENCES vendas_pedido(id) ON DELETE CASCADE,
-    produto_id UUID REFERENCES estoque_pa(id) ON DELETE RESTRICT, -- Integração com Estoque PA
+    produto_id UUID REFERENCES produto_acabado(id) ON DELETE RESTRICT, -- Integração com Estoque PA (Tabela real: produto_acabado)
     quantidade DECIMAL(10,2) NOT NULL,
     valor_unitario DECIMAL(10,2) NOT NULL,
     valor_total DECIMAL(10,2) GENERATED ALWAYS AS (quantidade * valor_unitario) STORED,
