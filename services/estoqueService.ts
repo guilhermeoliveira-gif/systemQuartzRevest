@@ -320,8 +320,7 @@ class EstoqueService {
         const { error: updateError } = await supabase
             .from('mecanica_insumo')
             .update({
-                quantidade_atual: novaQuantidade,
-                updated_at: new Date().toISOString()
+                quantidade_atual: novaQuantidade
             })
             .eq('id', movimento.peca_id);
 
