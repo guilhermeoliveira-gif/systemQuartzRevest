@@ -27,14 +27,22 @@ export const checklistService = {
 
     async createModelo(modelo: Omit<ChecklistModelo, 'id' | 'created_at' | 'updated_at'>): Promise<ChecklistModelo> {
         const data = await prisma.checklist_modelo.create({
-            data: modelo as any
+            data: {
+                ...(modelo as any),
+                id: crypto.randomUUID()
+            }
         });
         return data as unknown as ChecklistModelo;
     },
 
     async createItemModelo(item: Omit<ChecklistItemModelo, 'id' | 'created_at'>): Promise<ChecklistItemModelo> {
+        const { modelo_id, ...rest } = item as any;
         const data = await prisma.checklist_item_modelo.create({
-            data: item as any
+            data: {
+                ...(rest as any),
+                id: crypto.randomUUID(),
+                checklist_modelo_modelo_id: modelo_id ? { connect: { id: modelo_id } } : undefined
+            }
         });
         return data as unknown as ChecklistItemModelo;
     },
@@ -64,8 +72,14 @@ export const checklistService = {
     },
 
     async createAgendamento(agendamento: Omit<ChecklistAgendamento, 'id' | 'created_at' | 'updated_at'>): Promise<ChecklistAgendamento> {
+        const { modelo_id, responsavel_id, ...rest } = agendamento as any;
         const data = await prisma.checklist_agendamento.create({
-            data: agendamento as any
+            data: {
+                ...(rest as any),
+                id: crypto.randomUUID(),
+                checklist_modelo_modelo_id: modelo_id ? { connect: { id: modelo_id } } : undefined
+                // responsavel_id remains as scalar if no relation is defined in schema (as noted at line 53)
+            }
         });
         return data as unknown as ChecklistAgendamento;
     },
@@ -80,7 +94,8 @@ export const checklistService = {
             }),
             prisma.checklist_execucao.create({
                 data: {
-                    agendamento_id: agendamentoId,
+                    id: crypto.randomUUID(),
+                    checklist_agendamento_agendamento_id: { connect: { id: agendamentoId } },
                     executor_id: executorId,
                     status: 'EM_ANDAMENTO',
                     data_inicio: new Date()
@@ -113,8 +128,14 @@ export const checklistService = {
             }
         }
 
+        const { execucao_id, item_modelo_id, ...rest } = resposta as any;
         const data = await prisma.checklist_resposta.create({
-            data: { ...resposta as any, nao_conformidade_id: ncId }
+            data: {
+                ...(rest as any),
+                id: crypto.randomUUID(),
+                checklist_execucao_execucao_id: execucao_id ? { connect: { id: execucao_id } } : undefined,
+                checklist_item_modelo_item_modelo_id: item_modelo_id ? { connect: { id: item_modelo_id } } : undefined
+            }
         });
 
         return data as unknown as ChecklistResposta;

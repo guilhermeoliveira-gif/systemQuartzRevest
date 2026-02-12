@@ -23,7 +23,10 @@ export const manutencaoService = {
 
     async createMaquina(maquina: Partial<Maquina>): Promise<Maquina> {
         const data = await prisma.manutencao_maquina.create({
-            data: maquina as any
+            data: {
+                ...(maquina as any),
+                id: maquina.id || crypto.randomUUID()
+            }
         });
         return data as unknown as Maquina;
     },
@@ -60,8 +63,15 @@ export const manutencaoService = {
     },
 
     async createOS(os: Partial<OrdemServico>): Promise<OrdemServico> {
+        const { maquina_id, nc_id, tarefa_id, ...rest } = os;
         const data = await prisma.manutencao_os.create({
-            data: os as any
+            data: {
+                ...(rest as any),
+                id: os.id || crypto.randomUUID(),
+                manutencao_maquina_maquina_id: maquina_id ? { connect: { id: maquina_id } } : undefined,
+                nao_conformidade_nc_id: nc_id ? { connect: { id: nc_id } } : undefined,
+                tarefa_projeto_tarefa_id: tarefa_id ? { connect: { id: tarefa_id } } : undefined
+            }
         });
         return data as unknown as OrdemServico;
     },
@@ -131,7 +141,11 @@ export const manutencaoService = {
         } else {
             // Se não tiver ID, criar um novo
             await prisma.manutencao_maquina_item.create({
-                data: dbItem
+                data: {
+                    ...(dbItem as any),
+                    id: crypto.randomUUID(),
+                    manutencao_maquina_maquina_id: dbItem.maquina_id ? { connect: { id: dbItem.maquina_id } } : undefined
+                }
             });
         }
     },
@@ -146,8 +160,15 @@ export const manutencaoService = {
     },
 
     async createAprendizado(aprendizado: Partial<Aprendizado>): Promise<void> {
+        const { maquina_id, os_id, created_by, ...rest } = aprendizado;
         await prisma.manutencao_aprendizado.create({
-            data: aprendizado as any
+            data: {
+                ...(rest as any),
+                id: aprendizado.id || crypto.randomUUID(),
+                manutencao_maquina_maquina_id: maquina_id ? { connect: { id: maquina_id } } : undefined,
+                manutencao_os_os_id: os_id ? { connect: { id: os_id } } : undefined,
+                usuarios_created_by: created_by ? { connect: { id: created_by } } : undefined
+            }
         });
     },
 
@@ -185,13 +206,17 @@ export const manutencaoService = {
         if (existente) {
             await prisma.manutencao_maquina_plano.update({
                 where: { id: existente.id },
-                data: { status_vencimento: 'OK', updated_at: new Date() }
+                data: {
+                    status_vencimento: 'OK'
+                    // removed updated_at as it doesn't exist in schema
+                }
             });
         } else {
             await prisma.manutencao_maquina_plano.create({
                 data: {
-                    maquina_id: maquinaId,
-                    plano_id: planoId,
+                    id: crypto.randomUUID(),
+                    manutencao_maquina_maquina_id: { connect: { id: maquinaId } },
+                    manutencao_plano_plano_id: { connect: { id: planoId } },
                     status_vencimento: 'OK'
                 }
             });
