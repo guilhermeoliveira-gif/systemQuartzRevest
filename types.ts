@@ -69,7 +69,7 @@ export interface FormulaItem {
   id: string;
   formula_id?: string; // Opcional se aninhado
   materia_prima_id: string;
-  quantidade_necessaria: number; // Qtd de MP para produzir 1 un de PA
+  quantidade: number; // Qtd de MP para produzir 1 un de PA
 }
 
 export interface EntradaMateriaPrima {
