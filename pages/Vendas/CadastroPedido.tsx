@@ -16,6 +16,7 @@ const CadastroPedido: React.FC = () => {
     const [clientesEncontrados, setClientesEncontrados] = useState<VendaCliente[]>([]);
     const [clienteSelecionado, setClienteSelecionado] = useState<VendaCliente | null>(null);
     const [dataPrevisao, setDataPrevisao] = useState(vendasService.calcularPrevisaoEntrega(3).toISOString().split('T')[0]);
+    const [enderecoEntrega, setEnderecoEntrega] = useState('');
     const [observacao, setObservacao] = useState('');
 
     // Estados dos Itens
@@ -89,6 +90,7 @@ const CadastroPedido: React.FC = () => {
                 cliente_id: clienteSelecionado.id,
                 data_previsao_entrega: new Date(dataPrevisao).toISOString(),
                 observacao,
+                endereco_entrega: enderecoEntrega,
                 valor_total: itens.reduce((acc, curr) => acc + (curr.valor_total || 0), 0),
                 status: 'ORCAMENTO'
             }, itens);
@@ -136,6 +138,7 @@ const CadastroPedido: React.FC = () => {
                                             className="p-2 hover:bg-slate-100 cursor-pointer"
                                             onClick={() => {
                                                 setClienteSelecionado(cli);
+                                                setEnderecoEntrega(cli.endereco || '');
                                                 setClientesEncontrados([]);
                                             }}
                                         >
@@ -167,6 +170,17 @@ const CadastroPedido: React.FC = () => {
                 </div>
 
                 {/* Observação */}
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Endereço de Entrega</label>
+                    <input
+                        type="text"
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={enderecoEntrega}
+                        onChange={e => setEnderecoEntrega(e.target.value)}
+                        placeholder="Endereço do Cliente"
+                    />
+                </div>
+
                 <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Observações</label>
                     <textarea

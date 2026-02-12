@@ -35,6 +35,7 @@ export interface VendaPedido {
     data_previsao_entrega?: string;
     status: StatusPedido;
     observacao?: string;
+    endereco_entrega?: string;
     valor_total: number;
     itens?: VendaItem[];
     user_id?: string;
