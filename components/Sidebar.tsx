@@ -68,8 +68,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, onCloseSidebar }) => {
                 : 'hover:bg-slate-800/50 text-slate-400 hover:text-white'}
             `}
           >
-            <item.icon size={20} className={({ isActive }: any) => isActive ? 'text-white' : 'text-slate-500 group-hover:text-white transition-colors'} />
-            <span className="font-medium text-sm">{item.name}</span>
+            {({ isActive }) => (
+              <>
+                <item.icon size={20} className={isActive ? 'text-white' : 'text-slate-500 group-hover:text-white transition-colors'} />
+                <span className="font-medium text-sm">{item.name}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
