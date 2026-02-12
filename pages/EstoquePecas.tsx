@@ -159,13 +159,17 @@ const EstoquePecas: React.FC = () => {
 
             setSubmitting(true);
             try {
+                // Get current user
+                const { data: { user } } = await supabase.auth.getUser();
+                const userId = user?.id || '00000000-0000-0000-0000-000000000000'; // Fallback to a dummy UUID if valid
+
                 // Adaptação para o novo método addMovimentoPeca
                 await estoqueService.addMovimentoPeca({
                     peca_id: moveModal.item.id,
                     tipo: moveModal.type,
                     quantidade: Number(moveQty),
                     motivo_maquina: moveReason || (moveModal.type === 'ENTRADA' ? 'Compra/Reposição' : 'Uso Interno'),
-                    usuario_id: 'CURRENT_USER',
+                    usuario_id: userId,
                     maquina_id: selectedMaquinaId || undefined,
                     nome_retirante: retiranteName || undefined
                 });
@@ -175,9 +179,11 @@ const EstoquePecas: React.FC = () => {
 
                 setMoveModal({ ...moveModal, open: false });
                 showFeedback('success', 'Movimentação registrada!');
-            } catch (e) {
+            } catch (e: any) {
                 logger.error('Erro ao registrar movimentação', e);
-                showFeedback('error', 'Erro ao registrar movimentação.');
+                // Mostrar mensagem detalhada do erro (especialmente para erros 400/500 do Supabase)
+                const errorMsg = e.message || e.error_description || JSON.stringify(e);
+                showFeedback('error', `Erro: ${errorMsg}`);
             } finally {
                 setSubmitting(false);
             }
