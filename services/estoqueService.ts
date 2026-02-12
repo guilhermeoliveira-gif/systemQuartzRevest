@@ -273,27 +273,28 @@ class EstoqueService {
     }
 
     public async addMovimentoPeca(movimento: Omit<MovimentoPeca, 'id' | 'data_movimento'>): Promise<void> {
-        // 1. Inserir Movimento
-        // Garantir que a quantidade salva seja positiva para ENTRADA e negativa para SAIDA no registro de movimento se desejado,
-        // mas aqui vamos manter a lógica de que o 'tipo' define a operação e a 'quantidade' é o valor absoluto ou sinalizado.
-        // Para consistência, vamos salvar a quantidade como positiva no registro e usar o 'tipo' para identificar.
-        const qtdAjustada = Math.abs(Number(movimento.quantidade));
+        // Normalização defensiva dos dados de entrada
+        const tipoNormalized = String(movimento.tipo || '').trim().toUpperCase();
+        const qtdAjustada = Math.abs(Number(movimento.quantidade || 0));
+        const isSaida = tipoNormalized === 'SAIDA';
 
+        logger.info(`Iniciando registro de movimento: ${movimento.peca_id}, Tipo: ${tipoNormalized} (${isSaida ? 'SAIDA' : 'ENTRADA'}), Qtd: ${qtdAjustada}`);
+
+        // 1. Inserir registro na tabela de movimentos
         const { error: movError } = await supabase
             .from('movimento_peca')
             .insert({
                 ...movimento,
                 quantidade: qtdAjustada,
-                tipo: movimento.tipo // O frontend já envia 'ENTRADA' ou 'SAIDA'
-                // data_movimento default now()
+                tipo: tipoNormalized
             });
 
         if (movError) {
-            logger.error('Erro ao registrar movimento de peça', movError);
+            logger.error('Erro ao registrar movimento de peça no banco', movError);
             throw movError;
         }
 
-        // 2. Atualizar Estoque
+        // 2. Buscar saldo atual do item
         const { data: item, error: fetchError } = await supabase
             .from('mecanica_insumo')
             .select('*')
@@ -301,24 +302,33 @@ class EstoqueService {
             .single();
 
         if (fetchError || !item) {
-            logger.error(`Peça ${movimento.peca_id} não encontrada`, fetchError);
+            logger.error(`Erro ao buscar saldo: Peça ${movimento.peca_id} não encontrada`, fetchError);
             throw fetchError || new Error('Item not found');
         }
 
-        const quantidadeParaEstoque = movimento.tipo === 'SAIDA' ? -qtdAjustada : qtdAjustada;
-        const novaQuantidade = Number(item.quantidade_atual) + quantidadeParaEstoque;
+        // 3. Calcular novo saldo com base no tipo normalizado
+        const estoqueAtual = Number(item.quantidade_atual || 0);
+        const fatorOperacao = isSaida ? -1 : 1;
+        const deltaQuantidade = qtdAjustada * fatorOperacao;
+        const novaQuantidade = estoqueAtual + deltaQuantidade;
 
+        logger.info(`Cálculo de Estoque: Atual(${estoqueAtual}) ${isSaida ? '-' : '+'} Delta(${qtdAjustada}) = Novo(${novaQuantidade})`);
+
+        // 4. Salvar novo saldo
         const { error: updateError } = await supabase
             .from('mecanica_insumo')
-            .update({ quantidade_atual: novaQuantidade })
+            .update({
+                quantidade_atual: novaQuantidade,
+                updated_at: new Date().toISOString()
+            })
             .eq('id', movimento.peca_id);
 
         if (updateError) {
-            logger.error(`Erro ao atualizar saldo da peça ${movimento.peca_id}`, updateError);
+            logger.error(`Erro ao salvar novo saldo para a peça ${movimento.peca_id}`, updateError);
             throw updateError;
         }
 
-        logger.info(`Movimento de peça registrado: ${movimento.peca_id} (${movimento.quantidade})`);
+        logger.info(`Estoque atualizado com sucesso: ${movimento.peca_id} -> ${novaQuantidade}`);
     }
 
     // CRUD Genérico para Peças
