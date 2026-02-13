@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificacoesService } from '../services/notificacoesService';
 import { TarefaUnificada } from '../types_notificacoes';
-import { CheckCircle, Clock, AlertCircle, FileText, User, Filter, FolderKanban, ClipboardList } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, FileText, User, Filter, FolderKanban, ClipboardList, ChevronRight } from 'lucide-react';
+import MobileCard from '../components/MobileCard';
 
 const MinhasTarefas: React.FC = () => {
     const navigate = useNavigate();
@@ -221,60 +222,43 @@ const MinhasTarefas: React.FC = () => {
                     </div>
                 ) : tarefasFiltradas.length > 0 ? (
                     tarefasFiltradas.map((tarefa) => (
-                        <div
+                        <MobileCard
                             key={tarefa.id}
+                            title={tarefa.titulo}
+                            subtitle={`${getOrigemLabel(tarefa.origem)} • ${tarefa.contexto || ''}`}
+                            icon={tarefa.origem === 'PROJETO' ? FolderKanban : ClipboardList}
+                            badge={{
+                                text: tarefa.status.replace('_', ' '),
+                                color: tarefa.status === 'CONCLUIDA' ? 'success' : tarefa.status === 'EM_ANDAMENTO' ? 'info' : tarefa.status === 'PENDENTE' ? 'warning' : 'danger'
+                            }}
                             onClick={() => navigate(tarefa.link)}
-                            className={`bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer ${isAtrasada(tarefa.prazo, tarefa.status) ? 'border-red-300 bg-red-50' : 'border-slate-200'
-                                }`}
+                            className={isAtrasada(tarefa.prazo, tarefa.status) ? 'border-red-200 bg-red-50/30' : ''}
                         >
-                            <div className="flex flex-col md:flex-row gap-4 justify-between">
-                                <div className="flex-1 space-y-2">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 ${getStatusColor(tarefa.status)}`}>
-                                            {getStatusIcon(tarefa.status)}
-                                            {tarefa.status.replace('_', ' ')}
-                                        </span>
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getPrioridadeColor(tarefa.prioridade)}`}>
-                                            {tarefa.prioridade}
-                                        </span>
-                                        <span className="px-2 py-0.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 flex items-center gap-1">
-                                            {getOrigemIcon(tarefa.origem)}
-                                            {getOrigemLabel(tarefa.origem)}
+                            <div className="space-y-4">
+                                {tarefa.descricao && (
+                                    <p className="text-sm text-slate-600 line-clamp-2">{tarefa.descricao}</p>
+                                )}
+
+                                <div className="flex items-center justify-between pt-2 border-t border-slate-100/50">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prazo</span>
+                                        <span className={`text-sm font-bold ${isAtrasada(tarefa.prazo, tarefa.status) ? 'text-red-600' : 'text-slate-700'}`}>
+                                            {new Date(tarefa.prazo).toLocaleDateString('pt-BR')} ({formatarData(tarefa.prazo)})
                                         </span>
                                     </div>
 
-                                    <h3 className="text-lg font-bold text-slate-800">{tarefa.titulo}</h3>
-
-                                    {tarefa.descricao && (
-                                        <p className="text-sm text-slate-600 line-clamp-2">{tarefa.descricao}</p>
-                                    )}
-
-                                    {tarefa.contexto && (
-                                        <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg w-fit">
-                                            <FileText size={14} />
-                                            <span className="font-medium">{tarefa.contexto}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex flex-col justify-between items-end gap-2 min-w-[140px]">
-                                    <div className="text-right">
-                                        <p className="text-xs font-bold text-slate-400 uppercase">Prazo</p>
-                                        <p className={`text-sm font-bold ${isAtrasada(tarefa.prazo, tarefa.status) ? 'text-red-600' : 'text-slate-700'
-                                            }`}>
-                                            {new Date(tarefa.prazo).toLocaleDateString('pt-BR')}
-                                        </p>
-                                        <p className="text-xs text-slate-500">{formatarData(tarefa.prazo)}</p>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${getPrioridadeColor(tarefa.prioridade)} rotate-0`}>
+                                        <ChevronRight size={18} />
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </MobileCard>
                     ))
                 ) : (
-                    <div className="bg-slate-50 rounded-xl p-10 text-center border-2 border-dashed border-slate-200">
-                        <CheckCircle size={48} className="mx-auto mb-2 text-slate-300" />
-                        <h3 className="text-lg font-bold text-slate-600 mb-2">Nenhuma tarefa encontrada</h3>
-                        <p className="text-slate-400 text-sm">Tente ajustar os filtros ou você está em dia com suas tarefas! 🎉</p>
+                    <div className="bg-slate-50 rounded-2xl p-12 text-center border-2 border-dashed border-slate-200">
+                        <CheckCircle size={48} className="mx-auto mb-4 text-slate-300" />
+                        <h3 className="text-xl font-bold text-slate-600 mb-2">Zero Pendências!</h3>
+                        <p className="text-slate-400 text-sm max-w-xs mx-auto">Você está em dia com todas as suas tarefas. Aproveite o descanso ou ajude seu time! 🎉</p>
                     </div>
                 )}
             </div>

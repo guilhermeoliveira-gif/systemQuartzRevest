@@ -17,7 +17,12 @@
   - `PlanosAcao.tsx` → Dados reais do Supabase
 - ✅ Types atualizados para corresponder ao schema
 
-### 2. **Mobile-First UI System** (80% uso mobile)
+### 2. **Mobile-First UI System** (95% uso mobile)
+- ✅ **Páginas Otimizadas** (Novas Implementações)
+  - `EntradaMaterial.tsx`: Inputs grandes, previsão de estoque, histórico em cards
+  - `OrdensServico.tsx`: Lista de cards mobile vs Tabela desktop, FAB para nova OS
+  - `NaoConformidades.tsx`: Grid de cards, ações rápidas, FAB para novo registro
+  - `MinhasTarefas.tsx`: Layout responsivo, KPIs adaptáveis
 - ✅ **Bottom Navigation** (`components/BottomNav.tsx`)
   - Navegação fixa na parte inferior (padrão mobile)
   - 4 seções principais: Início, Estoque, Qualidade, Perfil

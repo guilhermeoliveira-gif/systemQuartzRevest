@@ -13,6 +13,9 @@ import { manutencaoService } from '../../services/manutencaoService';
 import { OrdemServico, Maquina, StatusOS, TipoManutencao, PrioridadeOS } from '../../types_manutencao';
 import { useToast } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
+import MobileCard from '../../components/MobileCard';
+import FAB from '../../components/FAB';
+import { Settings, Wrench, AlertCircle as AlertIcon } from 'lucide-react';
 
 const OrdensServico: React.FC = () => {
     const toast = useToast();
@@ -153,7 +156,7 @@ const OrdensServico: React.FC = () => {
                         <p className="text-slate-500 text-sm font-medium uppercase font-mono tracking-widest leading-none mt-1">Maintenance Service Orders</p>
                     </div>
                 </div>
-                <Button onClick={() => setIsAddOpen(true)} className="bg-blue-800 text-white">
+                <Button onClick={() => setIsAddOpen(true)} className="hidden md:flex bg-blue-800 text-white">
                     <Plus size={18} className="mr-2" /> Abrir Chamado (OS)
                 </Button>
             </header>
@@ -174,7 +177,65 @@ const OrdensServico: React.FC = () => {
                 </Button>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            {/* Mobile View - Cards */}
+            <div className="md:hidden space-y-4">
+                {loading ? (
+                    <div className="animate-pulse space-y-4">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-slate-200 h-32 rounded-xl" />
+                        ))}
+                    </div>
+                ) : (
+                    oss.filter(o =>
+                        o.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        o.maquina?.nome.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).map((os) => (
+                        <MobileCard
+                            key={os.id}
+                            title={os.maquina?.nome || 'Ativo Desconhecido'}
+                            subtitle={`${os.tipo} • ${new Date(os.data_abertura).toLocaleDateString('pt-BR')}`}
+                            icon={os.tipo === 'Preventiva' ? Settings : Wrench}
+                            badge={{
+                                text: os.status,
+                                color: os.status === 'Concluída' ? 'success' : os.status === 'Em Execução' ? 'warning' : os.status === 'Cancelada' ? 'danger' : 'info'
+                            }}
+                            onClick={() => { }}
+                        >
+                            <div className="space-y-3">
+                                <p className="text-sm text-slate-600 font-medium">{os.descricao}</p>
+                                <div className="flex items-center justify-between pt-2">
+                                    <div className="flex items-center gap-2">
+                                        {getPriorityBadge(os.prioridade)}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {os.status === 'Aberta' && (
+                                            <Button
+                                                size="xs"
+                                                variant="secondary"
+                                                className="bg-blue-50 text-blue-600 py-2 px-3 font-bold"
+                                                onClick={(e) => handleReceberOS(e, os)}
+                                            >
+                                                Receber
+                                            </Button>
+                                        )}
+                                        {(os.status === 'Em Execução' || os.status === 'Aberta') && (
+                                            <Button
+                                                size="xs"
+                                                className="bg-green-600 text-white py-2 px-3 font-bold shadow-md shadow-green-100"
+                                                onClick={(e) => handleOpenFinalize(e, os)}
+                                            >
+                                                Finalizar
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </MobileCard>
+                    ))
+                )}
+            </div>
+
+            <div className="hidden md:block bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -251,6 +312,15 @@ const OrdensServico: React.FC = () => {
                         <p className="text-slate-400 font-medium">Nenhuma ordem de serviço registrada.</p>
                     </div>
                 )}
+            </div>
+
+            {/* FAB for Mobile */}
+            <div className="md:hidden">
+                <FAB
+                    onClick={() => setIsAddOpen(true)}
+                    label="Nova OS"
+                    icon={<Plus size={24} />}
+                />
             </div>
 
             {/* Modal Nova OS */}
@@ -334,8 +404,8 @@ const OrdensServico: React.FC = () => {
                             <button
                                 onClick={() => setFinalizeData({ ...finalizeData, tipo_correcao: 'Definitiva' })}
                                 className={`p-3 rounded-xl border font-bold text-sm transition-all ${finalizeData.tipo_correcao === 'Definitiva'
-                                        ? 'bg-green-100 border-green-300 text-green-700'
-                                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                    ? 'bg-green-100 border-green-300 text-green-700'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                                     }`}
                             >
                                 Solução Definitiva
@@ -343,8 +413,8 @@ const OrdensServico: React.FC = () => {
                             <button
                                 onClick={() => setFinalizeData({ ...finalizeData, tipo_correcao: 'Paleativa' })}
                                 className={`p-3 rounded-xl border font-bold text-sm transition-all ${finalizeData.tipo_correcao === 'Paleativa'
-                                        ? 'bg-amber-100 border-amber-300 text-amber-700'
-                                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                    ? 'bg-amber-100 border-amber-300 text-amber-700'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                                     }`}
                             >
                                 Solução Paleativa

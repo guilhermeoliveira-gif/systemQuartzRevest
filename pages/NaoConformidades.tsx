@@ -8,6 +8,8 @@ import { qualidadeService } from '../services/qualidadeService';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CriarProjetoModal from '../components/CriarProjetoModal';
+import MobileCard from '../components/MobileCard';
+import FAB from '../components/FAB';
 
 // Components
 const KpiCard = ({ icon: Icon, label, value, color }: { icon: any, label: string, value: number, color: 'slate' | 'red' | 'amber' | 'green' | 'blue' | 'orange' }) => {
@@ -282,63 +284,47 @@ const NaoConformidades: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Grid Content */}
+                    {/* Content View */}
                     {listLayout === 'CARDS' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {ocorrencias.map(oc => (
-                                <div key={oc.id} className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-shadow">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-2" title={oc.titulo}>{oc.titulo}</h3>
-                                        <button className="text-slate-400 hover:text-slate-600 p-1">
-                                            <MoreVertical size={20} />
-                                        </button>
-                                    </div>
+                                <MobileCard
+                                    key={oc.id}
+                                    title={oc.titulo}
+                                    subtitle={`${oc.tipo} • ${new Date(oc.data_ocorrencia).toLocaleDateString()}`}
+                                    icon={ShieldAlert}
+                                    badge={{
+                                        text: oc.status === 'CONCLUIDO' ? 'Resolvido' : 'Aberto',
+                                        color: oc.status === 'CONCLUIDO' ? 'success' : 'danger'
+                                    }}
+                                    onClick={() => handleOpenAnalysis(oc)}
+                                >
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-slate-500 line-clamp-2 h-10">
+                                            {oc.descricao}
+                                        </p>
 
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex gap-2">
-                                            <Badge label={oc.status === 'CONCLUIDO' ? 'Resolvido' : 'Aberto'} color={oc.status === 'CONCLUIDO' ? 'green' : 'red'} variant="soft" />
+                                        <div className="flex flex-wrap gap-2">
                                             <Badge label={oc.severidade} color={oc.severidade === 'CRITICA' ? 'red' : oc.severidade === 'ALTA' ? 'amber' : 'slate'} variant={oc.severidade === 'CRITICA' ? 'solid' : 'soft'} />
+                                            {oc.origem && <Badge label={oc.origem} color="blue" />}
                                         </div>
+
                                         <button
-                                            onClick={() => handleOpenAnalysis(oc)}
-                                            className="bg-indigo-600 text-white shadow-md rounded-lg px-4 py-2 hover:bg-indigo-700 transition-all font-bold text-xs flex items-center gap-2"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleOpenAnalysis(oc);
+                                            }}
+                                            className="w-full bg-slate-900 text-white rounded-xl py-4 font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
                                         >
-                                            <AlertTriangle size={14} />
-                                            Resolver problema
+                                            <AlertTriangle size={18} />
+                                            Resolver Problema
                                         </button>
                                     </div>
-
-                                    <p className="text-slate-500 text-sm mb-6 line-clamp-2 h-10">
-                                        {oc.descricao}
-                                    </p>
-
-                                    <div className="space-y-3 text-sm text-slate-600">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar size={16} className="text-slate-400" />
-                                            <span>Detectado há {Math.floor((new Date().getTime() - new Date(oc.data_ocorrencia).getTime()) / (1000 * 60 * 60 * 24 * 30))} meses</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-red-600">
-                                            <Clock size={16} />
-                                            <span>Atrasado há {Math.floor(Math.random() * 90)} dia(s)</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2.5 h-2.5 rounded-full ${oc.severidade === 'CRITICA' ? 'bg-red-500' : 'bg-amber-500'}`}></div>
-                                            <span>Severidade: {oc.severidade.charAt(0) + oc.severidade.slice(1).toLowerCase()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
-                                            <span>Frequência: Ocasional</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-slate-500 text-xs mt-2">
-                                            <AlertTriangle size={14} />
-                                            <span>1 hipótese(s) em investigação</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                </MobileCard>
                             ))}
                         </div>
                     ) : (
-                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                        <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden">
                             {/* Simple List View Placeholder */}
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-slate-50 text-slate-500">
@@ -721,6 +707,17 @@ const NaoConformidades: React.FC = () => {
                         // Success toast handled inside modal
                     }}
                 />
+            )}
+
+            {/* FAB for Mobile */}
+            {viewMode === 'LIST' && (
+                <div className="md:hidden">
+                    <FAB
+                        onClick={() => setViewMode('FORM')}
+                        label="Novo Registro"
+                        icon={<Plus size={24} />}
+                    />
+                </div>
             )}
         </div>
     );
