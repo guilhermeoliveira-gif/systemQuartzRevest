@@ -28,9 +28,11 @@ export const UserSelect: React.FC<UserSelectProps> = ({
                 // Use cached service to avoid redundant network calls
                 const allUsers = await segurancaService.getUsuarios();
 
-                // Filter only active users for selection
+                // Filter only active users for selection (allow null/undefined as true)
                 if (isMounted) {
-                    setUsers(allUsers.filter(u => u.ativo));
+                    const activeUsers = allUsers.filter(u => u.ativo !== false);
+                    console.log('UserSelect loaded users:', activeUsers.length, activeUsers);
+                    setUsers(activeUsers);
                 }
             } catch (error) {
                 console.error("Erro ao carregar lista de usuários:", error);

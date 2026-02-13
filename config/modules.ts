@@ -122,8 +122,8 @@ export const modules: ModuleConfig[] = [
         path: '/pcp',
         subItems: [
             { name: 'Dashboard PCP', path: '/pcp', icon: LayoutDashboard },
-            { name: 'Planejamento', path: '/pcp/planejamento', icon: ClipboardCheck },
-            { name: 'Executar Produção', path: '/pcp/producao', icon: Factory },
+            { name: 'Planejar', path: '/pcp/planejamento', icon: ClipboardCheck },
+            { name: 'Executar', path: '/pcp/producao', icon: Factory },
             { name: 'Histórico', path: '/pcp/historico', icon: BarChart },
         ]
     },

@@ -10,6 +10,7 @@ import {
     LayoutGrid, List as ListIcon, CalendarDays, Truck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { UserSelect } from '../../components/UserSelect';
 
 const ChecklistAgendamento: React.FC = () => {
     const { showToast } = useToast();
@@ -60,14 +61,10 @@ const ChecklistAgendamento: React.FC = () => {
     const handleAgendar = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Mock de User ID logado como responsável se vazio
-            // TODO: Integrar com contexto de autenticação real
-            const user_id = 'c13327d0-7d72-4632-841d-384196165243';
-
             await checklistService.createAgendamento({
                 modelo_id: novoAgendamento.modelo_id,
                 data_agendada: novoAgendamento.data_agendada,
-                responsavel_id: user_id,
+                responsavel_id: novoAgendamento.responsavel_id,
                 entidade_id: novoAgendamento.entidade_id,
                 tipo_entidade: novoAgendamento.tipo_entidade,
                 status: 'PENDENTE'
@@ -212,7 +209,7 @@ const ChecklistAgendamento: React.FC = () => {
                                         <CalendarDays size={24} />
                                     </div>
                                     <div className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${ag.status === 'CONCLUIDO' ? 'bg-green-100 text-green-700' :
-                                            ag.status === 'PENDENTE' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                                        ag.status === 'PENDENTE' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
                                         }`}>
                                         {ag.status}
                                     </div>
@@ -343,6 +340,16 @@ const ChecklistAgendamento: React.FC = () => {
                                     required
                                     value={novoAgendamento.data_agendada}
                                     onChange={e => setNovoAgendamento({ ...novoAgendamento, data_agendada: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Responsável</label>
+                                <UserSelect
+                                    value={novoAgendamento.responsavel_id}
+                                    onChange={(value) => setNovoAgendamento({ ...novoAgendamento, responsavel_id: value })}
+                                    className="w-full"
+                                    label=""
                                 />
                             </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FolderKanban, Plus, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FolderKanban, Plus, List, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { projetosService } from '../services/projetosService';
 import { Projeto } from '../types_projetos';
@@ -75,8 +75,8 @@ const ProjetosDashboard: React.FC = () => {
                     onClick={() => navigate('/projetos/consulta')}
                     className="bg-teal-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-teal-700 transition shadow-sm font-medium"
                 >
-                    <Plus size={20} />
-                    Novo Projeto
+                    <List size={20} />
+                    Listar Todos Projetos
                 </button>
             </header>
 
