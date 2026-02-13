@@ -167,27 +167,15 @@ export const RegistrarAbastecimentoModal: React.FC<RegistrarAbastecimentoModalPr
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Valor Total (R$)</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Posto de Combustível</label>
                             <input
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
+                                type="text"
+                                placeholder="Ex: Posto Graal"
                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                value={formData.valor_total || ''}
-                                onChange={e => setFormData({ ...formData, valor_total: Number(e.target.value) })}
+                                value={formData.posto}
+                                onChange={e => setFormData({ ...formData, posto: e.target.value })}
                             />
                         </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Posto de Combustível</label>
-                        <input
-                            type="text"
-                            placeholder="Ex: Posto Graal"
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            value={formData.posto}
-                            onChange={e => setFormData({ ...formData, posto: e.target.value })}
-                        />
                     </div>
 
                     <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">

@@ -6,6 +6,7 @@ export interface VendaCliente {
     endereco?: string;
     email?: string;
     telefone?: string;
+    cidade?: string;
     created_at?: string;
 }
 

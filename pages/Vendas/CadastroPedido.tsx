@@ -120,9 +120,10 @@ const CadastroPedido: React.FC = () => {
 
             showToast('success', 'Pedido criado com sucesso!');
             navigate('/vendas');
-        } catch (error) {
-            console.error(error);
-            showToast('error', 'Erro ao salvar pedido.');
+        } catch (error: any) {
+            console.error('Erro detalhado ao salvar pedido:', error);
+            const errorMsg = error.details || error.message || 'Erro desconhecido ao salvar pedido.';
+            showToast('error', `Erro ao salvar: ${errorMsg}`);
         }
     };
 

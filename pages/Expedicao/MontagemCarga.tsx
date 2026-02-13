@@ -42,7 +42,7 @@ const MontagemCarga: React.FC = () => {
             setPedidosDisponiveis(dados);
         } catch (error) {
             console.error(error);
-            showToast('Erro ao carregar pedidos.', { type: 'error' });
+            showToast('error', 'Erro ao carregar pedidos.');
         }
     };
 
@@ -57,7 +57,7 @@ const MontagemCarga: React.FC = () => {
         } catch (error) {
             console.error('Erro ao verificar pendências:', error);
             // Em caso de erro, permitir adicionar mas avisar
-            showToast('Erro ao verificar pendências do cliente', { type: 'error' });
+            showToast('error', 'Erro ao verificar pendências do cliente');
         }
 
         setPedidosNaCarga([...pedidosNaCarga, pedido]);
@@ -71,11 +71,11 @@ const MontagemCarga: React.FC = () => {
 
     const salvarCarga = async () => {
         if (!motorista || !veiculo) {
-            showToast('Informe Motorista e Veículo', { type: 'warning' });
+            showToast('warning', 'Informe Motorista e Veículo');
             return;
         }
         if (pedidosNaCarga.length === 0) {
-            showToast('Adicione pedidos à carga', { type: 'warning' });
+            showToast('warning', 'Adicione pedidos à carga');
             return;
         }
 
@@ -94,11 +94,11 @@ const MontagemCarga: React.FC = () => {
                 await expedicaoService.adicionarPedidoCarga(novaCarga.id, pedido.id);
             }
 
-            showToast(`Carga #${novaCarga.numero_carga} criada com sucesso!`, { type: 'success' });
+            showToast('success', `Carga #${novaCarga.numero_carga} criada com sucesso!`);
             navigate('/expedicao'); // Vai para dashboard (a criar)
         } catch (error) {
             console.error(error);
-            showToast('Erro ao salvar carga.', { type: 'error' });
+            showToast('error', 'Erro ao salvar carga.');
         }
     };
 

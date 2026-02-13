@@ -106,10 +106,14 @@ export const vendasService = {
         if (errPedido) throw errPedido;
 
         // 2. Criar Itens
-        const itensComPedido = itens.map(item => ({
-            ...item,
-            pedido_id: novoPedido.id
-        }));
+        const itensComPedido = itens.map(item => {
+            // Remover propriedades virtuais (produto) e colunas geradas (valor_total)
+            const { produto, valor_total, ...itemData } = item as any;
+            return {
+                ...itemData,
+                pedido_id: novoPedido.id
+            };
+        });
 
         const { error: errItens } = await supabase
             .from('vendas_item')

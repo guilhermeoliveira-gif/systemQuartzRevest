@@ -62,7 +62,7 @@ const GestaoPendencias: React.FC = () => {
             setPendencias(data || []);
         } catch (error) {
             console.error(error);
-            showToast('Erro ao carregar pendências', { type: 'error' });
+            showToast('error', 'Erro ao carregar pendências');
         } finally {
             setLoading(false);
         }
@@ -70,7 +70,7 @@ const GestaoPendencias: React.FC = () => {
 
     const salvarPendencia = async () => {
         if (!clienteSelecionado || !produtoSelecionado || !qtd) {
-            showToast('Preencha Cliente, Produto e Quantidade', { type: 'warning' });
+            showToast('warning', 'Preencha Cliente, Produto e Quantidade');
             return;
         }
 
@@ -81,7 +81,7 @@ const GestaoPendencias: React.FC = () => {
                 quantidade: Number(qtd),
                 observacao
             });
-            showToast('Pendência registrada!', { type: 'success' });
+            showToast('success', 'Pendência registrada!');
 
             // Limpar form
             setClienteSelecionado(null);
@@ -94,7 +94,7 @@ const GestaoPendencias: React.FC = () => {
             carregarPendencias();
         } catch (error) {
             console.error(error);
-            showToast('Erro ao salvar pendência', { type: 'error' });
+            showToast('error', 'Erro ao salvar pendência');
         }
     };
 
@@ -102,11 +102,11 @@ const GestaoPendencias: React.FC = () => {
         if (!window.confirm('Marcar pendência como resolvida?')) return;
         try {
             await expedicaoService.resolverPendencia(id);
-            showToast('Pendência resolvida!', { type: 'success' });
+            showToast('success', 'Pendência resolvida!');
             carregarPendencias();
         } catch (error) {
             console.error(error);
-            showToast('Erro ao resolver', { type: 'error' });
+            showToast('error', 'Erro ao resolver');
         }
     };
 

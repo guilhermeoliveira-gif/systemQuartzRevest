@@ -19,7 +19,8 @@ const ClientesList: React.FC = () => {
         contato: '',
         endereco: '',
         email: '',
-        telefone: ''
+        telefone: '',
+        cidade: ''
     });
 
     useEffect(() => {
@@ -39,13 +40,24 @@ const ClientesList: React.FC = () => {
     };
 
     const handleEdit = (cliente: VendaCliente) => {
-        setNewCliente(cliente);
+        setNewCliente({
+            ...cliente,
+            cidade: cliente.cidade || ''
+        });
         setIsEditing(true);
         setShowModal(true);
     };
 
     const handleNew = () => {
-        setNewCliente({ nome: '', cnpj_cpf: '', contato: '', endereco: '', email: '', telefone: '' });
+        setNewCliente({
+            nome: '',
+            cnpj_cpf: '',
+            contato: '',
+            endereco: '',
+            email: '',
+            telefone: '',
+            cidade: ''
+        });
         setIsEditing(false);
         setShowModal(true);
     };
@@ -63,7 +75,15 @@ const ClientesList: React.FC = () => {
                 showToast('success', 'Cliente cadastrado com sucesso!');
             }
             setShowModal(false);
-            setNewCliente({ nome: '', cnpj_cpf: '', contato: '', endereco: '', email: '', telefone: '' });
+            setNewCliente({
+                nome: '',
+                cnpj_cpf: '',
+                contato: '',
+                endereco: '',
+                email: '',
+                telefone: '',
+                cidade: ''
+            });
             setIsEditing(false);
             loadClientes();
         } catch (error) {
@@ -74,7 +94,8 @@ const ClientesList: React.FC = () => {
 
     const filteredClientes = clientes.filter(c =>
         c.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        c.cnpj_cpf?.includes(busca)
+        c.cnpj_cpf?.includes(busca) ||
+        c.cidade?.toLowerCase().includes(busca.toLowerCase())
     );
 
     return (
@@ -101,7 +122,7 @@ const ClientesList: React.FC = () => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
                     type="text"
-                    placeholder="Buscar por nome ou CPF/CNPJ..."
+                    placeholder="Buscar por nome, cidade ou CPF/CNPJ..."
                     className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
@@ -128,9 +149,6 @@ const ClientesList: React.FC = () => {
                                 >
                                     <Pencil size={18} />
                                 </button>
-                                <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
-                                    <User size={18} />
-                                </button>
                             </div>
                             <h3 className="text-lg font-bold text-slate-800 mb-1 group-hover:text-blue-600 transition-colors uppercase truncate pr-16">{cliente.nome}</h3>
                             <p className="text-xs text-slate-400 font-mono mb-4">{cliente.cnpj_cpf || 'DOCUMENTO NÃO CADASTRADO'}</p>
@@ -150,9 +168,12 @@ const ClientesList: React.FC = () => {
                                     <div className="p-1.5 bg-slate-50 rounded-lg text-slate-400"><Mail size={14} /></div>
                                     <span className="truncate">{cliente.email || 'Sem e-mail'}</span>
                                 </div>
+                                <div className="flex items-center gap-3 text-sm text-slate-600">
+                                    <div className="p-1.5 bg-slate-50 rounded-lg text-slate-400"><MapPin size={14} /></div>
+                                    <span>{cliente.cidade || 'Uberlândia'}</span>
+                                </div>
                                 <div className="flex items-start gap-3 text-sm text-slate-600 pt-2 border-t border-slate-50">
-                                    <div className="p-1.5 bg-slate-50 rounded-lg text-slate-400 mt-0.5"><MapPin size={14} /></div>
-                                    <span className="text-xs italic leading-relaxed">{cliente.endereco || 'Endereço não informado'}</span>
+                                    <span className="text-xs italic leading-relaxed truncate">{cliente.endereco || 'Endereço não informado'}</span>
                                 </div>
                             </div>
                         </div>
@@ -160,7 +181,6 @@ const ClientesList: React.FC = () => {
                 </div>
             )}
 
-            {/* Modal Novo/Editar Cliente */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
                     <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in slide-in-from-bottom-4">
@@ -223,6 +243,16 @@ const ClientesList: React.FC = () => {
                                         onChange={e => setNewCliente({ ...newCliente, email: e.target.value })}
                                     />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Cidade</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Ex: Uberlândia"
+                                    value={newCliente.cidade || ''}
+                                    onChange={e => setNewCliente({ ...newCliente, cidade: e.target.value })}
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1">Endereço Completo</label>

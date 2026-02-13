@@ -60,18 +60,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 } else {
                     const isDemo = localStorage.getItem('antigravity_auth') === 'true';
                     if (isDemo) {
-                        console.warn('Modo Demo Ativado: Simulando Usuário Admin');
+                        console.warn('Modo Demo Ativado: Usando ID Real do Admin Seed');
                         const mockUser: any = {
-                            id: '00000000-0000-0000-0000-000000000001',
-                            email: 'admin@demo.com',
-                            user_metadata: { nome: 'Administrador Demo' }
+                            id: 'f9f4d082-aafd-4bb1-9642-caaaa826a2c1',
+                            email: 'admin@quartzrevest.com',
+                            user_metadata: { nome: 'Admin Seed' }
                         };
                         setUser(mockUser);
                         setSession({ user: mockUser } as any);
                         setProfile({
-                            id: '00000000-0000-0000-0000-000000000001',
-                            email: 'admin@demo.com',
-                            nome: 'Administrador Demo',
+                            id: 'f9f4d082-aafd-4bb1-9642-caaaa826a2c1',
+                            email: 'admin@quartzrevest.com',
+                            nome: 'Admin Seed',
                             cargo: 'Administrador',
                             setor: 'Diretoria'
                         });
@@ -105,16 +105,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     // Mantém ou define usuário demo se estiver logado via localStorage
                     if (!user) {
                         const mockUser: any = {
-                            id: '00000000-0000-0000-0000-000000000001',
-                            email: 'admin@demo.com',
-                            user_metadata: { nome: 'Administrador Demo' }
+                            id: 'f9f4d082-aafd-4bb1-9642-caaaa826a2c1',
+                            email: 'admin@quartzrevest.com',
+                            user_metadata: { nome: 'Admin Seed' }
                         };
                         setUser(mockUser);
                         setSession({ user: mockUser } as any);
                         setProfile({
-                            id: '00000000-0000-0000-0000-000000000001',
-                            email: 'admin@demo.com',
-                            nome: 'Administrador Demo',
+                            id: 'f9f4d082-aafd-4bb1-9642-caaaa826a2c1',
+                            email: 'admin@quartzrevest.com',
+                            nome: 'Admin Seed',
                             cargo: 'Administrador',
                             setor: 'Diretoria'
                         });
