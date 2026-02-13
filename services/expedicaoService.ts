@@ -205,14 +205,26 @@ export const expedicaoService = {
     },
 
     async verificarPendenciasCliente(clienteId: string): Promise<boolean> {
-        const { count, error } = await supabase
-            .from('expedicao_pendencia')
-            .select('*', { count: 'exact', head: true })
-            .eq('cliente_id', clienteId)
-            .is('data_resolvida', null);
+        try {
+            if (!clienteId) return false;
 
-        if (error) throw error;
-        return (count || 0) > 0;
+            const { count, error } = await supabase
+                .from('expedicao_pendencia')
+                .select('*', { count: 'exact', head: true })
+                .eq('cliente_id', clienteId)
+                .is('data_resolvida', null);
+
+            if (error) {
+                console.error('Supabase error checking pendencies:', error);
+                // Don't throw, just return false to avoid blocking the UI flow, 
+                // but log strictly.
+                return false;
+            }
+            return (count || 0) > 0;
+        } catch (err) {
+            console.error('Unexpected error checking pendencies:', err);
+            return false;
+        }
     },
 
     async getMotoristas() {

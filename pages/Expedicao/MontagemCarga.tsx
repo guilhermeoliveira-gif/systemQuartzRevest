@@ -182,27 +182,28 @@ const MontagemCarga: React.FC = () => {
             </header>
 
             {/* Conteúdo Principal (2 Colunas) */}
-            <main className="flex-1 flex overflow-hidden">
+            <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
                 {/* COLUNA ESQUERDA: Pedidos Disponíveis */}
-                <section className="flex-1 flex flex-col border-r bg-white min-w-[400px]">
+                <section className="flex-1 flex flex-col border-r bg-white md:min-w-[400px] h-1/2 md:h-auto">
                     <div className="p-4 border-b bg-slate-50 space-y-3">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                             <h2 className="font-bold text-slate-700 flex items-center gap-2">
-                                <Package size={18} className="text-orange-500" /> Pedidos Disponíveis ({disponiveisFiltrados.length})
+                                <Package size={18} className="text-orange-500" />
+                                <span className="md:inline">Disponíveis</span> ({disponiveisFiltrados.length})
                             </h2>
-                            <div className="flex bg-white rounded-lg border p-1 shadow-sm">
+                            <div className="flex bg-white rounded-lg border p-1 shadow-sm w-full md:w-auto">
                                 <button
                                     onClick={() => setFiltroRegiao('TODO')}
-                                    className={`px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'TODO' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                                    className={`flex-1 md:flex-none px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'TODO' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
                                 >Todos</button>
                                 <button
                                     onClick={() => setFiltroRegiao('UBERLANDIA')}
-                                    className={`px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'UBERLANDIA' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                                    className={`flex-1 md:flex-none px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'UBERLANDIA' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
                                 >Uberlândia</button>
                                 <button
                                     onClick={() => setFiltroRegiao('REGIAO')}
-                                    className={`px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'REGIAO' ? 'bg-purple-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                                    className={`flex-1 md:flex-none px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'REGIAO' ? 'bg-purple-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
                                 >Região</button>
                             </div>
                         </div>
@@ -220,12 +221,12 @@ const MontagemCarga: React.FC = () => {
                             <div key={pedido.id} className="bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-shadow group flex justify-between items-center">
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-bold text-slate-800 text-lg">{pedido.cliente?.nome}</span>
+                                        <span className="font-bold text-slate-800 text-base md:text-lg">{pedido.cliente?.nome}</span>
                                         <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">#{pedido.numero_pedido}</span>
                                     </div>
-                                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-xs text-slate-500">
                                         <div className="flex items-center gap-1">
-                                            <MapPin size={12} /> {pedido.cliente?.cidade} - {pedido.cliente?.bairro}
+                                            <MapPin size={12} /> {pedido.cliente?.cidade}
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <Calendar size={12} /> {new Date(pedido.data_previsao_entrega).toLocaleDateString()}
@@ -240,7 +241,8 @@ const MontagemCarga: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => moverParaCarga(pedido)}
-                                    className="bg-blue-50 text-blue-600 p-2 rounded-full hover:bg-blue-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    // Always visible on mobile to make it easy to add
+                                    className="bg-blue-50 text-blue-600 p-2 rounded-full hover:bg-blue-100 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                                 >
                                     <ArrowRight size={20} />
                                 </button>
@@ -251,20 +253,20 @@ const MontagemCarga: React.FC = () => {
 
 
                 {/* COLUNA DIREITA: Carga Atual */}
-                <section className="flex-1 flex flex-col bg-slate-100 border-l-4 border-slate-200">
+                <section className="flex-1 flex flex-col bg-slate-100 border-l-4 border-slate-200 h-1/2 md:h-auto overflow-hidden">
                     <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm">
                         <h2 className="font-bold text-slate-700 flex items-center gap-2">
-                            <Truck size={18} className="text-blue-600" /> Carga Atual ({pedidosNaCarga.length} Pedidos)
+                            <Truck size={18} className="text-blue-600" />
+                            <span className="md:inline">Carga</span> ({pedidosNaCarga.length})
                         </h2>
-                        <div className="text-xs text-slate-400">Arraste ou clique para adicionar/remover</div>
+                        <div className="text-xs text-slate-400">Arraste ou clique</div>
                     </div>
 
                     <div className="flex-1 overflow-auto p-4 space-y-3">
                         {pedidosNaCarga.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
                                 <Truck size={48} className="mb-4 text-slate-300" />
-                                <p>Nenhum pedido na carga</p>
-                                <p className="text-sm">Selecione pedidos à esquerda</p>
+                                <p>Nenhum pedido</p>
                             </div>
                         ) : (
                             pedidosNaCarga.map((pedido, idx) => (
@@ -285,23 +287,23 @@ const MontagemCarga: React.FC = () => {
                     </div>
 
                     {/* Resumo da Carga (Footer) */}
-                    <div className="bg-white border-t p-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-                        <div className="grid grid-cols-4 gap-4 mb-2">
-                            <div className="bg-slate-50 p-3 rounded-lg border text-center">
-                                <div className="text-xs text-slate-500 font-bold uppercase">Peso Total</div>
-                                <div className="text-xl font-bold text-slate-800">{(resumo.pesoTotal || 0).toLocaleString()} <span className="text-xs text-slate-400">kg</span></div>
+                    <div className="bg-white border-t p-2 md:p-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-2">
+                            <div className="bg-slate-50 p-2 md:p-3 rounded-lg border text-center">
+                                <div className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Peso</div>
+                                <div className="text-sm md:text-xl font-bold text-slate-800">{(resumo.pesoTotal || 0).toLocaleString()} <span className="text-[10px] text-slate-400">kg</span></div>
                             </div>
-                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-center">
-                                <div className="text-xs text-blue-500 font-bold uppercase">Paletes</div>
-                                <div className="text-xl font-bold text-blue-700">{resumo.paletesTotal} <span className="text-xs text-blue-400">un</span></div>
+                            <div className="bg-blue-50 p-2 md:p-3 rounded-lg border border-blue-100 text-center">
+                                <div className="text-[10px] md:text-xs text-blue-500 font-bold uppercase">Paletes</div>
+                                <div className="text-sm md:text-xl font-bold text-blue-700">{resumo.paletesTotal} <span className="text-[10px] text-blue-400">un</span></div>
                             </div>
-                            <div className="bg-slate-50 p-3 rounded-lg border text-center">
-                                <div className="text-xs text-slate-500 font-bold uppercase">Argamassa</div>
-                                <div className="text-lg font-bold text-slate-700">{resumo.argamassa} <span className="text-xs text-slate-400">sc</span></div>
+                            <div className="bg-slate-50 p-2 md:p-3 rounded-lg border text-center">
+                                <div className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Argamassa</div>
+                                <div className="text-sm md:text-lg font-bold text-slate-700">{resumo.argamassa} <span className="text-[10px] text-slate-400">sc</span></div>
                             </div>
-                            <div className="bg-slate-50 p-3 rounded-lg border text-center">
-                                <div className="text-xs text-slate-500 font-bold uppercase">Rejunte</div>
-                                <div className="text-lg font-bold text-slate-700">{resumo.rejunte} <span className="text-xs text-slate-400">kg</span></div>
+                            <div className="bg-slate-50 p-2 md:p-3 rounded-lg border text-center">
+                                <div className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Rejunte</div>
+                                <div className="text-sm md:text-lg font-bold text-slate-700">{resumo.rejunte} <span className="text-[10px] text-slate-400">kg</span></div>
                             </div>
                         </div>
                     </div>
