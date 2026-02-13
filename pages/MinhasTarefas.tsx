@@ -110,7 +110,7 @@ const MinhasTarefas: React.FC = () => {
     });
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto pb-20">
+        <div className="space-y-6 pb-20">
             <header className="px-1">
                 <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Minhas Tarefas</h1>
                 <p className="text-slate-500 font-medium text-sm">Todas as suas pendências unificadas</p>

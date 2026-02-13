@@ -127,7 +127,7 @@ const DashboardGlobal: React.FC = () => {
     }
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto pb-20">
+        <div className="space-y-6 pb-20">
             <header>
                 <h1 className="text-3xl font-bold text-neutral-900">Dashboard Global</h1>
                 <p className="text-neutral-500">Visão geral de todos os módulos do sistema</p>

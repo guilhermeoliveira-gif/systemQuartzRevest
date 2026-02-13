@@ -24,7 +24,7 @@ const VendasDashboard: React.FC = () => {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="p-6 space-y-6">
             <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">Vendas & Pedidos</h1>
@@ -76,8 +76,8 @@ const VendasDashboard: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${pedido.status === 'APROVADO' ? 'bg-green-100 text-green-700' :
-                                                    pedido.status === 'ORCAMENTO' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-slate-100 text-slate-600'
+                                                pedido.status === 'ORCAMENTO' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-slate-100 text-slate-600'
                                                 }`}>
                                                 {pedido.status}
                                             </span>

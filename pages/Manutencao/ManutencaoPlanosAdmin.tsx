@@ -90,7 +90,7 @@ const ManutencaoPlanosAdmin: React.FC = () => {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="p-6 space-y-6">
             <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <div className="flex items-center gap-4">
                     <Link to="/manutencao/preventiva" className="p-2 hover:bg-slate-100 rounded-full transition-colors">

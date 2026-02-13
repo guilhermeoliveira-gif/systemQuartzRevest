@@ -172,7 +172,7 @@ const PCPProducao: React.FC = () => {
     if (loading) return <LoadingState message="Carregando Painel do Operador..." fullScreen />;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20">
+        <div className="space-y-8 pb-20">
             {/* Seção Produção Atual */}
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
                 <div className={`p-1 text-center text-[10px] font-black uppercase tracking-[0.3em] ${isProduzindo ? 'bg-green-500 text-white animate-pulse' : 'bg-slate-100 text-slate-400'}`}>

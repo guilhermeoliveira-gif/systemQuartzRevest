@@ -123,11 +123,14 @@ const MontagemCarga: React.FC = () => {
         }
     };
 
-    // Filter local por texto
-    const disponiveisFiltrados = pedidosDisponiveis.filter(p =>
-        p.cliente?.nome?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-        p.numero_pedido?.toString().includes(filtroTexto)
-    );
+    // Filter local por texto e exclusão dos que já estão na carga
+    const disponiveisFiltrados = pedidosDisponiveis.filter(p => {
+        const jaNaCarga = pedidosNaCarga.some(n => n.id === p.id);
+        if (jaNaCarga) return false;
+
+        return p.cliente?.nome?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+            p.numero_pedido?.toString().includes(filtroTexto)
+    });
 
     return (
         <div className="h-screen flex flex-col bg-slate-100 overflow-hidden">

@@ -79,7 +79,7 @@ const MainLayout: React.FC = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-x-hidden min-h-screen p-4 md:p-8 lg:p-10 bg-slate-50 pb-20 md:pb-8">
+            <main className="flex-1 overflow-x-hidden min-h-screen p-4 md:p-6 bg-slate-50 pb-20 md:pb-6">
                 <Breadcrumbs />
                 <Outlet />
             </main>

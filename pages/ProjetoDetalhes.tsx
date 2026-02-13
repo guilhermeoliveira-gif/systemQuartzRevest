@@ -49,7 +49,7 @@ const ProjetoDetalhes: React.FC = () => {
     if (!projeto) return null;
 
     return (
-        <div className="space-y-6 pb-20 max-w-6xl mx-auto">
+        <div className="space-y-6 pb-20">
             {/* Header / Breadcrumb approach */}
             <div className="flex items-center gap-4 mb-2">
                 <button

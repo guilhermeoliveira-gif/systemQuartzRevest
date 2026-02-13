@@ -183,7 +183,7 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header Section */}
       <div className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="px-6 py-8">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-slate-900 mb-2">QuartzRevest 4.0</h1>
@@ -194,7 +194,7 @@ const ModuleSelector: React.FC<ModuleSelectorProps> = ({ onLogout }) => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="px-6 py-12">
         <div className="mb-8">
           <h2 className="text-xl font-bold text-slate-800 mb-2">Selecione o Módulo</h2>
           <p className="text-slate-600 text-sm">Escolha o ambiente de trabalho para começar</p>
