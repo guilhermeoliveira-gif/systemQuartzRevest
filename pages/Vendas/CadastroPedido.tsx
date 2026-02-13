@@ -79,7 +79,7 @@ const CadastroPedido: React.FC = () => {
         if (!produtoSelecionado || qtd <= 0) return;
 
         if (itens.some(i => i.produto_id === produtoSelecionado.id)) {
-            showToast('Produto já adicionado!', { type: 'warning' });
+            showToast('warning', 'Produto já adicionado!');
             return;
         }
 
@@ -103,7 +103,7 @@ const CadastroPedido: React.FC = () => {
 
     const salvarPedido = async () => {
         if (!clienteSelecionado || itens.length === 0) {
-            showToast('Selecione um cliente e adicione itens.', { type: 'error' });
+            showToast('error', 'Selecione um cliente e adicione itens.');
             return;
         }
 
@@ -118,11 +118,11 @@ const CadastroPedido: React.FC = () => {
                 user_id: user?.id
             }, itens);
 
-            showToast('Pedido criado com sucesso!', { type: 'success' });
+            showToast('success', 'Pedido criado com sucesso!');
             navigate('/vendas');
         } catch (error) {
             console.error(error);
-            showToast('Erro ao salvar pedido.', { type: 'error' });
+            showToast('error', 'Erro ao salvar pedido.');
         }
     };
 

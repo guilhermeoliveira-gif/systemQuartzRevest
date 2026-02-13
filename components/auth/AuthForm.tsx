@@ -29,7 +29,8 @@ const AuthForm: React.FC = () => {
                     password: formData.password,
                 });
                 if (error) throw error;
-                navigate('/');
+                // Navigation is handled by the parent component (Login.tsx) observing the auth state
+                // navigate('/');
             } else {
                 const { error, data } = await supabase.auth.signUp({
                     email: formData.email,

@@ -15,7 +15,11 @@ if (!supabaseUrl || !supabaseKey) {
     URL: ${supabaseUrl ? 'Defined' : 'Missing'}
     Key: ${supabaseKey ? 'Defined' : 'Missing'}
     
-    Verifique se o arquivo .env ou .env.local existe e contém as chaves VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.`;
+    Verifique se o arquivo .env existe na raiz e contém:
+    VITE_SUPABASE_URL=...
+    VITE_SUPABASE_ANON_KEY=...
+    
+    Se estiver usando localhost, certifique-se de restartar o servidor (npm run dev) após alterar o .env.`;
 
     console.error(msg);
     // Lançar erro para ser pego pelo GlobalErrorProvider na tela

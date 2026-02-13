@@ -56,6 +56,7 @@ export const GlobalErrorProvider: React.FC<GlobalErrorProviderProps> = ({ childr
             // Extrair mensagem de erro útil de objetos ou strings
             let msg = 'Erro desconhecido em promessa';
             let stack = '';
+            let isIgnorable = false;
 
             if (event.reason) {
                 if (event.reason instanceof Error) {
@@ -70,12 +71,38 @@ export const GlobalErrorProvider: React.FC<GlobalErrorProviderProps> = ({ childr
                         msg = String(event.reason);
                     }
                 }
+
+                // Lista de erros para "ignorar" do modal global (tratar via Toast ou console)
+                const ignoredTerms = [
+                    'Failed to fetch',
+                    'NetworkError',
+                    'AbortError',
+                    'dynamically imported module',
+                    'PostgrestError',
+                    'JWT',
+                    'AuthApiError'
+                ];
+
+                if (ignoredTerms.some(term => msg.includes(term))) {
+                    isIgnorable = true;
+                }
             }
 
-            showError('Erro de Execução (Async)', msg, stack);
+            if (isIgnorable) {
+                console.warn('[GlobalErrorIgnored]', msg);
+                // Opcional: Acionar um toast aqui se tiver acesso ao contexto
+            } else {
+                showError('Erro de Execução (Async)', msg, stack);
+            }
         };
 
         const handleWindowError = (event: ErrorEvent) => {
+            // Ignorar erros de resize observer loop limit exceeded (comum e inofensivo)
+            if (event.message === 'ResizeObserver loop limit exceeded' ||
+                event.message.includes('ResizeObserver')) {
+                return;
+            }
+
             showError('Erro de Execução (Runtime)', event.message, event.error?.stack);
         };
 

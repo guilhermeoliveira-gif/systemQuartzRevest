@@ -32,7 +32,7 @@ const ClientesList: React.FC = () => {
             setClientes(data);
         } catch (error) {
             console.error(error);
-            showToast('Erro ao carregar clientes', { type: 'error' });
+            showToast('error', 'Erro ao carregar clientes');
         } finally {
             setLoading(false);
         }
@@ -57,10 +57,10 @@ const ClientesList: React.FC = () => {
         try {
             if (isEditing && newCliente.id) {
                 await vendasService.atualizarCliente(newCliente.id, newCliente);
-                showToast('Cliente atualizado com sucesso!', { type: 'success' });
+                showToast('success', 'Cliente atualizado com sucesso!');
             } else {
                 await vendasService.criarCliente(newCliente as any);
-                showToast('Cliente cadastrado com sucesso!', { type: 'success' });
+                showToast('success', 'Cliente cadastrado com sucesso!');
             }
             setShowModal(false);
             setNewCliente({ nome: '', cnpj_cpf: '', contato: '', endereco: '', email: '', telefone: '' });
@@ -68,7 +68,7 @@ const ClientesList: React.FC = () => {
             loadClientes();
         } catch (error) {
             console.error(error);
-            showToast('Erro ao salvar cliente', { type: 'error' });
+            showToast('error', 'Erro ao salvar cliente');
         }
     };
 

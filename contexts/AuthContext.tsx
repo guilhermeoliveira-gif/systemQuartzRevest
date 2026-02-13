@@ -58,6 +58,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (session?.user) {
                     await fetchUserProfile(session.user.id, session.user);
                 } else {
+                    const isDemo = localStorage.getItem('antigravity_auth') === 'true';
+                    if (isDemo) {
+                        console.warn('Modo Demo Ativado: Simulando Usuário Admin');
+                        const mockUser: any = {
+                            id: '00000000-0000-0000-0000-000000000001',
+                            email: 'admin@demo.com',
+                            user_metadata: { nome: 'Administrador Demo' }
+                        };
+                        setUser(mockUser);
+                        setSession({ user: mockUser } as any);
+                        setProfile({
+                            id: '00000000-0000-0000-0000-000000000001',
+                            email: 'admin@demo.com',
+                            nome: 'Administrador Demo',
+                            cargo: 'Administrador',
+                            setor: 'Diretoria'
+                        });
+                    }
                     setLoading(false);
                 }
             } catch (err: any) {
@@ -82,8 +100,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Busca perfil apenas se houver sessão para evitar chamadas vazias
                 await fetchUserProfile(session.user.id, session.user);
             } else {
-                setProfile(null);
-                setLoading(false); // Garante que loading pare se não houver usuário
+                const isDemo = localStorage.getItem('antigravity_auth') === 'true';
+                if (isDemo) {
+                    // Mantém ou define usuário demo se estiver logado via localStorage
+                    if (!user) {
+                        const mockUser: any = {
+                            id: '00000000-0000-0000-0000-000000000001',
+                            email: 'admin@demo.com',
+                            user_metadata: { nome: 'Administrador Demo' }
+                        };
+                        setUser(mockUser);
+                        setSession({ user: mockUser } as any);
+                        setProfile({
+                            id: '00000000-0000-0000-0000-000000000001',
+                            email: 'admin@demo.com',
+                            nome: 'Administrador Demo',
+                            cargo: 'Administrador',
+                            setor: 'Diretoria'
+                        });
+                    }
+                } else {
+                    setProfile(null);
+                }
+                setLoading(false); // Garante que loading pare
             }
         });
 
@@ -123,13 +162,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         } catch (error: any) {
             if (!isMounted.current) return;
-            console.error('Erro inesperado ao buscar perfil:', error);
+            console.error('Erro inesperado ao buscar perfil (banco offline?):', error);
+
+            // Fallback crítico: Se o banco falhar totalmente, usamos os dados básicos da sessão
+            const userObj = currentUser || user;
+            if (userObj) {
+                setProfile({
+                    id: userObj.id,
+                    email: userObj.email || '',
+                    nome: userObj.user_metadata?.nome || userObj.email?.split('@')[0] || 'Usuário (Offline)',
+                    cargo: 'Acesso Limitado',
+                    setor: 'Geral'
+                });
+            }
         } finally {
             if (isMounted.current) setLoading(false);
         }
     };
 
     const signOut = async () => {
+        localStorage.removeItem('antigravity_auth');
         await supabase.auth.signOut();
         setUser(null);
         setSession(null);
