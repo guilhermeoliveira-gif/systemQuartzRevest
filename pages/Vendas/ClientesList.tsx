@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, User, Phone, Mail, MapPin, ArrowLeft } from 'lucide-react';
+import { Plus, Search, User, Phone, Mail, MapPin, ArrowLeft, Pencil } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { vendasService } from '../../services/vendasService';
 import { VendaCliente } from '../../types_vendas';
@@ -10,6 +10,7 @@ const ClientesList: React.FC = () => {
     const [busca, setBusca] = useState('');
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const { showToast } = useToast();
 
     const [newCliente, setNewCliente] = useState<Partial<VendaCliente>>({
@@ -37,15 +38,33 @@ const ClientesList: React.FC = () => {
         }
     };
 
+    const handleEdit = (cliente: VendaCliente) => {
+        setNewCliente(cliente);
+        setIsEditing(true);
+        setShowModal(true);
+    };
+
+    const handleNew = () => {
+        setNewCliente({ nome: '', cnpj_cpf: '', contato: '', endereco: '', email: '', telefone: '' });
+        setIsEditing(false);
+        setShowModal(true);
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newCliente.nome) return;
 
         try {
-            await vendasService.criarCliente(newCliente as any);
-            showToast('Cliente cadastrado com sucesso!', { type: 'success' });
+            if (isEditing && newCliente.id) {
+                await vendasService.atualizarCliente(newCliente.id, newCliente);
+                showToast('Cliente atualizado com sucesso!', { type: 'success' });
+            } else {
+                await vendasService.criarCliente(newCliente as any);
+                showToast('Cliente cadastrado com sucesso!', { type: 'success' });
+            }
             setShowModal(false);
             setNewCliente({ nome: '', cnpj_cpf: '', contato: '', endereco: '', email: '', telefone: '' });
+            setIsEditing(false);
             loadClientes();
         } catch (error) {
             console.error(error);
@@ -71,7 +90,7 @@ const ClientesList: React.FC = () => {
                     </div>
                 </div>
                 <button
-                    onClick={() => setShowModal(true)}
+                    onClick={handleNew}
                     className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-lg shadow-blue-200 transition-all active:scale-95"
                 >
                     <Plus size={20} /> Novo Cliente
@@ -101,12 +120,19 @@ const ClientesList: React.FC = () => {
                         </div>
                     ) : filteredClientes.map(cliente => (
                         <div key={cliente.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow group relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                <button
+                                    onClick={() => handleEdit(cliente)}
+                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                                    title="Editar Cliente"
+                                >
+                                    <Pencil size={18} />
+                                </button>
                                 <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
                                     <User size={18} />
                                 </button>
                             </div>
-                            <h3 className="text-lg font-bold text-slate-800 mb-1 group-hover:text-blue-600 transition-colors uppercase truncate">{cliente.nome}</h3>
+                            <h3 className="text-lg font-bold text-slate-800 mb-1 group-hover:text-blue-600 transition-colors uppercase truncate pr-16">{cliente.nome}</h3>
                             <p className="text-xs text-slate-400 font-mono mb-4">{cliente.cnpj_cpf || 'DOCUMENTO NÃO CADASTRADO'}</p>
 
                             <div className="space-y-3">
@@ -134,13 +160,14 @@ const ClientesList: React.FC = () => {
                 </div>
             )}
 
-            {/* Modal Novo Cliente */}
+            {/* Modal Novo/Editar Cliente */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
                     <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in slide-in-from-bottom-4">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                <Plus className="text-blue-600" /> Novo Cliente
+                                {isEditing ? <Pencil className="text-blue-600" /> : <Plus className="text-blue-600" />}
+                                {isEditing ? 'Editar Cliente' : 'Novo Cliente'}
                             </h2>
                             <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full">
                                 <Plus className="rotate-45" size={24} />
@@ -218,7 +245,7 @@ const ClientesList: React.FC = () => {
                                     type="submit"
                                     className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
                                 >
-                                    Salvar Cliente
+                                    {isEditing ? 'Atualizar Cliente' : 'Salvar Cliente'}
                                 </button>
                             </div>
                         </form>

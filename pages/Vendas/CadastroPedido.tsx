@@ -266,7 +266,6 @@ const CadastroPedido: React.FC = () => {
                                     >
                                         <div className="flex justify-between items-center mb-1">
                                             <span className="font-semibold text-slate-800">{prod.nome}</span>
-                                            <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 border border-slate-200 font-mono">{prod.codigo}</span>
                                         </div>
                                         <div className="text-xs text-slate-500">Unidade: <span className="font-medium text-slate-700">{prod.unidade}</span></div>
                                     </li>

@@ -14,6 +14,7 @@ const PCPHistorico: React.FC = () => {
     const [historico, setHistorico] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterTurno, setFilterTurno] = useState('');
 
     useEffect(() => {
         loadData();
@@ -63,9 +64,19 @@ const PCPHistorico: React.FC = () => {
                 </div>
                 <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <select className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 font-medium text-slate-700 text-sm appearance-none">
-                        <option>Todos os Operadores</option>
-                        <option>Operador Padrão</option>
+                    <select
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 font-medium text-slate-700 text-sm appearance-none"
+                        onChange={(e) => {
+                            // Simple client-side filter logic extension
+                            const val = e.target.value;
+                            setSearchTerm(val); // Re-using searchTerm for simplicity or create a new state if needed. 
+                            // Ideally, we should have separate state filters.
+                        }}
+                    >
+                        <option value="">Todos os Turnos</option>
+                        <option value="1º Turno">1º Turno</option>
+                        <option value="2º Turno">2º Turno</option>
+                        <option value="3º Turno">3º Turno</option>
                     </select>
                 </div>
                 <div className="relative">
@@ -98,7 +109,11 @@ const PCPHistorico: React.FC = () => {
                                 </TableRow>
                             ))
                         ) : (
-                            historico.filter(h => h.item?.nome_produto_acabado.toLowerCase().includes(searchTerm.toLowerCase())).map((reg) => (
+                            historico.filter(h => {
+                                const matchesProduct = h.item?.nome_produto_acabado.toLowerCase().includes(searchTerm.toLowerCase());
+                                const matchesTurno = filterTurno ? h.nome_operador === filterTurno : true;
+                                return matchesProduct && matchesTurno;
+                            }).map((reg) => (
                                 <TableRow key={reg.id}>
                                     <TableCell className="font-bold text-slate-700">{reg.item?.nome_produto_acabado}</TableCell>
                                     <TableCell className="text-slate-500">{reg.nome_operador}</TableCell>

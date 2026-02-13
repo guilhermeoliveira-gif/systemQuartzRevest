@@ -26,7 +26,8 @@ const PCPProducao: React.FC = () => {
     const [itemAtivo, setItemAtivo] = useState<ItemPlanoProducao | null>(null);
     const [registroAtivo, setRegistroAtivo] = useState<RegistroProducao | null>(null);
 
-    // Form control
+    // Formulário de Produção
+    const [turnoAtual, setTurnoAtual] = useState('1º Turno');
     const [isProduzindo, setIsProduzindo] = useState(false);
     const [contadores, setContadores] = useState({
         c1: 0,
@@ -61,6 +62,7 @@ const PCPProducao: React.FC = () => {
                 setRegistroAtivo(reg || null);
                 if (reg) {
                     setContadores({ c1: Number(reg.contador1_inicio), c2: Number(reg.contador2_inicio) });
+                    if (reg.nome_operador) setTurnoAtual(reg.nome_operador);
                 }
             } else {
                 // DO NOT auto-select. Let the user choose from the pool.
@@ -110,7 +112,7 @@ const PCPProducao: React.FC = () => {
         try {
             const novoRegistro = await pcpService.iniciarProducao({
                 id_item_plano_producao: itemAtivo.id,
-                nome_operador: 'Operador Padrão', // Placeholder
+                nome_operador: turnoAtual, // Usa o turno selecionado
                 contador1_inicio: contadores.c1,
                 contador2_inicio: contadores.c2
             });
@@ -184,7 +186,22 @@ const PCPProducao: React.FC = () => {
                                 <h2 className="text-3xl md:text-5xl font-black text-blue-800 tracking-tighter uppercase">{itemAtivo.nome_produto_acabado}</h2>
                                 <div className="flex items-center justify-center gap-4 text-slate-400 font-bold uppercase tracking-widest text-xs">
                                     <span className="flex items-center gap-1"><Package size={14} /> {itemAtivo.qtd_misturas_planejadas} Misturas Planejadas</span>
-                                    <span className="flex items-center gap-1"><User size={14} /> Operador: Operador Padrão</span>
+                                    {isProduzindo ? (
+                                        <span className="flex items-center gap-1"><User size={14} /> {turnoAtual}</span>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <User size={14} />
+                                            <select
+                                                value={turnoAtual}
+                                                onChange={(e) => setTurnoAtual(e.target.value)}
+                                                className="bg-transparent border-b border-slate-300 focus:border-blue-500 outline-none text-slate-500 font-bold uppercase text-xs"
+                                            >
+                                                <option value="1º Turno">1º Turno</option>
+                                                <option value="2º Turno">2º Turno</option>
+                                                <option value="3º Turno">3º Turno</option>
+                                            </select>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

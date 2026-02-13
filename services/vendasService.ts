@@ -33,6 +33,17 @@ export const vendasService = {
         return data;
     },
 
+    async atualizarCliente(id: string, cliente: Partial<VendaCliente>) {
+        const { data, error } = await supabase
+            .from('vendas_cliente')
+            .update(cliente)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
     // --- PRODUTOS (Integração Estoque PA) ---
     async buscarProdutos(query: string) {
         const { data, error } = await supabase
@@ -45,8 +56,9 @@ export const vendasService = {
         // Map para interface EstoquePA (compatibilidade)
         return data.map((p: any) => ({
             id: p.id,
-            descricao: p.nome, // Alias
-            codigo: p.id.split('-')[0], // Mock de código
+            nome: p.nome, // Correctly mapping the name
+            descricao: p.nome, // Alias kept for compatibility
+            // codigo: removed fake code generation from ID
             unidade: p.unidade_medida
         })) as EstoquePA[];
     },
