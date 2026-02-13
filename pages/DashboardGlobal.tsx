@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     FileText, FolderKanban, CheckSquare, Package, AlertCircle,
-    TrendingUp, Clock, Users, BarChart3, Truck
+    TrendingUp, Clock, Users, BarChart3, Truck, Wrench, ChevronRight
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import VendasSummary from '../components/dashboard/VendasSummary';
@@ -15,6 +15,15 @@ interface DashboardStats {
     estoque: { alertas: number; criticos: number };
 }
 
+interface PrioridadeAction {
+    id: string;
+    titulo: string;
+    prazo: string;
+    prioridade: string;
+    origem: string;
+    status: string;
+}
+
 const DashboardGlobal: React.FC = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -24,10 +33,30 @@ const DashboardGlobal: React.FC = () => {
         tarefas: { total: 0, pendentes: 0, atrasadas: 0 },
         estoque: { alertas: 0, criticos: 0 }
     });
+    const [prioridades, setPrioridades] = useState<PrioridadeAction[]>([]);
 
     useEffect(() => {
         loadStats();
+        loadPrioridades();
     }, []);
+
+    const loadPrioridades = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('tarefas_unificadas')
+                .select('*')
+                .neq('status', 'CONCLUIDA')
+                .neq('status', 'CANCELADA')
+                .order('prazo', { ascending: true })
+                .limit(5);
+
+            if (data) {
+                setPrioridades(data as PrioridadeAction[]);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar prioridades:', error);
+        }
+    };
 
     const loadStats = async () => {
         try {
@@ -176,74 +205,112 @@ const DashboardGlobal: React.FC = () => {
                 })}
             </div>
 
-            {/* Alertas Críticos */}
-            {(stats.ncs.criticas > 0 || stats.projetos.atrasados > 0 || stats.tarefas.atrasadas > 0 || stats.estoque.criticos > 0) && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                        <AlertCircle className="text-red-600" size={24} />
-                        <h2 className="text-lg font-bold text-red-800">Atenção Necessária</h2>
+            {/* Alertas Críticos e Ações Prioritárias */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Ações Prioritárias */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-black text-slate-800 flex items-center gap-2 tracking-tight">
+                            <Clock className="text-teal-600" size={24} />
+                            Prioridades do Dia
+                        </h2>
+                        <button
+                            onClick={() => navigate('/minhas-tarefas')}
+                            className="text-xs font-black text-teal-600 uppercase tracking-widest hover:underline"
+                        >
+                            Ver Todas
+                        </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                        {stats.ncs.criticas > 0 && (
-                            <div className="bg-white p-3 rounded-lg border border-red-200">
-                                <p className="text-xs font-bold text-red-600 uppercase">NCs Críticas</p>
-                                <p className="text-2xl font-black text-red-700">{stats.ncs.criticas}</p>
+
+                    <div className="space-y-3">
+                        {prioridades.length > 0 ? prioridades.map(acao => (
+                            <div
+                                key={acao.id}
+                                onClick={() => navigate(acao.origem === 'QUALIDADE' ? '/qualidade/planos-acao' : `/projetos/detalhes/${acao.id.split('-')[0]}`)}
+                                className="flex items-center justify-between p-4 bg-slate-50 border border-transparent hover:border-teal-200 hover:bg-white transition-all rounded-xl cursor-pointer group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                    <div>
+                                        <p className="text-sm font-black text-slate-700 uppercase tracking-tight group-hover:text-teal-700">{acao.titulo}</p>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">{acao.origem}</span>
+                                            <span className="text-slate-300">•</span>
+                                            <span className={`text-[10px] font-black uppercase ${new Date(acao.prazo) < new Date() ? 'text-red-500' : 'text-slate-400'}`}>
+                                                Prazo: {new Date(acao.prazo).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <ChevronRight size={18} className="text-slate-300 group-hover:text-teal-500 group-hover:translate-x-1 transition-all" />
                             </div>
-                        )}
-                        {stats.projetos.atrasados > 0 && (
-                            <div className="bg-white p-3 rounded-lg border border-red-200">
-                                <p className="text-xs font-bold text-red-600 uppercase">Projetos Atrasados</p>
-                                <p className="text-2xl font-black text-red-700">{stats.projetos.atrasados}</p>
-                            </div>
-                        )}
-                        {stats.tarefas.atrasadas > 0 && (
-                            <div className="bg-white p-3 rounded-lg border border-red-200">
-                                <p className="text-xs font-bold text-red-600 uppercase">Tarefas Atrasadas</p>
-                                <p className="text-2xl font-black text-red-700">{stats.tarefas.atrasadas}</p>
-                            </div>
-                        )}
-                        {stats.estoque.criticos > 0 && (
-                            <div className="bg-white p-3 rounded-lg border border-red-200">
-                                <p className="text-xs font-bold text-red-600 uppercase">Estoque Crítico</p>
-                                <p className="text-2xl font-black text-red-700">{stats.estoque.criticos}</p>
+                        )) : (
+                            <div className="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <CheckSquare size={40} className="mx-auto text-slate-200 mb-2" />
+                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Tudo em dia por aqui!</p>
                             </div>
                         )}
                     </div>
                 </div>
-            )}
+
+                {/* Alertas Ativos */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-black text-slate-800 flex items-center gap-2 tracking-tight">
+                            <AlertCircle className="text-red-600" size={24} />
+                            Atenção Crítica
+                        </h2>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className={`p-5 rounded-2xl border transition-all ${stats.ncs.criticas > 0 ? 'bg-red-50 border-red-200 shadow-sm shadow-red-100' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
+                            <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">NCs Críticas</p>
+                            <p className="text-3xl font-black text-slate-800 leading-none">{stats.ncs.criticas}</p>
+                        </div>
+                        <div className={`p-5 rounded-2xl border transition-all ${stats.projetos.atrasados > 0 ? 'bg-orange-50 border-orange-200 shadow-sm shadow-orange-100' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
+                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Prazos Atrasados</p>
+                            <p className="text-3xl font-black text-slate-800">{stats.projetos.atrasados + stats.tarefas.atrasadas}</p>
+                        </div>
+                        <div className={`p-5 rounded-2xl border transition-all ${stats.estoque.criticos > 0 ? 'bg-amber-50 border-amber-200 shadow-sm shadow-amber-100' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
+                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Estoque Crítico</p>
+                            <p className="text-3xl font-black text-slate-800">{stats.estoque.criticos}</p>
+                        </div>
+                        <div className="p-5 rounded-2xl border bg-slate-50 border-slate-100 opacity-60">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Manutenção</p>
+                            <p className="text-3xl font-black text-slate-800">2</p>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => navigate('/qualidade/nao-conformidades')}
+                        className="w-full mt-6 py-4 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-[0.98]"
+                    >
+                        Tratar Riscos
+                    </button>
+                </div>
+            </div>
 
             {/* Ações Rápidas */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <h2 className="text-lg font-bold text-slate-800 mb-4">Ações Rápidas</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <button
-                        onClick={() => navigate('/qualidade/cadastro-nc')}
-                        className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition text-left"
-                    >
-                        <FileText size={20} className="text-red-600 mb-2" />
-                        <p className="text-sm font-bold text-slate-800">Nova NC</p>
-                    </button>
-                    <button
-                        onClick={() => navigate('/projetos/consulta')}
-                        className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition text-left"
-                    >
-                        <FolderKanban size={20} className="text-teal-600 mb-2" />
-                        <p className="text-sm font-bold text-slate-800">Novo Projeto</p>
-                    </button>
-                    <button
-                        onClick={() => navigate('/projetos/tarefas-consulta')}
-                        className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition text-left"
-                    >
-                        <CheckSquare size={20} className="text-blue-600 mb-2" />
-                        <p className="text-sm font-bold text-slate-800">Nova Tarefa</p>
-                    </button>
-                    <button
-                        onClick={() => navigate('/minhas-tarefas')}
-                        className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition text-left"
-                    >
-                        <Clock size={20} className="text-orange-600 mb-2" />
-                        <p className="text-sm font-bold text-slate-800">Minhas Tarefas</p>
-                    </button>
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h2 className="text-lg font-black text-slate-800 mb-6 uppercase tracking-widest">Módulos do Sistema</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {[
+                        { label: 'Qualidade', icon: FileText, path: '/qualidade/nao-conformidades', color: 'text-red-600' },
+                        { label: 'Projetos', icon: FolderKanban, path: '/projetos/dashboard', color: 'text-teal-600' },
+                        { label: 'Estoque', icon: Package, path: '/estoque/dashboard', color: 'text-orange-600' },
+                        { label: 'PCP', icon: BarChart3, path: '/pcp', color: 'text-blue-600' },
+                        { label: 'Expedição', icon: Truck, path: '/expedicao/carga', color: 'text-indigo-600' },
+                        { label: 'Manutenção', icon: Wrench, path: '/manutencao', color: 'text-slate-600' },
+                    ].map(item => (
+                        <button
+                            key={item.label}
+                            onClick={() => navigate(item.path)}
+                            className="p-6 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-white hover:border-teal-200 hover:shadow-xl hover:shadow-teal-600/5 transition-all group text-center flex flex-col items-center gap-3"
+                        >
+                            <item.icon size={28} className={`${item.color} group-hover:scale-110 transition-transform`} />
+                            <p className="text-xs font-black text-slate-700 uppercase tracking-wider">{item.label}</p>
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>

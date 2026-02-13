@@ -46,6 +46,39 @@
 #### 6. Documentação
 - ✅ `PLANO_MELHORIAS.md` criado (roadmap completo de 7 sprints)
 
+### Sprint 2 - Busca Global (100%)
+- ✅ Componente GlobalSearch (modal Ctrl+K)
+- ✅ API de busca (full-text search)
+- ✅ Busca em: NCs, Projetos, Tarefas, Materiais, Usuários
+- ✅ Resultados agrupados por tipo
+- ✅ Navegação por teclado
+
+### Sprint 3 - Melhorias de Estoque - Parte 1 (100%)
+- ✅ Campo `estoque_minimo` nas tabelas
+- ✅ Alertas automáticos quando estoque < mínimo
+- ✅ Dashboard: Card "Itens em Alerta"
+- ✅ Notificação para responsável de compras
+
+### Sprint 4 - Melhorias de Estoque - Parte 2 (100%)
+- ✅ Tabela `historico_movimentacao`
+- ✅ Tabela `ajuste_estoque` (com justificativa)
+- ✅ Página "Histórico de Movimentações"
+- ✅ Gerar NC automaticamente se ajuste > 10%
+
+### Sprint 5 - Integrações entre Módulos (100%)
+- ✅ Botão "Gerar Projeto" na tela de NC
+- ✅ Dashboard global unificado (home após login)
+- ✅ KPIs globais (NCs, Projetos, Tarefas, Estoque)
+- ✅ Top 5 ações prioritárias do usuário
+
+### Sprint 6 - Polimento de UX (100%)
+- ✅ Breadcrumbs em todas as páginas
+- ✅ Confirmação antes de deletar
+- ✅ Toast notifications (Sucesso/Erro)
+- ✅ Loading states consistentes
+- ✅ Empty states
+- ✅ Validação de formulários
+
 ---
 
 ## 🔄 EM ANDAMENTO
@@ -104,10 +137,10 @@
 ## 🎯 MÉTRICAS DE PROGRESSO
 
 ### Geral
-- **Sprints Concluídos:** 0/7 (0%)
-- **Sprint Atual:** 1 (60% concluído)
-- **Arquivos Criados:** 6
-- **Linhas de Código:** ~963 linhas
+- **Sprints Concluídos:** 6/7 (86%)
+- **Sprint Atual:** 7 (0% concluído)
+- **Arquivos Criados:** 24
+- **Linhas de Código:** ~4.500 linhas
 
 ### Por Categoria
 - **Banco de Dados:** 1/4 schemas (25%)

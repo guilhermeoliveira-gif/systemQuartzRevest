@@ -35,14 +35,15 @@ const Dashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [mps, pas, pecasInsumos] = await Promise.all([
+      const [mps, pas, pecasInsumos, databaseAlerts] = await Promise.all([
         estoqueService.getMateriasPrimas(),
         estoqueService.getProdutosAcabados(),
-        estoqueService.getPecasInsumos()
+        estoqueService.getPecasInsumos(),
+        estoqueService.getAlertasEstoque()
       ]);
 
-      const totalMP = mps.reduce((acc, curr) => acc + Number(curr.quantidade_atual), 0);
-      const totalPA = pas.reduce((acc, curr) => acc + Number(curr.quantidade_atual), 0);
+      const totalMP = mps.reduce((acc, curr) => acc + Number(curr.estoque_atual || curr.quantidade_atual || 0), 0);
+      const totalPA = pas.reduce((acc, curr) => acc + Number(curr.estoque_atual || curr.quantidade_atual || 0), 0);
 
       const pecasMsg = pecasInsumos.filter(p => p.categoria === 'PECA');
       const insumosMsg = pecasInsumos.filter(p => p.categoria === 'INSUMO');
@@ -50,43 +51,35 @@ const Dashboard: React.FC = () => {
       const totalPecas = pecasMsg.reduce((acc, curr) => acc + Number(curr.quantidade_atual), 0);
       const totalInsumos = insumosMsg.reduce((acc, curr) => acc + Number(curr.quantidade_atual), 0);
 
-      // Generate Alerts & Shopping List
-      const alerts: Alerta[] = [];
-      const shopList: ShoppingItem[] = [];
+      // Map Database Alerts to UI format
+      const alerts: Alerta[] = databaseAlerts.map(da => ({
+        id: da.id,
+        tipo_alerta: da.nivel_alerta === 'CRITICO' ? '🔴 ESTOQUE CRÍTICO' : '🟡 ESTOQUE BAIXO',
+        mensagem: `${da.item_nome}: ${da.estoque_atual} (Mín: ${da.estoque_minimo})`,
+        data_alerta: new Date(da.created_at).toLocaleDateString(),
+        status: da.resolved_at ? 'Resolvido' : 'Ativo'
+      }));
 
-      // Check MP
-      mps.forEach(mp => {
-        if (mp.quantidade_atual <= (mp.minimo_seguranca || 0)) {
-          alerts.push({
-            id: `mp-${mp.id}`,
-            tipo_alerta: 'Estoque Baixo',
-            mensagem: `Matéria-Prima: ${mp.nome} (${mp.quantidade_atual} ${mp.unidade_medida})`,
-            data_alerta: new Date().toLocaleDateString(),
-            status: 'Ativo'
-          });
-          shopList.push({
-            id: mp.id,
-            nome: mp.nome,
-            tipo: 'Matéria-Prima',
-            atual: Number(mp.quantidade_atual),
-            minimo: Number(mp.minimo_seguranca),
-            unidade: mp.unidade_medida,
-            categoria_origem: 'MATERIA_PRIMA'
-          });
-        }
+      // Shopping List (Legacy Check + Database Alerts)
+      const shopListMap = new Map<string, ShoppingItem>();
+
+      // Add items from DB alerts first
+      databaseAlerts.forEach(da => {
+        shopListMap.set(da.item_id, {
+          id: da.item_id,
+          nome: da.item_nome,
+          tipo: da.tipo_item.replace('_', ' '),
+          atual: Number(da.estoque_atual),
+          minimo: Number(da.estoque_minimo),
+          unidade: 'UN', // Should ideally come from item
+          categoria_origem: da.tipo_item as any
+        });
       });
 
-      // Check Pecas & Insumos
+      // Supplement with local checks for safety (especially for Pecas which might not have auto-alerts yet)
       pecasInsumos.forEach(p => {
         if (p.quantidade_atual <= (p.minimo_seguranca || 0)) {
-          alerts.push({
-            id: `peca-${p.id}`,
-            tipo_alerta: 'Estoque Baixo',
-            mensagem: `${p.categoria}: ${p.nome} (${p.quantidade_atual} ${p.unidade_medida})`,
-            data_alerta: new Date().toLocaleDateString(),
-            status: 'Ativo'
-          });
-          shopList.push({
+          shopListMap.set(p.id, {
             id: p.id,
             nome: p.nome,
             tipo: p.categoria === 'PECA' ? 'Peça Mecânica' : 'Insumo',
@@ -106,7 +99,7 @@ const Dashboard: React.FC = () => {
         alertasCount: alerts.length
       });
       setAlertas(alerts);
-      setShoppingList(shopList);
+      setShoppingList(Array.from(shopListMap.values()));
     } catch (error) {
       logger.error('Erro ao carregar dados do dashboard', error);
     } finally {

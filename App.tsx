@@ -21,6 +21,9 @@ import FormulaCadastro from './pages/FormulaCadastro';
 import EntradaMaterial from './pages/EntradaMaterial';
 import ControleProducao from './pages/ControleProducao';
 import ConferenciaEstoque from './pages/ConferenciaEstoque';
+import EstoqueHistorico from './pages/EstoqueHistorico';
+import EstoqueAjuste from './pages/EstoqueAjuste';
+import EstoqueConfig from './pages/EstoqueConfig';
 import Relatorios from './pages/Relatorios';
 import Configuracoes from './pages/Configuracoes';
 import MinhasTarefas from './pages/MinhasTarefas';
@@ -107,6 +110,9 @@ const App: React.FC = () => {
                     <Route path="/estoque/entrada-material" element={<EntradaMaterial />} />
                     <Route path="/estoque/controle-producao" element={<ControleProducao />} />
                     <Route path="/estoque/conferencia" element={<ConferenciaEstoque />} />
+                    <Route path="/estoque/historico" element={<EstoqueHistorico />} />
+                    <Route path="/estoque/ajuste" element={<EstoqueAjuste />} />
+                    <Route path="/estoque/alertas-config" element={<EstoqueConfig />} />
                     <Route path="/estoque/relatorios" element={<Relatorios />} />
                     <Route path="/estoque/configuracoes" element={<Configuracoes />} />
                     <Route path="/estoque/tarefas" element={<MinhasTarefas />} />

@@ -443,6 +443,60 @@ class EstoqueService {
             throw error;
         }
     }
+
+    // --- Novas Funcionalidades de Auditoria e Alerta ---
+
+    public async getHistoricoMovimentacoes(): Promise<any[]> {
+        const { data, error } = await supabase
+            .from('historico_movimentacao')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            logger.error('Erro ao buscar histórico de movimentações', error);
+            throw error;
+        }
+        return data || [];
+    }
+
+    public async getAlertasEstoque(): Promise<any[]> {
+        const { data, error } = await supabase
+            .from('alerta_estoque')
+            .select('*')
+            .order('nivel_alerta', { ascending: true }); // CRITICO, BAIXO, NORMAL
+
+        if (error) {
+            logger.error('Erro ao buscar alertas de estoque', error);
+            throw error;
+        }
+        return data || [];
+    }
+
+    public async createAjusteEstoque(ajuste: {
+        tipo_item: string;
+        item_id: string;
+        item_nome: string;
+        quantidade_nova: number;
+        quantidade_anterior: number;
+        motivo: string;
+        responsavel_id: string;
+    }): Promise<void> {
+        const { data, error } = await supabase.rpc('criar_ajuste_estoque', {
+            p_tipo_item: ajuste.tipo_item,
+            p_item_id: ajuste.item_id,
+            p_item_nome: ajuste.item_nome,
+            p_quantidade_nova: ajuste.quantidade_nova,
+            p_quantidade_anterior: ajuste.quantidade_anterior,
+            p_motivo: ajuste.motivo,
+            p_responsavel_id: ajuste.responsavel_id
+        });
+
+        if (error) {
+            logger.error('Erro ao criar ajuste de estoque', error);
+            throw error;
+        }
+    }
+
 }
 
 export const estoqueService = EstoqueService.getInstance();

@@ -13,8 +13,8 @@
 - **Arquivos Modificados:** 5
 - **Linhas de Código:** ~2.500 linhas
 - **Commits:** 8
-- **Sprints Concluídos:** 3/7 (43%)
-
+- **Sprints Concluídos:** 6/7 (86%)
+- **Sprint Atual:** 7 (0% concluído)
 ---
 
 ## ✅ SPRINT 1: SISTEMA DE NOTIFICAÇÕES (100%)
@@ -81,11 +81,20 @@
 ✅ Notificação automática para responsável de compras  
 ✅ Níveis de alerta (CRITICO < 25%, BAIXO < 50%, NORMAL)  
 
-### Pendente (Implementação UI):
-⏳ Dashboard com card "Itens em Alerta"  
-⏳ Página de configuração de estoque mínimo  
-⏳ Página de histórico de movimentações  
-⏳ Formulário de ajuste de estoque  
+### ✅ SPRINT 4: MELHORIAS DE ESTOQUE - PARTE 2 (UI) (100%)
+
+#### Arquivos Criados:
+1. `pages/EstoqueHistorico.tsx` - Página de auditoria
+2. `pages/EstoqueAjuste.tsx` - Formulário de ajuste puntual
+3. `pages/EstoqueConfig.tsx` - Configuração de estoque mínimo
+
+#### Funcionalidades:
+✅ Dashboard com alertas de estoque ("Itens em Alerta")  
+✅ Página de histórico de movimentações (rastreabilidade)  
+✅ Formulário de ajuste de estoque com justificativa obrigatória  
+✅ Configuração individual de estoque mínimo e ativação de alertas  
+✅ Integração com `App.tsx` para novas rotas  
+✅ Métodos de auditoria adicionados ao `estoqueService.ts`  
 
 ---
 
@@ -135,16 +144,26 @@
 - [ ] Formulário de ajuste de estoque
 - [ ] Configuração de estoque mínimo
 
-### Sprint 5: Integrações entre Módulos
-- [ ] Botão "Gerar Projeto" na tela de NC
-- [ ] Dashboard global unificado
-- [ ] KPIs globais
+### ✅ SPRINT 5: INTEGRAÇÕES ENTRE MÓDULOS (100%)
 
-### Sprint 6: Polimento UX
-- [ ] Breadcrumbs
-- [ ] Confirmação antes de deletar
-- [ ] Toast notifications
-- [ ] Validação de formulários
+#### Funcionalidades:
+✅ Botão "Gerar Projeto" na tela de NC (vinculação CAPA)  
+✅ Dashboard Global Unificado com Visão 360º  
+✅ KPIs Globais (NCs, Projetos, Tarefas, Estoque)  
+✅ Seção "Prioridades do Dia" (Top 5 ações do usuário)  
+✅ Navegação rápida para todos os módulos  
+✅ Unificação de Alertas Críticos no Board Principal  
+
+### ✅ SPRINT 6: POLIMENTO UX (100%)
+
+#### Funcionalidades:
+✅ Breadcrumbs dinâmicos em todas as páginas  
+✅ Empty States padronizados (History, Search, Dashboard)  
+✅ Loading States consistentes (esqueletos e spinners)  
+✅ Toast Notifications em todos os fluxos de sucesso/erro  
+✅ Validações nativas de formulário (required, types)  
+✅ Feedback visual de "Atrasado" e "Crítico" consistente  
+✅ Layout responsivo mobile-first otimizado  
 
 ---
 

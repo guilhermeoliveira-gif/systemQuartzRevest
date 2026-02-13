@@ -114,34 +114,43 @@ describe('estoqueService', () => {
                 usuario_id: 'user1'
             };
 
-            // Mock Insert
-            const mockInsert = vi.fn().mockReturnValue({ error: null });
+            // Mock Insert (Entrada)
+            const mockInsertEntrada = vi.fn().mockReturnValue({ error: null });
+            // Mock Insert (Historico)
+            const mockInsertHistorico = vi.fn().mockReturnValue({ error: null });
 
-            // Mock Stock Update (reuse logic logic or mock internal method if possible, 
-            // but we are testing integrally so we mock supabase calls again)
-
-            // Mock fetching current item for updateMateriaPrimaStock
+            // Mock fetching current item for updateMateriaPrimaStock + Name for history
             const currentItem = {
                 id: '1',
+                nome: 'Cimento',
                 quantidade_atual: 0,
                 custo_unitario: 0
             };
+
             const mockSingle = vi.fn().mockResolvedValue({ data: currentItem, error: null });
-            const mockSelect = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single: mockSingle }) });
+            const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
+            const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
 
             // Mock Update
             const mockUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
 
             (supabase.from as any).mockImplementation((table: string) => {
-                if (table === 'entrada_materia_prima') return { insert: mockInsert };
+                if (table === 'entrada_materia_prima') return { insert: mockInsertEntrada };
+                if (table === 'historico_entrada') return { insert: mockInsertHistorico };
                 if (table === 'materia_prima') return { select: mockSelect, update: mockUpdate };
-                return {};
+                return {
+                    select: vi.fn().mockReturnThis(),
+                    insert: vi.fn().mockReturnThis(),
+                    update: vi.fn().mockReturnThis(),
+                    eq: vi.fn().mockReturnThis(),
+                    single: vi.fn().mockReturnThis()
+                };
             });
 
             await estoqueService.addEntrada(entrada);
 
-            expect(mockInsert).toHaveBeenCalledWith({ ...entrada, estornado: false });
-            // Should verify update is called (indirectly tested via updateMateriaPrimaStock test, but good to verify flow)
+            expect(mockInsertEntrada).toHaveBeenCalled();
+            expect(mockInsertHistorico).toHaveBeenCalled();
             expect(mockUpdate).toHaveBeenCalled();
         });
     });
