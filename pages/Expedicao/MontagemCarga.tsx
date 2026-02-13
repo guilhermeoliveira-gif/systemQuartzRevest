@@ -131,23 +131,23 @@ const MontagemCarga: React.FC = () => {
 
     return (
         <div className="h-screen flex flex-col bg-slate-100 overflow-hidden">
-            {/* Header */}
-            <header className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm z-10">
-                <div className="flex items-center gap-4">
-                    <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                        <Truck size={24} />
+            {/* Header - Mais compacto */}
+            <header className="bg-white border-b px-4 py-2 md:px-6 md:py-3 flex flex-wrap justify-between items-center shadow-sm z-10 gap-2">
+                <div className="flex items-center gap-3">
+                    <div className="bg-blue-600 p-2 rounded-lg text-white hidden md:block shadow-md">
+                        <Truck size={20} />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-slate-800">Montagem de Carga</h1>
-                        <p className="text-sm text-slate-500">Expedição / Romaneio</p>
+                        <h1 className="text-lg md:text-xl font-bold text-slate-800 leading-tight">Montagem de Carga</h1>
+                        <p className="text-[10px] md:text-xs text-slate-500 font-medium">Expedição / Romaneio</p>
                     </div>
                 </div>
 
-                <div className="flex gap-4 items-center bg-slate-50 p-2 rounded-lg border">
-                    <div className="flex flex-col min-w-[150px]">
-                        <label className="text-xs font-bold text-slate-500 uppercase">Motorista</label>
+                <div className="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border flex-1 md:flex-none max-w-full md:max-w-md">
+                    <div className="flex flex-col flex-1 min-w-[120px]">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Motorista</label>
                         <select
-                            className="bg-transparent outline-none font-medium text-slate-800"
+                            className="bg-transparent outline-none font-bold text-slate-800 text-xs md:text-sm px-1 cursor-pointer"
                             value={motorista}
                             onChange={e => setMotorista(e.target.value)}
                         >
@@ -157,11 +157,11 @@ const MontagemCarga: React.FC = () => {
                             ))}
                         </select>
                     </div>
-                    <div className="w-px h-8 bg-slate-300"></div>
-                    <div className="flex flex-col min-w-[150px]">
-                        <label className="text-xs font-bold text-slate-500 uppercase">Veículo</label>
+                    <div className="w-px h-6 bg-slate-300"></div>
+                    <div className="flex flex-col flex-1 min-w-[120px]">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Veículo</label>
                         <select
-                            className="bg-transparent outline-none font-medium text-slate-800"
+                            className="bg-transparent outline-none font-bold text-slate-800 text-xs md:text-sm px-1 cursor-pointer"
                             value={veiculo}
                             onChange={e => setVeiculo(e.target.value)}
                         >
@@ -173,78 +173,87 @@ const MontagemCarga: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <button onClick={() => navigate('/expedicao')} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-medium">Cancelar</button>
-                    <button onClick={salvarCarga} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all active:scale-95">
-                        <Save size={18} /> Salvar Carga
+                <div className="flex gap-2 w-full md:w-auto">
+                    <button onClick={() => navigate('/expedicao')} className="flex-1 md:flex-none px-3 py-1.5 text-slate-500 hover:text-slate-700 font-bold text-sm transition-colors">Cancelar</button>
+                    <button onClick={salvarCarga} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all active:scale-95">
+                        <Save size={16} /> Salvar
                     </button>
                 </div>
             </header>
 
             {/* Conteúdo Principal (2 Colunas) */}
-            <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
+            <main className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
 
                 {/* COLUNA ESQUERDA: Pedidos Disponíveis */}
-                <section className="flex-1 flex flex-col border-r bg-white md:min-w-[400px] h-1/2 md:h-auto">
-                    <div className="p-4 border-b bg-slate-50 space-y-3">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-                            <h2 className="font-bold text-slate-700 flex items-center gap-2">
-                                <Package size={18} className="text-orange-500" />
-                                <span className="md:inline">Disponíveis</span> ({disponiveisFiltrados.length})
+                <section className="flex-1 flex flex-col border-r bg-white md:min-w-[400px] h-1/2 md:h-auto overflow-hidden">
+                    <div className="p-3 border-b bg-slate-50 space-y-2">
+                        <div className="flex justify-between items-center gap-2">
+                            <h2 className="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                                <Package size={16} className="text-orange-500" />
+                                <span>Disponíveis</span>
+                                <span className="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px]">{disponiveisFiltrados.length}</span>
                             </h2>
-                            <div className="flex bg-white rounded-lg border p-1 shadow-sm w-full md:w-auto">
+                            <div className="flex bg-white rounded-md border p-0.5 shadow-sm">
                                 <button
                                     onClick={() => setFiltroRegiao('TODO')}
-                                    className={`flex-1 md:flex-none px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'TODO' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                                    className={`px-2 py-0.5 text-[10px] font-bold rounded ${filtroRegiao === 'TODO' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
                                 >Todos</button>
                                 <button
                                     onClick={() => setFiltroRegiao('UBERLANDIA')}
-                                    className={`flex-1 md:flex-none px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'UBERLANDIA' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
-                                >Uberlândia</button>
+                                    className={`px-2 py-0.5 text-[10px] font-bold rounded ${filtroRegiao === 'UBERLANDIA' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+                                >UDI</button>
                                 <button
                                     onClick={() => setFiltroRegiao('REGIAO')}
-                                    className={`flex-1 md:flex-none px-3 py-1 text-xs font-bold rounded ${filtroRegiao === 'REGIAO' ? 'bg-purple-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
-                                >Região</button>
+                                    className={`px-2 py-0.5 text-[10px] font-bold rounded ${filtroRegiao === 'REGIAO' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+                                >REG</button>
                             </div>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Filtrar por cliente..."
-                            className="w-full p-2 border rounded-lg text-sm bg-white"
-                            value={filtroTexto}
-                            onChange={e => setFiltroTexto(e.target.value)}
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Filtrar por nome ou pedido..."
+                                className="w-full pl-3 pr-8 py-1.5 border rounded-lg text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                value={filtroTexto}
+                                onChange={e => setFiltroTexto(e.target.value)}
+                            />
+                        </div>
                     </div>
 
-                    <div className="flex-1 overflow-auto p-4 space-y-3 bg-slate-50/50">
+                    <div className="flex-1 overflow-auto p-2 space-y-2 bg-slate-50/50 scrollbar-thin">
                         {disponiveisFiltrados.map(pedido => (
-                            <div key={pedido.id} className="bg-white p-3 rounded-lg border shadow-sm hover:shadow-md transition-shadow group flex justify-between items-center">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-bold text-slate-800 text-base md:text-lg">{pedido.cliente?.nome}</span>
-                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">#{pedido.numero_pedido}</span>
-                                    </div>
-                                    <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-xs text-slate-500">
-                                        <div className="flex items-center gap-1">
-                                            <MapPin size={12} /> {pedido.cliente?.cidade}
+                            <div key={pedido.id} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:border-blue-300 transition-all group flex gap-3">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between mb-1">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-slate-800 text-sm truncate">{pedido.cliente?.nome}</span>
+                                            <span className="text-[10px] font-medium text-slate-400">Pedido #{pedido.numero_pedido}</span>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <Calendar size={12} /> {new Date(pedido.data_previsao_entrega).toLocaleDateString()}
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 rounded-full">
+                                                {pedido.cliente?.cidade}
+                                            </span>
                                         </div>
                                     </div>
-                                    {/* Resumo de itens visual */}
-                                    <div className="mt-2 text-xs text-slate-600 line-clamp-1">
-                                        {Array.isArray(pedido.itens) ? pedido.itens.map((i: any) =>
-                                            `${i.quantidade || 0}x ${(i.produto && i.produto.nome) ? i.produto.nome : 'Produto'}`
-                                        ).join(', ') : 'Sem itens'}
+
+                                    {/* Lista de Itens mais visível */}
+                                    <div className="mt-2 bg-slate-50 border border-slate-100 rounded-md p-1.5 space-y-1">
+                                        {Array.isArray(pedido.itens) ? pedido.itens.map((i: any, idx: number) => (
+                                            <div key={idx} className="flex justify-between items-center text-[11px]">
+                                                <span className="text-slate-700 font-medium truncate pr-2">
+                                                    {(i.produto && i.produto.nome) ? i.produto.nome : 'Produto'}
+                                                </span>
+                                                <span className="text-blue-700 font-bold bg-white border px-1 rounded">
+                                                    {i.quantidade || 0}
+                                                </span>
+                                            </div>
+                                        )) : <span className="text-[10px] text-slate-400 italic">Sem itens</span>}
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => moverParaCarga(pedido)}
-                                    // Always visible on mobile to make it easy to add
-                                    className="bg-blue-50 text-blue-600 p-2 rounded-full hover:bg-blue-100 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                    className="self-center bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-100 flex-shrink-0 transition-transform active:scale-90"
                                 >
-                                    <ArrowRight size={20} />
+                                    <ArrowRight size={18} />
                                 </button>
                             </div>
                         ))}
@@ -253,57 +262,79 @@ const MontagemCarga: React.FC = () => {
 
 
                 {/* COLUNA DIREITA: Carga Atual */}
-                <section className="flex-1 flex flex-col bg-slate-100 border-l-4 border-slate-200 h-1/2 md:h-auto overflow-hidden">
-                    <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm">
-                        <h2 className="font-bold text-slate-700 flex items-center gap-2">
-                            <Truck size={18} className="text-blue-600" />
-                            <span className="md:inline">Carga</span> ({pedidosNaCarga.length})
+                <section className="flex-1 flex flex-col bg-slate-100 border-l border-slate-200 h-1/2 md:h-auto overflow-hidden">
+                    <div className="p-3 border-b bg-white flex justify-between items-center shadow-sm">
+                        <h2 className="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                            <Truck size={16} className="text-blue-600" />
+                            <span>Carga Atual</span>
+                            <span className="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded text-[10px]">{pedidosNaCarga.length}</span>
                         </h2>
-                        <div className="text-xs text-slate-400">Arraste ou clique</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider italic">Mover para remover</div>
                     </div>
 
-                    <div className="flex-1 overflow-auto p-4 space-y-3">
+                    <div className="flex-1 overflow-auto p-2 space-y-2 scrollbar-thin">
                         {pedidosNaCarga.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
-                                <Truck size={48} className="mb-4 text-slate-300" />
-                                <p>Nenhum pedido</p>
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center opacity-50">
+                                <Truck size={40} className="mb-3 text-slate-300" />
+                                <p className="text-xs font-bold uppercase tracking-tight">Carga Vazia</p>
+                                <p className="text-[10px]">Adicione pedidos à esquerda</p>
                             </div>
                         ) : (
                             pedidosNaCarga.map((pedido, idx) => (
-                                <div key={pedido.id} className="bg-white p-3 rounded-lg border-l-4 border-blue-500 shadow-sm flex justify-between items-center">
-                                    <div>
-                                        <div className="font-bold text-slate-800">{idx + 1}. {pedido.cliente?.nome}</div>
-                                        <div className="text-xs text-slate-500">{pedido.cliente?.cidade}</div>
+                                <div key={pedido.id} className="bg-white p-3 rounded-lg border-l-4 border-blue-600 border-t border-r border-b border-slate-200 shadow-sm flex gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className="font-bold text-slate-800 text-sm truncate">{idx + 1}. {pedido.cliente?.nome}</span>
+                                            <span className="text-[9px] bg-slate-100 text-slate-500 px-1 rounded font-bold">UDI</span>
+                                        </div>
+
+                                        {/* Lista de Itens na Carga */}
+                                        <div className="mt-2 grid grid-cols-1 gap-1">
+                                            {Array.isArray(pedido.itens) && pedido.itens.map((i: any, idxIt: number) => (
+                                                <div key={idxIt} className="flex justify-between text-[11px] bg-blue-50/50 px-1.5 py-0.5 rounded border border-blue-100/50">
+                                                    <span className="text-slate-600 truncate">{(i.produto && i.produto.nome) ? i.produto.nome : 'Produto'}</span>
+                                                    <span className="text-blue-800 font-bold ml-2">x{i.quantidade || 0}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => removerDaCarga(pedido)}
-                                        className="text-red-400 hover:text-red-600 p-2"
+                                        className="self-start text-slate-300 hover:text-red-500 p-1 transition-colors"
                                     >
-                                        <X size={18} />
+                                        <X size={16} />
                                     </button>
                                 </div>
                             ))
                         )}
                     </div>
 
-                    {/* Resumo da Carga (Footer) */}
-                    <div className="bg-white border-t p-2 md:p-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-2">
-                            <div className="bg-slate-50 p-2 md:p-3 rounded-lg border text-center">
-                                <div className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Peso</div>
-                                <div className="text-sm md:text-xl font-bold text-slate-800">{(resumo.pesoTotal || 0).toLocaleString()} <span className="text-[10px] text-slate-400">kg</span></div>
+                    {/* Resumo da Carga (Footer) - Mais robusto e visível */}
+                    <div className="bg-slate-900 text-white border-t p-3 md:p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.15)]">
+                        <div className="grid grid-cols-4 gap-2 md:gap-4">
+                            <div className="bg-white/10 p-2 rounded-lg text-center border border-white/5">
+                                <div className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Peso</div>
+                                <div className="text-sm md:text-lg font-black text-white leading-tight">
+                                    {(resumo.pesoTotal || 0).toLocaleString()} <span className="text-[10px] font-normal text-slate-400">kg</span>
+                                </div>
                             </div>
-                            <div className="bg-blue-50 p-2 md:p-3 rounded-lg border border-blue-100 text-center">
-                                <div className="text-[10px] md:text-xs text-blue-500 font-bold uppercase">Paletes</div>
-                                <div className="text-sm md:text-xl font-bold text-blue-700">{resumo.paletesTotal} <span className="text-[10px] text-blue-400">un</span></div>
+                            <div className="bg-blue-600/20 p-2 rounded-lg text-center border border-blue-500/30">
+                                <div className="text-[9px] text-blue-300 font-bold uppercase mb-0.5">Paletes</div>
+                                <div className="text-sm md:text-lg font-black text-blue-400 leading-tight">
+                                    {resumo.paletesTotal} <span className="text-[10px] font-normal text-blue-300/60">un</span>
+                                </div>
                             </div>
-                            <div className="bg-slate-50 p-2 md:p-3 rounded-lg border text-center">
-                                <div className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Argamassa</div>
-                                <div className="text-sm md:text-lg font-bold text-slate-700">{resumo.argamassa} <span className="text-[10px] text-slate-400">sc</span></div>
+                            <div className="bg-white/10 p-2 rounded-lg text-center border border-white/5">
+                                <div className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Argamassa</div>
+                                <div className="text-sm md:text-lg font-black text-white leading-tight">
+                                    {resumo.argamassa} <span className="text-[10px] font-normal text-slate-400">sc</span>
+                                </div>
                             </div>
-                            <div className="bg-slate-50 p-2 md:p-3 rounded-lg border text-center">
-                                <div className="text-[10px] md:text-xs text-slate-500 font-bold uppercase">Rejunte</div>
-                                <div className="text-sm md:text-lg font-bold text-slate-700">{resumo.rejunte} <span className="text-[10px] text-slate-400">kg</span></div>
+                            <div className="bg-white/10 p-2 rounded-lg text-center border border-white/5">
+                                <div className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Rejunte</div>
+                                <div className="text-sm md:text-lg font-black text-white leading-tight">
+                                    {resumo.rejunte} <span className="text-[10px] font-normal text-slate-400">kg</span>
+                                </div>
                             </div>
                         </div>
                     </div>
