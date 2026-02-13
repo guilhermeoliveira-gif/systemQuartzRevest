@@ -61,7 +61,7 @@ export const modules: ModuleConfig[] = [
         ]
     },
     {
-        id: 'comercial',
+        id: 'vendas',
         name: 'Vendas & CRM',
         description: 'Pedidos, faturamento e carteira de clientes.',
         icon: ShoppingCart,
@@ -110,7 +110,7 @@ export const modules: ModuleConfig[] = [
         ]
     },
     {
-        id: 'producao',
+        id: 'pcp',
         name: 'Produção & PCP',
         description: 'Planejamento e controle de produção.',
         icon: Factory,
