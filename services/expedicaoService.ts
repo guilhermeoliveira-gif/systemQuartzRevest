@@ -93,28 +93,41 @@ export const expedicaoService = {
 
     // --- PEDIDOS DISPONÍVEIS ---
     async getPedidosDisponiveis(filtro: 'TODO' | 'UBERLANDIA' | 'REGIAO' = 'TODO') {
-        let query = supabase
-            .from('vendas_pedido')
-            .select(`
-                *,
-                cliente:vendas_cliente(nome, cidade, bairro, endereco),
-                itens:vendas_item(quantidade, produto:produto_acabado(nome))
-            `)
-            .is('carga_id', null) // Apenas sem carga
-            // .neq('status', 'CANCELADO') // Ignora cancelados
-            .order('data_previsao_entrega', { ascending: true });
+        try {
+            const { data, error } = await supabase
+                .from('vendas_pedido')
+                .select(`
+                    *,
+                    cliente:vendas_cliente(nome, cidade, bairro, endereco),
+                    itens:vendas_item(
+                        quantidade, 
+                        produto:produto_acabado(nome)
+                    )
+                `)
+                .is('carga_id', null)
+                .order('data_previsao_entrega', { ascending: true });
 
-        const { data, error } = await query;
-        if (error) throw error;
+            if (error) {
+                console.error('Erro em getPedidosDisponiveis:', error);
+                throw error;
+            }
 
-        // Filtragem em memória devido a complexidade de cidade/região string
-        if (filtro === 'UBERLANDIA') {
-            return data.filter((p: any) => p.cliente?.cidade?.toUpperCase().includes('UBERL'));
-        } else if (filtro === 'REGIAO') {
-            return data.filter((p: any) => !p.cliente?.cidade?.toUpperCase().includes('UBERL'));
+            console.log('Pedidos carregados:', data?.length);
+
+            if (!data) return [];
+
+            // Filtragem em memória
+            if (filtro === 'UBERLANDIA') {
+                return data.filter((p: any) => p.cliente?.cidade?.toUpperCase().includes('UBERL'));
+            } else if (filtro === 'REGIAO') {
+                return data.filter((p: any) => !p.cliente?.cidade?.toUpperCase().includes('UBERL'));
+            }
+
+            return data;
+        } catch (err) {
+            console.error('Catch getPedidosDisponiveis:', err);
+            throw err;
         }
-
-        return data;
     },
 
     // --- CÁLCULOS (Lógica Legada) ---
@@ -157,7 +170,7 @@ export const expedicaoService = {
             .select(`
                 *,
                 cliente:vendas_cliente(id, nome),
-                produto:produto_acabado(id, nome, codigo) // Ajuste conforme seu schema real
+                produto:produto_acabado(id, nome, codigo)
             `)
             .order('created_at', { ascending: false });
 
@@ -200,5 +213,47 @@ export const expedicaoService = {
 
         if (error) throw error;
         return (count || 0) > 0;
+    },
+
+    async getMotoristas() {
+        try {
+            const { data, error } = await supabase
+                .from('usuarios')
+                .select('id, nome, perfil:perfil_id!inner(nome)')
+                .eq('ativo', true);
+
+            if (error) {
+                console.error('Supabase error in getMotoristas:', error);
+                throw error;
+            }
+
+            // Filtrar em memória se necessário ou usar o join
+            const motoristas = data
+                .filter((u: any) => u.perfil?.nome === 'Motorista')
+                .map((u: any) => ({ id: u.id, nome: u.nome }));
+
+            return motoristas;
+        } catch (err) {
+            console.error('Catch error in getMotoristas:', err);
+            throw err;
+        }
+    },
+
+    async getVeiculos() {
+        try {
+            const { data, error } = await supabase
+                .from('frota_veiculos')
+                .select('id, placa, modelo, marca')
+                .eq('status', 'ATIVO');
+
+            if (error) {
+                console.error('Erro em getVeiculos:', error);
+                throw error;
+            }
+            return data;
+        } catch (err) {
+            console.error('Catch getVeiculos:', err);
+            throw err;
+        }
     }
 };

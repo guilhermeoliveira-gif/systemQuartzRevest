@@ -193,5 +193,16 @@ export const frotaService = {
                 .update({ km_atual: novoKm })
                 .eq('id', veiculoId);
         }
+    },
+
+    async getMotoristas() {
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id, nome, perfil!inner(nome)')
+            .eq('perfil.nome', 'Motorista')
+            .eq('ativo', true);
+
+        if (error) throw error;
+        return data.map((u: any) => ({ id: u.id, nome: u.nome }));
     }
 };

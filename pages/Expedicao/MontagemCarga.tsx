@@ -14,6 +14,10 @@ const MontagemCarga: React.FC = () => {
     const [motorista, setMotorista] = useState('');
     const [veiculo, setVeiculo] = useState('');
 
+    // Listas de Seleção
+    const [listaMotoristas, setListaMotoristas] = useState<{ id: string, nome: string }[]>([]);
+    const [listaVeiculos, setListaVeiculos] = useState<any[]>([]);
+
     // Listas
     const [pedidosDisponiveis, setPedidosDisponiveis] = useState<any[]>([]);
     const [pedidosNaCarga, setPedidosNaCarga] = useState<any[]>([]);
@@ -28,6 +32,23 @@ const MontagemCarga: React.FC = () => {
     useEffect(() => {
         carregarPedidosDisponiveis();
     }, [filtroRegiao]);
+
+    useEffect(() => {
+        carregarDadosAuxiliares();
+    }, []);
+
+    const carregarDadosAuxiliares = async () => {
+        try {
+            const [mots, veics] = await Promise.all([
+                expedicaoService.getMotoristas(),
+                expedicaoService.getVeiculos()
+            ]);
+            setListaMotoristas(mots);
+            setListaVeiculos(veics);
+        } catch (error) {
+            console.error('Erro ao carregar dados auxiliares:', error);
+        }
+    };
 
     // Recalcula totais sempre que a lista da carga mudar
     useEffect(() => {
@@ -123,24 +144,32 @@ const MontagemCarga: React.FC = () => {
                 </div>
 
                 <div className="flex gap-4 items-center bg-slate-50 p-2 rounded-lg border">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-[150px]">
                         <label className="text-xs font-bold text-slate-500 uppercase">Motorista</label>
-                        <input
-                            className="bg-transparent outline-none font-medium text-slate-800 placeholder-slate-400"
-                            placeholder="Nome Completo"
+                        <select
+                            className="bg-transparent outline-none font-medium text-slate-800"
                             value={motorista}
                             onChange={e => setMotorista(e.target.value)}
-                        />
+                        >
+                            <option value="">Selecione...</option>
+                            {listaMotoristas.map(m => (
+                                <option key={m.id} value={m.nome}>{m.nome}</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="w-px h-8 bg-slate-300"></div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-[150px]">
                         <label className="text-xs font-bold text-slate-500 uppercase">Veículo</label>
-                        <input
-                            className="bg-transparent outline-none font-medium text-slate-800 placeholder-slate-400"
-                            placeholder="Placa / Modelo"
+                        <select
+                            className="bg-transparent outline-none font-medium text-slate-800"
                             value={veiculo}
                             onChange={e => setVeiculo(e.target.value)}
-                        />
+                        >
+                            <option value="">Selecione...</option>
+                            {listaVeiculos.map(v => (
+                                <option key={v.id} value={`${v.placa} - ${v.modelo || v.marca}`}>{v.placa} - {v.modelo || v.marca}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 

@@ -20,7 +20,8 @@ const ClientesList: React.FC = () => {
         endereco: '',
         email: '',
         telefone: '',
-        cidade: ''
+        cidade: '',
+        bairro: ''
     });
 
     useEffect(() => {
@@ -42,7 +43,8 @@ const ClientesList: React.FC = () => {
     const handleEdit = (cliente: VendaCliente) => {
         setNewCliente({
             ...cliente,
-            cidade: cliente.cidade || ''
+            cidade: cliente.cidade || '',
+            bairro: cliente.bairro || ''
         });
         setIsEditing(true);
         setShowModal(true);
@@ -56,7 +58,8 @@ const ClientesList: React.FC = () => {
             endereco: '',
             email: '',
             telefone: '',
-            cidade: ''
+            cidade: '',
+            bairro: ''
         });
         setIsEditing(false);
         setShowModal(true);
@@ -82,7 +85,8 @@ const ClientesList: React.FC = () => {
                 endereco: '',
                 email: '',
                 telefone: '',
-                cidade: ''
+                cidade: '',
+                bairro: ''
             });
             setIsEditing(false);
             loadClientes();
@@ -170,7 +174,7 @@ const ClientesList: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-3 text-sm text-slate-600">
                                     <div className="p-1.5 bg-slate-50 rounded-lg text-slate-400"><MapPin size={14} /></div>
-                                    <span>{cliente.cidade || 'Uberlândia'}</span>
+                                    <span>{cliente.cidade || 'Uberlândia'} - {cliente.bairro || 'Centro'}</span>
                                 </div>
                                 <div className="flex items-start gap-3 text-sm text-slate-600 pt-2 border-t border-slate-50">
                                     <span className="text-xs italic leading-relaxed truncate">{cliente.endereco || 'Endereço não informado'}</span>
@@ -244,15 +248,27 @@ const ClientesList: React.FC = () => {
                                     />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1">Cidade</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    placeholder="Ex: Uberlândia"
-                                    value={newCliente.cidade || ''}
-                                    onChange={e => setNewCliente({ ...newCliente, cidade: e.target.value })}
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Cidade</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        placeholder="Ex: Uberlândia"
+                                        value={newCliente.cidade || ''}
+                                        onChange={e => setNewCliente({ ...newCliente, cidade: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Bairro</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        placeholder="Ex: Centro"
+                                        value={newCliente.bairro || ''}
+                                        onChange={e => setNewCliente({ ...newCliente, bairro: e.target.value })}
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-1">Endereço Completo</label>

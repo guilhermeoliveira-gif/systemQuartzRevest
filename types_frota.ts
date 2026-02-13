@@ -25,6 +25,7 @@ export interface Abastecimento {
     posto?: string;
     media_km_l?: number;
     usuario_id?: string;
+    motorista_id?: string;
     created_at?: string;
 }
 

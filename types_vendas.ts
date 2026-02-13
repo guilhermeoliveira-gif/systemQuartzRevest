@@ -7,6 +7,7 @@ export interface VendaCliente {
     email?: string;
     telefone?: string;
     cidade?: string;
+    bairro?: string;
     created_at?: string;
 }
 
