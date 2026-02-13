@@ -35,6 +35,13 @@ const OrdensServico: React.FC = () => {
         status: 'Aberta'
     });
 
+    // Finalize Modal
+    const [isFinalizeOpen, setIsFinalizeOpen] = useState(false);
+    const [finalizeData, setFinalizeData] = useState({
+        tipo_correcao: 'Definitiva' as 'Definitiva' | 'Paleativa',
+        descricao_fechamento: ''
+    });
+
     useEffect(() => {
         loadData();
     }, []);
@@ -73,6 +80,41 @@ const OrdensServico: React.FC = () => {
             loadData();
         } catch (error) {
             toast.error('Erro', 'Falha ao abrir OS.');
+        }
+    };
+
+    const handleReceberOS = async (e: React.MouseEvent, os: OrdemServico) => {
+        e.stopPropagation();
+        if (window.confirm(`Deseja iniciar a execução da OS para ${os.maquina?.nome}?`)) {
+            try {
+                await manutencaoService.iniciarOS(os.id);
+                toast.success('Iniciado', 'OS em execução.');
+                loadData();
+            } catch (error) {
+                toast.error('Erro', 'Falha ao iniciar OS.');
+            }
+        }
+    };
+
+    const handleOpenFinalize = (e: React.MouseEvent, os: OrdemServico) => {
+        e.stopPropagation();
+        setSelectedOS(os);
+        setFinalizeData({ tipo_correcao: 'Definitiva', descricao_fechamento: '' });
+        setIsFinalizeOpen(true);
+    };
+
+    const handleFinalizarOS = async () => {
+        if (!selectedOS || !finalizeData.descricao_fechamento) {
+            return toast.error('Atenção', 'Informe a descrição da solução.');
+        }
+
+        try {
+            await manutencaoService.finalizarOS(selectedOS.id, finalizeData);
+            toast.success('Concluído', 'OS finalizada com sucesso!');
+            setIsFinalizeOpen(false);
+            loadData();
+        } catch (error) {
+            toast.error('Erro', 'Falha ao finalizar OS.');
         }
     };
 
@@ -157,7 +199,7 @@ const OrdensServico: React.FC = () => {
                                 o.maquina?.nome.toLowerCase().includes(searchTerm.toLowerCase())
                             ).map((os) => (
                                 <TableRow key={os.id} className="cursor-pointer group">
-                                    <TableCell>
+                                    <TableCell onClick={() => { }}>
                                         <div className="font-black text-slate-800 uppercase tracking-tighter">{os.maquina?.nome}</div>
                                         <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{os.tipo}</div>
                                     </TableCell>
@@ -168,9 +210,32 @@ const OrdensServico: React.FC = () => {
                                     </TableCell>
                                     <TableCell>{getStatusBadge(os.status)}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-blue-600">
-                                            <ArrowRight size={18} />
-                                        </Button>
+                                        <div className="flex justify-end gap-2">
+                                            {os.status === 'Aberta' && (
+                                                <Button
+                                                    size="xs"
+                                                    variant="secondary"
+                                                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold"
+                                                    onClick={(e) => handleReceberOS(e, os)}
+                                                >
+                                                    Receber OS
+                                                </Button>
+                                            )}
+                                            {(os.status === 'Em Execução' || os.status === 'Aberta') && (
+                                                <Button
+                                                    size="xs"
+                                                    className="bg-green-600 text-white hover:bg-green-700 font-bold shadow-green-200"
+                                                    onClick={(e) => handleOpenFinalize(e, os)}
+                                                >
+                                                    <CheckCircle size={14} className="mr-1" /> Finalizar
+                                                </Button>
+                                            )}
+                                            {os.status === 'Concluída' && (
+                                                <span className="text-xs font-bold text-green-600 flex items-center">
+                                                    <CheckCircle size={14} className="mr-1" /> OK
+                                                </span>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -188,7 +253,7 @@ const OrdensServico: React.FC = () => {
                 )}
             </div>
 
-            {/* Modals */}
+            {/* Modal Nova OS */}
             <Dialog
                 isOpen={isAddOpen}
                 onClose={() => setIsAddOpen(false)}
@@ -247,6 +312,64 @@ const OrdensServico: React.FC = () => {
                     <div className="flex justify-end gap-3 pt-4">
                         <Button variant="ghost" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
                         <Button onClick={handleSave} className="bg-blue-800 text-white">Criar OS</Button>
+                    </div>
+                </div>
+            </Dialog>
+
+            {/* Modal Finalizar OS */}
+            <Dialog
+                isOpen={isFinalizeOpen}
+                onClose={() => setIsFinalizeOpen(false)}
+                title={`Finalizar OS - ${selectedOS?.maquina?.nome || 'Ativo'}`}
+            >
+                <div className="space-y-4">
+                    <div className="p-4 bg-blue-50 rounded-lg mb-4">
+                        <p className="text-xs font-bold text-blue-800 uppercase mb-1">Problema Relatado</p>
+                        <p className="text-sm text-blue-600">{selectedOS?.descricao}</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tipo de Correção</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => setFinalizeData({ ...finalizeData, tipo_correcao: 'Definitiva' })}
+                                className={`p-3 rounded-xl border font-bold text-sm transition-all ${finalizeData.tipo_correcao === 'Definitiva'
+                                        ? 'bg-green-100 border-green-300 text-green-700'
+                                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                    }`}
+                            >
+                                Solução Definitiva
+                            </button>
+                            <button
+                                onClick={() => setFinalizeData({ ...finalizeData, tipo_correcao: 'Paleativa' })}
+                                className={`p-3 rounded-xl border font-bold text-sm transition-all ${finalizeData.tipo_correcao === 'Paleativa'
+                                        ? 'bg-amber-100 border-amber-300 text-amber-700'
+                                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                    }`}
+                            >
+                                Solução Paleativa
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descrição da Solução / Fechamento</label>
+                        <textarea
+                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold h-32"
+                            placeholder="Descreva o que foi feito para corrigir o problema..."
+                            value={finalizeData.descricao_fechamento}
+                            onChange={(e) => setFinalizeData({ ...finalizeData, descricao_fechamento: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button variant="ghost" onClick={() => setIsFinalizeOpen(false)}>Cancelar</Button>
+                        <Button
+                            onClick={handleFinalizarOS}
+                            className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200"
+                        >
+                            <CheckCircle size={18} className="mr-2" /> Confirmar Finalização
+                        </Button>
                     </div>
                 </div>
             </Dialog>

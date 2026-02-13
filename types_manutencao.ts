@@ -110,6 +110,8 @@ export interface OrdemServico {
     custo_total: number;
     horas_maquina_na_os?: number;
     pecas_utilizadas: PecaUtilizada[];
+    tipo_correcao?: 'Definitiva' | 'Paleativa'; // Novo campo de fechamento
+    descricao_fechamento?: string; // Novo campo de fechamento
     created_at?: string;
     updated_at?: string;
 }

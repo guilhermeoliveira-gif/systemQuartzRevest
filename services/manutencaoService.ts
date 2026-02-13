@@ -112,6 +112,71 @@ export const manutencaoService = {
         }
     },
 
+    async iniciarOS(id: string, tecnico?: string): Promise<void> {
+        const updates: Partial<OrdemServico> = {
+            status: 'Em Execução',
+            data_inicio: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        if (tecnico) updates.tecnico_responsavel = tecnico;
+
+        const { error } = await supabase
+            .from('manutencao_os')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) throw error;
+    },
+
+    async finalizarOS(id: string, dados: { tipo_correcao: 'Definitiva' | 'Paleativa'; descricao_fechamento: string; tecnico?: string }): Promise<void> {
+        const updates: Partial<OrdemServico> = {
+            status: 'Concluída',
+            data_conclusao: new Date().toISOString(),
+            tipo_correcao: dados.tipo_correcao,
+            descricao_fechamento: dados.descricao_fechamento,
+            updated_at: new Date().toISOString()
+        };
+        if (dados.tecnico) updates.tecnico_responsavel = dados.tecnico;
+
+        // First update the OS
+        const { error } = await supabase
+            .from('manutencao_os')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Then execute the side effects (machine hours, task updates)
+        // We need to fetch the OS first to get maquina_id, etc if not passed.
+        // For simplicity, we can fetch it or just rely on the side effects logic if we refactor updateOS.
+        // Re-using the logic inside updateOS might be cleaner, but let's just call updateOS with the status change to filter down to that logic?
+        // Actually, let's copy the side-effect logic here to be explicit or refactor updateOS to take these fields.
+
+        // Fetch OS to trigger side effects
+        const { data: os } = await supabase.from('manutencao_os').select('*').eq('id', id).single();
+        if (os) {
+            if (os.maquina_id && os.horas_maquina_na_os) {
+                await this.updateMaquina(os.maquina_id, {
+                    ultima_manutencao_horas: os.horas_maquina_na_os,
+                    status: 'Operacional'
+                });
+            }
+            if (os.tarefa_id) {
+                try {
+                    // @ts-ignore
+                    const { projetosService } = await import('./projetosService');
+                    await projetosService.updateTarefa(os.tarefa_id, {
+                        status: 'CONCLUIDA',
+                        progresso: 100,
+                        updated_at: new Date().toISOString()
+                    });
+                } catch (taskError) {
+                    console.error('Erro ao atualizar tarefa:', taskError);
+                }
+            }
+        }
+    },
+
     // ==================== ITENS DE MÁQUINA ====================
     async getItensMaquina(maquinaId: string): Promise<MaquinaItem[]> {
         const { data, error } = await supabase
